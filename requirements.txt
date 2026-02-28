@@ -1,0 +1,21 @@
+# LLM Manager — Python dependencies
+# Install: pip install -r requirements.txt
+
+# === API server ===
+fastapi>=0.100,<1.0
+uvicorn[standard]>=0.20
+pydantic>=2.0
+requests>=2.28
+python-dotenv>=1.0
+
+# === Model training / LoRA ===
+torch>=2.0
+transformers>=4.36
+peft>=0.7
+datasets>=2.14
+safetensors>=0.4
+accelerate>=0.25
+bitsandbytes>=0.40
+
+# === Model downloads ===
+huggingface-hub>=0.20
