@@ -1,0 +1,123 @@
+:root{
+  --bg:#0b0f14;--panel:#111827;--text:#e6edf3;--muted:#a3b2c7;
+  --pop:#66d9e8;--pop2:#a78bfa;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;
+  --input:#0f1623;--border:#1f2a37;--ring:#243447;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:linear-gradient(180deg,#0b0f14,#0e1420);
+  color:var(--text);font:14px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Inter;
+  max-width:100%;
+  overflow-x:hidden;
+}
+.wrap{max-width:1100px;margin:40px auto;padding:0 16px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:14px;flex-wrap:wrap}
+h1{margin:0;font-size:28px}
+h2{margin:.25rem 0 1rem;font-size:18px;color:var(--text)}
+.muted{color:var(--muted)}
+.mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace}
+
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{
+  background:var(--panel);padding:16px;border:1px solid var(--border);
+  border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.25)
+}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+
+input, select{
+  width:100%;height:44px;border-radius:12px;background:var(--input);
+  color:var(--text);border:1px solid var(--border);padding:0 12px;
+  outline:none;transition:box-shadow .15s,border-color .15s
+}
+select{
+  appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='%23a3b2c7'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:36px
+}
+input:focus, select:focus{border-color:var(--pop);box-shadow:0 0 0 3px #66d9e833}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:44px;padding:0 18px;border-radius:14px;border:1px solid transparent;
+  background:linear-gradient(135deg,var(--pop),var(--pop2));
+  color:#0b0f14;font-weight:700;letter-spacing:.2px;cursor:pointer;
+  box-shadow:0 10px 20px rgba(167,139,250,.25), inset 0 0 0 1px #ffffff22;
+  transition:transform .05s ease, filter .15s ease, opacity .15s ease
+}
+.btn:hover{filter:brightness(1.05)}
+.btn:active{transform:translateY(1px)}
+.btn.secondary{
+  background:#0f1623;color:var(--text);border:1px solid var(--border);
+  box-shadow:none
+}
+.btn.danger{
+  background:linear-gradient(135deg,#ef4444,#f59e0b);
+  color:#0b0f14
+}
+.btn[disabled]{
+  opacity:.45;
+  cursor:not-allowed;
+  filter:none !important;
+}
+
+.controls{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+
+/* Tabs */
+.tabs{display:flex;gap:10px;flex-wrap:wrap}
+.tab{
+  height:40px;padding:0 14px;border-radius:999px;
+  background:#0f1623;color:var(--text);border:1px solid var(--border);
+  cursor:pointer
+}
+.tab.active{border-color:var(--pop);box-shadow:0 0 0 3px #66d9e822}
+.panel{display:none}
+.panel.active{display:block}
+
+/* Output boxes - HARD wrap */
+.outBox{
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 12px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+/* Jobs */
+.jobs-table{ width:100%; border-collapse:collapse; }
+.jobs-table th, .jobs-table td{ padding:8px 10px; border-top:1px solid var(--border); vertical-align:top; }
+.jobs-table th{ text-align:left; color:var(--muted); font-weight:600; }
+
+/* KV */
+.kv{display:grid;grid-template-columns:180px 1fr;gap:8px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:12px;background:#0f1623;border:1px solid var(--border);color:var(--muted)}
+
+/* Engine controls */
+.engineGrid{display:grid;gap:12px;grid-template-columns:repeat(1,minmax(0,1fr))}
+.engineCard{
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:14px;
+  background:rgba(15,23,42,0.65);
+}
+.engineCard.ok{border-color:rgba(34,197,94,0.55)}
+.engineCard.warn{border-color:rgba(245,158,11,0.55)}
+.engineCard.bad{border-color:rgba(239,68,68,0.55)}
+.engineHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.engineTitle{font-weight:800;letter-spacing:.2px}
+.engineMeta{color:var(--muted);font-size:12px;line-height:1.35;margin-top:4px}
+.engineBadge{
+  padding:6px 10px;border-radius:999px;
+  border:1px solid var(--border);
+  background:#0f1623;color:var(--muted);
+  font-size:12px;
+}
+
+@media (max-width:900px){.row,.grid{grid-template-columns:1fr}}

@@ -1,0 +1,450 @@
+{"prompt": "multiply one point twenty five tablespoons by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"tablespoon\",\"factor\":4}}"}
+{"prompt": "five raised to three", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"5**3\"}}"}
+{"prompt": "convert two hundred and twelve degrees f to c", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":212,\"scale\":\"f\"}}"}
+{"prompt": "what's the average of eight three five", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[8,3,5]}}"}
+{"prompt": "multiply one point twenty five cups by two", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"cup\",\"factor\":2}}"}
+{"prompt": "find root of four", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(4)\"}}"}
+{"prompt": "area of a circle with radius four", "response": "{\"module\":\"math\",\"function\":\"area_circle\",\"args\":{\"radius\":4}}"}
+{"prompt": "scale two point five cups by three", "response": "{\"module\":\"math\",\"function\":\"scale_recipe\",\"args\":{\"amount\":2.5,\"scale\":3,\"unit\":\"cup\"}}"}
+{"prompt": "calculate area of a triangle with base six and height seven", "response": "{\"module\":\"math\",\"function\":\"area_triangle\",\"args\":{\"base\":6,\"height\":7}}"}
+{"prompt": "what's half of one teaspoons", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":1,\"unit\":\"teaspoon\"}}"}
+{"prompt": "add twenty percent tip to one hundred", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":100,\"tip_percent\":20}}"}
+{"prompt": "two to the two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"2**2\"}}"}
+{"prompt": "volume of a box two by three by four", "response": "{\"module\":\"math\",\"function\":\"volume_box\",\"args\":{\"length\":2,\"width\":3,\"height\":4}}"}
+{"prompt": "what's half of four liters", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":4,\"unit\":\"liter\"}}"}
+{"prompt": "what's half of three teaspoons", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":3,\"unit\":\"teaspoon\"}}"}
+{"prompt": "round four hundred and sixty-four point seventy two to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":464.072,\"precision\":\"tenth\"}}"}
+{"prompt": "what is two thirds of eight", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.6666666666666666 * 8\"}}"}
+{"prompt": "what is a quarter of eight", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.25 * 8\"}}"}
+{"prompt": "what is four to the power of two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"4**2\"}}"}
+{"prompt": "convert four hundred and fifty-one degrees f to c", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":451,\"scale\":\"f\"}}"}
+{"prompt": "what's the average of nine five three", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[9,5,3]}}"}
+{"prompt": "what's the average of eight one two", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[8,1,2]}}"}
+{"prompt": "what's half of eight teaspoons", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":8,\"unit\":\"teaspoon\"}}"}
+{"prompt": "hey could you convert two foots into meters", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":2,\"from_unit\":\"foot\",\"to_unit\":\"meter\"}}"}
+{"prompt": "round two hundred and thirty-four point six hundred and sixty-five to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":234.665,\"precision\":\"hundredth\"}}"}
+{"prompt": "hey could you convert one foots into meters", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":1,\"from_unit\":\"foot\",\"to_unit\":\"meter\"}}"}
+{"prompt": "what is five to the power of two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"5**2\"}}"}
+{"prompt": "what's the square root of one hundred and twenty-one", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(121)\"}}"}
+{"prompt": "add fifteen percent tip to fifteen", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":15,\"tip_percent\":15}}"}
+{"prompt": "what is one and a half of eight", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"1.5 * 8\"}}"}
+{"prompt": "add twenty percent tip to forty two.five", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":42.5,\"tip_percent\":20}}"}
+{"prompt": "hey could you convert five liters into gallons", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":5,\"from_unit\":\"liter\",\"to_unit\":\"gallon\"}}"}
+{"prompt": "five to the two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"5**2\"}}"}
+{"prompt": "hey could you convert three point five grams into ounces", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":3.5,\"from_unit\":\"gram\",\"to_unit\":\"ounce\"}}"}
+{"prompt": "round two hundred and thirteen point nine hundred and thirty-three to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":213.933,\"precision\":\"tenth\"}}"}
+{"prompt": "multiply zero point five ounces by two", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":0.5,\"unit\":\"ounce\",\"factor\":2}}"}
+{"prompt": "round two hundred and eighty-five point one hundred and sixty-four to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":285.164,\"precision\":\"tenth\"}}"}
+{"prompt": "what's half of one liters", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":1,\"unit\":\"liter\"}}"}
+{"prompt": "hey could you convert one liters into gallons", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":1,\"from_unit\":\"liter\",\"to_unit\":\"gallon\"}}"}
+{"prompt": "two to the three", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"2**3\"}}"}
+{"prompt": "convert zero degrees c to f", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":0,\"scale\":\"c\"}}"}
+{"prompt": "four raised to three", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"4**3\"}}"}
+{"prompt": "four raised to two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"4**2\"}}"}
+{"prompt": "what's the average of one two four", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[1,2,4]}}"}
+{"prompt": "find root of one hundred and forty-four", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(144)\"}}"}
+{"prompt": "multiply three tablespoons by two", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":3,\"unit\":\"tablespoon\",\"factor\":2}}"}
+{"prompt": "increase eighty three by eighteen percent", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"83 * (1 + 0.18)\"}}"}
+{"prompt": "multiply zero point five cups by two", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":0.5,\"unit\":\"cup\",\"factor\":2}}"}
+{"prompt": "increase eight hundred and twenty-seven by twelve percent", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"827 * (1 + 0.12)\"}}"}
+{"prompt": "find root of eighty one", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(81)\"}}"}
+{"prompt": "what is a half of eight", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.5 * 8\"}}"}
+{"prompt": "round eighty eight point forty four to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":88.44,\"precision\":\"whole\"}}"}
+{"prompt": "increase five hundred and sixty-seven by fifteen percent", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"567 * (1 + 0.15)\"}}"}
+{"prompt": "hey could you convert one inchs into centimeters", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":1,\"from_unit\":\"inch\",\"to_unit\":\"centimeter\"}}"}
+{"prompt": "hey could you convert two liters into gallons", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":2,\"from_unit\":\"liter\",\"to_unit\":\"gallon\"}}"}
+{"prompt": "what's the average of three eight nine", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[3,8,9]}}"}
+{"prompt": "find root of twenty five", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(25)\"}}"}
+{"prompt": "add fifteen percent tip to one hundred", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":100,\"tip_percent\":15}}"}
+{"prompt": "round two hundred and seventy-six point two hundred and sixteen to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":276.216,\"precision\":\"whole\"}}"}
+{"prompt": "five to the three", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"5**3\"}}"}
+{"prompt": "what's half of eight liters", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":8,\"unit\":\"liter\"}}"}
+{"prompt": "multiply one point twenty five ounces by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"ounce\",\"factor\":4}}"}
+{"prompt": "find root of sixteen", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(16)\"}}"}
+{"prompt": "add fifteen percent tip to forty two.five", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":42.5,\"tip_percent\":15}}"}
+{"prompt": "what's the square root of one hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(100)\"}}"}
+{"prompt": "what's half of four teaspoons", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":4,\"unit\":\"teaspoon\"}}"}
+{"prompt": "round three hundred and seventy-six point five hundred and fifty-three to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":376.553,\"precision\":\"hundredth\"}}"}
+{"prompt": "multiply zero point five cups by three", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":0.5,\"unit\":\"cup\",\"factor\":3}}"}
+{"prompt": "what's the area of a five by ten rectangle", "response": "{\"module\":\"math\",\"function\":\"area_rectangle\",\"args\":{\"length\":5,\"width\":10}}"}
+{"prompt": "what's half of three cups", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":3,\"unit\":\"cup\"}}"}
+{"prompt": "hey could you convert five grams into ounces", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":5,\"from_unit\":\"gram\",\"to_unit\":\"ounce\"}}"}
+{"prompt": "what is two to the power of three", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"2**3\"}}"}
+{"prompt": "what is three to the power of two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3**2\"}}"}
+{"prompt": "what is twenty percent of eight hundred and twenty-seven", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.2 * 827\"}}"}
+{"prompt": "five raised to two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"5**2\"}}"}
+{"prompt": "what's the average of seven three four", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[7,3,4]}}"}
+{"prompt": "hey could you convert two cups into milliliters", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":2,\"from_unit\":\"cup\",\"to_unit\":\"milliliter\"}}"}
+{"prompt": "square root one hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(100)\"}}"}
+{"prompt": "convert four hundred and fifty-one degrees c to f", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":451,\"scale\":\"c\"}}"}
+{"prompt": "what is three and a half of eight", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3.5 * 8\"}}"}
+{"prompt": "round two hundred and thirty-six point two hundred and forty-eight to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":236.248,\"precision\":\"tenth\"}}"}
+{"prompt": "round seven hundred and eighteen point four hundred and ninety-eight to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":718.498,\"precision\":\"hundredth\"}}"}
+{"prompt": "what is five percent of five hundred and fifty-seven", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.05 * 557\"}}"}
+{"prompt": "round nine hundred and thirty-two point twenty two to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":932.022,\"precision\":\"tenth\"}}"}
+{"prompt": "hey could you convert three point five liters into gallons", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":3.5,\"from_unit\":\"liter\",\"to_unit\":\"gallon\"}}"}
+{"prompt": "what's the square root of thirty six", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(36)\"}}"}
+{"prompt": "what is eighteen percent of one hundred and ninety-six", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.18 * 196\"}}"}
+{"prompt": "what's the average of one two six", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[1,2,6]}}"}
+{"prompt": "what's the average of five four seven", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[5,4,7]}}"}
+{"prompt": "find root of thirty six", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(36)\"}}"}
+{"prompt": "round eight hundred and forty-seven point two hundred and twenty-two to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":847.222,\"precision\":\"hundredth\"}}"}
+{"prompt": "what is three quarters of eight", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.75 * 8\"}}"}
+{"prompt": "round two hundred and thirty-two point nine hundred and thirty-three to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":232.933,\"precision\":\"hundredth\"}}"}
+{"prompt": "multiply one point twenty five cups by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"cup\",\"factor\":4}}"}
+{"prompt": "three to the three", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3**3\"}}"}
+{"prompt": "what's the average of eight three six", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[8,3,6]}}"}
+{"prompt": "hey could you convert five cups into milliliters", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":5,\"from_unit\":\"cup\",\"to_unit\":\"milliliter\"}}"}
+{"prompt": "convert one hundred degrees c to f", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":100,\"scale\":\"c\"}}"}
+{"prompt": "hey could you convert five foots into meters", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":5,\"from_unit\":\"foot\",\"to_unit\":\"meter\"}}"}
+{"prompt": "multiply zero point five ounces by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":0.5,\"unit\":\"ounce\",\"factor\":4}}"}
+{"prompt": "convert thirty two degrees f to c", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":32,\"scale\":\"f\"}}"}
+{"prompt": "three raised to two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3**2\"}}"}
+{"prompt": "multiply three ounces by three", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":3,\"unit\":\"ounce\",\"factor\":3}}"}
+{"prompt": "multiply one point twenty five cups by three", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"cup\",\"factor\":3}}"}
+{"prompt": "what's the average of three six two", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[3,6,2]}}"}
+{"prompt": "how much is four hundred and eight times eighteen percent", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.18 * 408\"}}"}
+{"prompt": "multiply three cups by two", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":3,\"unit\":\"cup\",\"factor\":2}}"}
+{"prompt": "round three hundred and forty-two point seventeen to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":342.017,\"precision\":\"hundredth\"}}"}
+{"prompt": "hey could you convert three point five cups into milliliters", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":3.5,\"from_unit\":\"cup\",\"to_unit\":\"milliliter\"}}"}
+{"prompt": "square root one hundred and twenty-one", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(121)\"}}"}
+{"prompt": "what's the average of four three eight", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[4,3,8]}}"}
+{"prompt": "increase two hundred and four by seventy five percent", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"204 * (1 + 0.75)\"}}"}
+{"prompt": "round seven hundred and thirty-two point forty two to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":732.42,\"precision\":\"whole\"}}"}
+{"prompt": "how much is three times five percent", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.05 * 3\"}}"}
+{"prompt": "what's the average of two nine five", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[2,9,5]}}"}
+{"prompt": "what's half of one cups", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":1,\"unit\":\"cup\"}}"}
+{"prompt": "round eight point one hundred and forty-three to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":8.143,\"precision\":\"tenth\"}}"}
+{"prompt": "what's the average of nine, seven, nine", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[9,7,9]}}"}
+{"prompt": "what's the average of four, eight, one", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[4,8,1]}}"}
+{"prompt": "what's the area of a rectangle that is five long and ten wide", "response": "{\"module\":\"math\",\"function\":\"area_rectangle\",\"args\":{\"length\":5,\"width\":10}}"}
+{"prompt": "add a twenty percent tip to twenty five", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":25,\"tip_percent\":20}}"}
+{"prompt": "what's three quarters of eight", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.75 * 8\"}}"}
+{"prompt": "what would the root of sixteen be", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(16)\"}}"}
+{"prompt": "what is half of two teaspoons", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":2,\"unit\":\"teaspoon\"}}"}
+{"prompt": "what is half of two liters", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":2,\"unit\":\"liter\"}}"}
+{"prompt": "what's one hundred and eighty-six point five hundred and fifty-three rounded to the closest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":186.553,\"precision\":\"hundredth\"}}"}
+{"prompt": "hey can you find twenty percent of eighty", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.2 * 80\"}}"}
+{"prompt": "what's the average of two, seven, two", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[2,7,2]}}"}
+{"prompt": "what's the volume of a box that's two by three by four", "response": "{\"module\":\"math\",\"function\":\"volume_box\",\"args\":{\"length\":2,\"width\":3,\"height\":4}}"}
+{"prompt": "what is five raised to the two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"5**2\"}}"}
+{"prompt": "scale one point five cups by two", "response": "{\"module\":\"math\",\"function\":\"scale_recipe\",\"args\":{\"amount\":1.5,\"scale\":2,\"unit\":\"cup\"}}"}
+{"prompt": "what is two raised to the three", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"2**3\"}}"}
+{"prompt": "how much is one hundred and twenty multiplied by twenty percent", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"120 * (1 - 0.2)\"}}"}
+{"prompt": "can you convert thirty two degrees c to f", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":32,\"scale\":\"c\"}}"}
+{"prompt": "add a ten percent tip to twenty five", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":25,\"tip_percent\":10}}"}
+{"prompt": "round fifty two point three hundred and fifty-eight to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":52.358,\"precision\":\"tenth\"}}"}
+{"prompt": "how much is two hundred multiplied by twenty percent", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"200 * (1 - 0.2)\"}}"}
+{"prompt": "round one hundred and seventy-eight point seven hundred and fifty-three to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":178.753,\"precision\":\"whole\"}}"}
+{"prompt": "what's half of eight", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.5 * 8\"}}"}
+{"prompt": "how big is the area of a circle with radius four", "response": "{\"module\":\"math\",\"function\":\"area_circle\",\"args\":{\"radius\":4}}"}
+{"prompt": "what's the average of two, five, seven", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[2,5,7]}}"}
+{"prompt": "what is half of four teaspoons", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":4,\"unit\":\"teaspoon\"}}"}
+{"prompt": "what's twenty percent off of one hundred and twenty", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.2 * 120\"}}"}
+{"prompt": "how many ounces is one grams", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":1,\"from_unit\":\"gram\",\"to_unit\":\"ounce\"}}"}
+{"prompt": "what's a quarter of eight", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.25 * 8\"}}"}
+{"prompt": "area of a triangle base three and height six", "response": "{\"module\":\"math\",\"function\":\"area_triangle\",\"args\":{\"base\":3,\"height\":6}}"}
+{"prompt": "what's thirty two f in c", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":32,\"scale\":\"f\"}}"}
+{"prompt": "what's thirty two c in f", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":32,\"scale\":\"c\"}}"}
+{"prompt": "what's the average of one, seven, nine", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[1,7,9]}}"}
+{"prompt": "what's the average of eight, four, four", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[8,4,4]}}"}
+{"prompt": "what is half of four liters", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":4,\"unit\":\"liter\"}}"}
+{"prompt": "how many ounces is two grams", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":2.5,\"from_unit\":\"gram\",\"to_unit\":\"ounce\"}}"}
+{"prompt": "what's the average of two, nine, seven", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[2,9,7]}}"}
+{"prompt": "what's ten percent off of eighty", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.1 * 80\"}}"}
+{"prompt": "what would the root of thirty six be", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(36)\"}}"}
+{"prompt": "can you multiply two cups by two", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":2,\"unit\":\"cup\",\"factor\":2}}"}
+{"prompt": "what is three raised to the two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3**2\"}}"}
+{"prompt": "what's the average of two, one, eight", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[2,1,8]}}"}
+{"prompt": "can you multiply one cups by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"cup\",\"factor\":4}}"}
+{"prompt": "hey can you find twenty five percent of one hundred and twenty", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.25 * 120\"}}"}
+{"prompt": "what's the average of four, five, six", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[4,5,6]}}"}
+{"prompt": "add a ten percent tip to sixty", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":60,\"tip_percent\":10}}"}
+{"prompt": "hey convert two grams to ounces for me", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":2.5,\"from_unit\":\"gram\",\"to_unit\":\"ounce\"}}"}
+{"prompt": "round one hundred and forty-eight point fifty eight to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":148.58,\"precision\":\"hundredth\"}}"}
+{"prompt": "what's one hundred and eighty-five point nine hundred and forty-six rounded to the closest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":185.946,\"precision\":\"tenth\"}}"}
+{"prompt": "what's three and a half of eight", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3.5 * 8\"}}"}
+{"prompt": "what's forty one point two hundred and eighty-five rounded to the closest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":41.285,\"precision\":\"tenth\"}}"}
+{"prompt": "what is two raised to the two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"2**2\"}}"}
+{"prompt": "what's the average of six, two, four", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[6,2,4]}}"}
+{"prompt": "what's the average of four, nine, six", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[4,9,6]}}"}
+{"prompt": "can you multiply one tablespoons by three", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"tablespoon\",\"factor\":3}}"}
+{"prompt": "add a twenty percent tip to sixty", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":60,\"tip_percent\":20}}"}
+{"prompt": "what is five raised to the three", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"5**3\"}}"}
+{"prompt": "what's the average of one, six, three", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[1,6,3]}}"}
+{"prompt": "what would the root of nine be", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(9)\"}}"}
+{"prompt": "what's one hundred and forty-four point one hundred and twenty-six rounded to the closest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":144.126,\"precision\":\"tenth\"}}"}
+{"prompt": "can you multiply zero cups by three", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":0.5,\"unit\":\"cup\",\"factor\":3}}"}
+{"prompt": "could you tell me the square root of nine", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(9)\"}}"}
+{"prompt": "what would the root of one hundred be", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(100)\"}}"}
+{"prompt": "can you convert one hundred degrees f to c", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":100,\"scale\":\"f\"}}"}
+{"prompt": "what is half of ten teaspoons", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":10,\"unit\":\"teaspoon\"}}"}
+{"prompt": "what's the average of eight, two, three", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[8,2,3]}}"}
+{"prompt": "what's one hundred c in f", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":100,\"scale\":\"c\"}}"}
+{"prompt": "how much is eighty multiplied by twenty percent", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"80 * (1 - 0.2)\"}}"}
+{"prompt": "what is three raised to the three", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3**3\"}}"}
+{"prompt": "hey can you find twenty percent of one hundred and twenty", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.2 * 120\"}}"}
+{"prompt": "could you tell me the square root of thirty six", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(36)\"}}"}
+{"prompt": "what's a half of eight", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.5 * 8\"}}"}
+{"prompt": "round one hundred and seventy-four point five hundred and twenty-seven to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":174.527,\"precision\":\"tenth\"}}"}
+{"prompt": "hey convert one liters to gallons for me", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":1,\"from_unit\":\"liter\",\"to_unit\":\"gallon\"}}"}
+{"prompt": "round thirty seven point nine hundred and twenty-one to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":37.921,\"precision\":\"tenth\"}}"}
+{"prompt": "what's twenty three point seven hundred and thirteen rounded to the closest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":23.713,\"precision\":\"hundredth\"}}"}
+{"prompt": "could you tell me the square root of sixteen", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(16)\"}}"}
+{"prompt": "what's two hundred and twelve f in c", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":212,\"scale\":\"f\"}}"}
+{"prompt": "can you convert one hundred degrees c to f", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":100,\"scale\":\"c\"}}"}
+{"prompt": "can you multiply one cups by three", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"cup\",\"factor\":3}}"}
+{"prompt": "round eighty seven point four hundred and fifty-eight to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":87.458,\"precision\":\"whole\"}}"}
+{"prompt": "what's fifty percent off of two hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.5 * 200\"}}"}
+{"prompt": "can you multiply two cups by three", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":2,\"unit\":\"cup\",\"factor\":3}}"}
+{"prompt": "what's the average of four, one, one", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[4,1,1]}}"}
+{"prompt": "what's the average of one, seven, three", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[1,7,3]}}"}
+{"prompt": "round fifty six point eight hundred and sixteen to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":56.816,\"precision\":\"whole\"}}"}
+{"prompt": "round forty nine point three hundred and twenty-eight to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":49.328,\"precision\":\"tenth\"}}"}
+{"prompt": "what's twenty eight point two hundred and twenty-five rounded to the closest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":28.225,\"precision\":\"whole\"}}"}
+{"prompt": "what's the average of five, six, five", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[5,6,5]}}"}
+{"prompt": "what's one hundred f in c", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":100,\"scale\":\"f\"}}"}
+{"prompt": "can you convert thirty two degrees f to c", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":32,\"scale\":\"f\"}}"}
+{"prompt": "hey convert one grams to ounces for me", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":1,\"from_unit\":\"gram\",\"to_unit\":\"ounce\"}}"}
+{"prompt": "how many centimeters is one inchs", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":1,\"from_unit\":\"inch\",\"to_unit\":\"centimeter\"}}"}
+{"prompt": "what's eighteen point six hundred and forty-two rounded to the closest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":18.642,\"precision\":\"whole\"}}"}
+{"prompt": "what is half of ten liters", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":10,\"unit\":\"liter\"}}"}
+{"prompt": "can you multiply two tablespoons by two", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":2,\"unit\":\"tablespoon\",\"factor\":2}}"}
+{"prompt": "can you multiply one tablespoons by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"tablespoon\",\"factor\":4}}"}
+{"prompt": "what's one hundred and thirty point one hundred and thirty-seven rounded to the closest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":130.137,\"precision\":\"hundredth\"}}"}
+{"prompt": "can you multiply two cups by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":2,\"unit\":\"cup\",\"factor\":4}}"}
+{"prompt": "how much is one hundred and twenty multiplied by ten percent", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"120 * (1 - 0.1)\"}}"}
+{"prompt": "what's fifty percent off of one hundred and twenty", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.5 * 120\"}}"}
+{"prompt": "what is half of six tablespoons", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":6,\"unit\":\"tablespoon\"}}"}
+{"prompt": "round the number nine hundred and ninety-five point nineteen to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":995.019,\"precision\":\"tenth\"}}"}
+{"prompt": "please scale two cups by three times", "response": "{\"module\":\"math\",\"function\":\"scale_recipe\",\"args\":{\"amount\":2,\"scale\":3,\"unit\":\"cup\"}}"}
+{"prompt": "hey jarvis what's the square root of one hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(100)\"}}"}
+{"prompt": "could you figure out what twenty five percent of eighty is", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.25 * 80\"}}"}
+{"prompt": "can you tell me how many milliliters are in one cups", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":1,\"from_unit\":\"cup\",\"to_unit\":\"milliliter\"}}"}
+{"prompt": "give me the average of three five and nine", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[3,5,9]}}"}
+{"prompt": "could you figure out what twenty percent of one hundred and sixty is", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.2 * 160\"}}"}
+{"prompt": "what is the area of a triangle with base six and height eight", "response": "{\"module\":\"math\",\"function\":\"area_triangle\",\"args\":{\"base\":6,\"height\":8}}"}
+{"prompt": "figure out a twenty percent tip on forty five dollars", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":45,\"tip_percent\":20}}"}
+{"prompt": "please convert two hundred and twelve degrees f into c for me", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":212,\"scale\":\"f\"}}"}
+{"prompt": "please multiply one and a half cups by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.5,\"unit\":\"cup\",\"factor\":4}}"}
+{"prompt": "area of a circle where the radius is seven", "response": "{\"module\":\"math\",\"function\":\"area_circle\",\"args\":{\"radius\":7}}"}
+{"prompt": "hey what is half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.5 * 10\"}}"}
+{"prompt": "hey jarvis what's the square root of twenty five", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(25)\"}}"}
+{"prompt": "round the number three hundred and forty-six point nine hundred and twenty-one to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":346.921,\"precision\":\"whole\"}}"}
+{"prompt": "hey jarvis what's the square root of four", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(4)\"}}"}
+{"prompt": "calculate the volume of a box that's two feet by three feet by four feet", "response": "{\"module\":\"math\",\"function\":\"volume_box\",\"args\":{\"length\":2,\"width\":3,\"height\":4}}"}
+{"prompt": "please convert two hundred and twelve degrees c into f for me", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":212,\"scale\":\"c\"}}"}
+{"prompt": "round the number five hundred and thirty-four point eight hundred and fifty-one to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":534.851,\"precision\":\"whole\"}}"}
+{"prompt": "hey what is one and a half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"1.5 * 10\"}}"}
+{"prompt": "hey jarvis what's the square root of forty nine", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(49)\"}}"}
+{"prompt": "what is three raised to the power of two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3**2\"}}"}
+{"prompt": "round the number seven hundred and fifty-five point forty three to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":755.43,\"precision\":\"whole\"}}"}
+{"prompt": "hey what is three and a half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3.5 * 10\"}}"}
+{"prompt": "can you tell me how many centimeters are in one inchs", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":1,\"from_unit\":\"inch\",\"to_unit\":\"centimeter\"}}"}
+{"prompt": "round the number four hundred and ninety-nine point five hundred and fifty-nine to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":499.559,\"precision\":\"hundredth\"}}"}
+{"prompt": "please convert thirty two degrees c into f for me", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":32,\"scale\":\"c\"}}"}
+{"prompt": "round the number three hundred and fifty-three point nine hundred and forty-four to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":353.944,\"precision\":\"whole\"}}"}
+{"prompt": "what's the area of a rectangle that's five feet by ten feet", "response": "{\"module\":\"math\",\"function\":\"area_rectangle\",\"args\":{\"length\":5,\"width\":10}}"}
+{"prompt": "round the number fifty one point six hundred and twenty-eight to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":51.628,\"precision\":\"hundredth\"}}"}
+{"prompt": "round the number one hundred and ninety-three point seven hundred and ninety-nine to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":193.799,\"precision\":\"hundredth\"}}"}
+{"prompt": "hey what is a quarter of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.25 * 10\"}}"}
+{"prompt": "can you tell me how many milliliters are in three cups", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":3,\"from_unit\":\"cup\",\"to_unit\":\"milliliter\"}}"}
+{"prompt": "round the number seventy four point seven hundred and fifty-three to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":74.753,\"precision\":\"tenth\"}}"}
+{"prompt": "could you figure out what ten percent of eighty is", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.1 * 80\"}}"}
+{"prompt": "round the number three hundred and sixty-five point six hundred and eighty-four to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":365.684,\"precision\":\"tenth\"}}"}
+{"prompt": "round the number one hundred and forty-four point twenty five to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":144.025,\"precision\":\"tenth\"}}"}
+{"prompt": "hey what is two thirds of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.6666666666666666 * 10\"}}"}
+{"prompt": "round the number six hundred and eighty-two point ninety nine to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":682.099,\"precision\":\"whole\"}}"}
+{"prompt": "could you figure out what ten percent of one hundred and sixty is", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.1 * 160\"}}"}
+{"prompt": "please convert ninety eight degrees c into f for me", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":98,\"scale\":\"c\"}}"}
+{"prompt": "please convert ninety eight degrees f into c for me", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":98,\"scale\":\"f\"}}"}
+{"prompt": "could you figure out what fifteen percent of one hundred is", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.15 * 100\"}}"}
+{"prompt": "round the number three hundred and fifty-one point one hundred and eighty-two to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":351.182,\"precision\":\"whole\"}}"}
+{"prompt": "round the number seven hundred and eight point three hundred and ninety-one to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":708.391,\"precision\":\"whole\"}}"}
+{"prompt": "round the number five hundred and seven point seven hundred and fifty-two to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":507.752,\"precision\":\"hundredth\"}}"}
+{"prompt": "round the number six hundred and seventeen point six hundred and eighty-eight to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":617.688,\"precision\":\"whole\"}}"}
+{"prompt": "round the number seven hundred and ninety-two point sixty five to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":792.65,\"precision\":\"whole\"}}"}
+{"prompt": "hey what is three quarters of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.75 * 10\"}}"}
+{"prompt": "could you figure out what twenty percent of eighty is", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.2 * 80\"}}"}
+{"prompt": "calculate the volume of a box that's two feet by three feet by four feet", "response": "{\"module\":\"math\",\"function\":\"volume_box\",\"args\":{\"length\":2,\"width\":3,\"height\":4}}"}
+{"prompt": "please convert thirty two degrees c into f for me", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":32,\"scale\":\"c\"}}"}
+{"prompt": "can you tell me how many milliliters are in one cups", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":1,\"from_unit\":\"cup\",\"to_unit\":\"milliliter\"}}"}
+{"prompt": "figure out a twenty percent tip on forty five dollars", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":45,\"tip_percent\":20}}"}
+{"prompt": "what is three raised to the power of two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3**2\"}}"}
+{"prompt": "please scale two cups by three times", "response": "{\"module\":\"math\",\"function\":\"scale_recipe\",\"args\":{\"amount\":2,\"scale\":3,\"unit\":\"cup\"}}"}
+{"prompt": "give me the average of three five and nine", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[3,5,9]}}"}
+{"prompt": "what is half of six tablespoons", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":6,\"unit\":\"tablespoon\"}}"}
+{"prompt": "hey what is half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.5 * 10\"}}"}
+{"prompt": "could you figure out what fifteen percent of eighty is", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.15 * 80\"}}"}
+{"prompt": "area of a circle where the radius is seven", "response": "{\"module\":\"math\",\"function\":\"area_circle\",\"args\":{\"radius\":7}}"}
+{"prompt": "what's the area of a rectangle that's five feet by ten feet", "response": "{\"module\":\"math\",\"function\":\"area_rectangle\",\"args\":{\"length\":5,\"width\":10}}"}
+{"prompt": "round the number nine hundred and nineteen point four hundred and forty-four to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":919.444,\"precision\":\"hundredth\"}}"}
+{"prompt": "round the number five hundred and thirty-seven point seven hundred and sixty-six to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":537.766,\"precision\":\"hundredth\"}}"}
+{"prompt": "hey jarvis what's the square root of twenty five", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(25)\"}}"}
+{"prompt": "round the number five hundred and eight point eight hundred and ninety-two to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":508.892,\"precision\":\"whole\"}}"}
+{"prompt": "what is the area of a triangle with base six and height eight", "response": "{\"module\":\"math\",\"function\":\"area_triangle\",\"args\":{\"base\":6,\"height\":8}}"}
+{"prompt": "hey jarvis what's the square root of four", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(4)\"}}"}
+{"prompt": "could you figure out what ten percent of eighty is", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.1 * 80\"}}"}
+{"prompt": "hey what is one and a half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"1.5 * 10\"}}"}
+{"prompt": "hey jarvis what's the square root of forty nine", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(49)\"}}"}
+{"prompt": "please convert two hundred and twelve degrees c into f for me", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":212,\"scale\":\"c\"}}"}
+{"prompt": "hey what is two thirds of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.6666666666666666 * 10\"}}"}
+{"prompt": "please multiply one and a half cups by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.5,\"unit\":\"cup\",\"factor\":4}}"}
+{"prompt": "round the number two hundred and seventy-five point nine hundred and forty-eight to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":275.948,\"precision\":\"whole\"}}"}
+{"prompt": "can you tell me how many centimeters are in one inchs", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":1,\"from_unit\":\"inch\",\"to_unit\":\"centimeter\"}}"}
+{"prompt": "could you figure out what fifteen percent of one hundred is", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.15 * 100\"}}"}
+{"prompt": "could you figure out what twenty percent of one hundred and sixty is", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.2 * 160\"}}"}
+{"prompt": "hey what is three quarters of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.75 * 10\"}}"}
+{"prompt": "could you figure out what ten percent of one hundred and sixty is", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.1 * 160\"}}"}
+{"prompt": "hey jarvis what's the square root of one hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(100)\"}}"}
+{"prompt": "please convert two hundred and twelve degrees f into c for me", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":212,\"scale\":\"f\"}}"}
+{"prompt": "hey what is a half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.5 * 10\"}}"}
+{"prompt": "could you figure out what twenty five percent of one hundred and sixty is", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.25 * 160\"}}"}
+{"prompt": "round the number eighty four point thirty three to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":84.033,\"precision\":\"tenth\"}}"}
+{"prompt": "can you tell me how many centimeters are in three inchs", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":3,\"from_unit\":\"inch\",\"to_unit\":\"centimeter\"}}"}
+{"prompt": "please convert ninety eight degrees f into c for me", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":98,\"scale\":\"f\"}}"}
+{"prompt": "round the number four hundred and eleven point nine hundred and twenty-eight to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":411.928,\"precision\":\"hundredth\"}}"}
+{"prompt": "hey what is three and a half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3.5 * 10\"}}"}
+{"prompt": "round the number seven hundred and ninety-six point twenty seven to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":796.027,\"precision\":\"whole\"}}"}
+{"prompt": "please convert thirty two degrees f into c for me", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":32,\"scale\":\"f\"}}"}
+{"prompt": "please convert ninety eight degrees c into f for me", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":98,\"scale\":\"c\"}}"}
+{"prompt": "round the number fifty point eight hundred and twenty-eight to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":50.828,\"precision\":\"whole\"}}"}
+{"prompt": "what is two to the power of two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"2**2\"}}"}
+{"prompt": "what is the average of one five two", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[1,5,2]}}"}
+{"prompt": "multiply zero point five cups by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":0.5,\"unit\":\"cup\",\"factor\":4}}"}
+{"prompt": "what is three quarters of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.75 * 10\"}}"}
+{"prompt": "round three hundred and five point four eight four to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":305.484,\"precision\":\"whole\"}}"}
+{"prompt": "multiply one point two five cups by two", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"cup\",\"factor\":2}}"}
+{"prompt": "round ninety-eight point three three one to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":98.331,\"precision\":\"hundredth\"}}"}
+{"prompt": "what is three and a half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3.5 * 10\"}}"}
+{"prompt": "what is thirty percent of two hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.3 * 200\"}}"}
+{"prompt": "what is the average of five nine four", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[5,9,4]}}"}
+{"prompt": "add a fifteen percent tip to one hundred", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":100,\"tip_percent\":15}}"}
+{"prompt": "what is ten percent of one hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.1 * 100\"}}"}
+{"prompt": "convert two hundred and twelve degrees c to f", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":212,\"scale\":\"c\"}}"}
+{"prompt": "how many meters is two point five foots", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":2.5,\"from_unit\":\"foot\",\"to_unit\":\"meter\"}}"}
+{"prompt": "what is half of ten liters", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":10,\"unit\":\"liter\"}}"}
+{"prompt": "convert zero degrees c to f", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":0,\"scale\":\"c\"}}"}
+{"prompt": "round eight hundred and thirty-eight point two one three to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":838.213,\"precision\":\"tenth\"}}"}
+{"prompt": "convert thirty-two degrees c to f", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":32,\"scale\":\"c\"}}"}
+{"prompt": "multiply zero point five cups by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":0.5,\"unit\":\"cup\",\"factor\":4}}"}
+{"prompt": "what is the square root of nine", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(9)\"}}"}
+{"prompt": "what is twenty percent of one hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.2 * 100\"}}"}
+{"prompt": "round eighty-four point three four four to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":84.344,\"precision\":\"tenth\"}}"}
+{"prompt": "multiply one point two five cups by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"cup\",\"factor\":4}}"}
+{"prompt": "multiply three cups by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":3,\"unit\":\"cup\",\"factor\":4}}"}
+{"prompt": "what is the average of three six eight", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[3,6,8]}}"}
+{"prompt": "convert four hundred and fifty-one degrees f to c", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":451,\"scale\":\"f\"}}"}
+{"prompt": "add a fifteen percent tip to fifteen", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":15,\"tip_percent\":15}}"}
+{"prompt": "multiply three tablespoons by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":3,\"unit\":\"tablespoon\",\"factor\":4}}"}
+{"prompt": "round one hundred and ninety-one point seven four nine to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":191.749,\"precision\":\"hundredth\"}}"}
+{"prompt": "add a twenty percent tip to one hundred", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":100,\"tip_percent\":20}}"}
+{"prompt": "multiply one point two five tablespoons by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"tablespoon\",\"factor\":4}}"}
+{"prompt": "round two hundred and thirty-three point nine four nine to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":233.949,\"precision\":\"tenth\"}}"}
+{"prompt": "multiply three liters by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":3,\"unit\":\"liter\",\"factor\":4}}"}
+{"prompt": "what is thirty percent of one hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.3 * 100\"}}"}
+{"prompt": "multiply three liters by two", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":3,\"unit\":\"liter\",\"factor\":2}}"}
+{"prompt": "round two hundred and fifty-five point one two seven to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":255.127,\"precision\":\"hundredth\"}}"}
+{"prompt": "what is the average of four eight six", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[4,8,6]}}"}
+{"prompt": "what is five to the power of two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"5**2\"}}"}
+{"prompt": "round sixty point six five nine to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":60.659,\"precision\":\"hundredth\"}}"}
+{"prompt": "what is a half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.5 * 10\"}}"}
+{"prompt": "round thirty-two point nine zero seven to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":32.907,\"precision\":\"hundredth\"}}"}
+{"prompt": "what is the average of one two six", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[1,2,6]}}"}
+{"prompt": "what is the square root of one hundred and forty-four", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(144)\"}}"}
+{"prompt": "round seven hundred and seventy-six point three seven seven to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":776.377,\"precision\":\"whole\"}}"}
+{"prompt": "what is twenty percent of two hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.2 * 200\"}}"}
+{"prompt": "what is the average of seven four eight", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[7,4,8]}}"}
+{"prompt": "multiply three cups by two", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":3,\"unit\":\"cup\",\"factor\":2}}"}
+{"prompt": "what is two to the power of three", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"2**3\"}}"}
+{"prompt": "how many ounces is two point five grams", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":2.5,\"from_unit\":\"gram\",\"to_unit\":\"ounce\"}}"}
+{"prompt": "what is twenty-five percent of sixty", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.25 * 60\"}}"}
+{"prompt": "what is the average of one six six", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[1,6,6]}}"}
+{"prompt": "round five hundred and eighty-two point eight seven four to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":582.874,\"precision\":\"hundredth\"}}"}
+{"prompt": "multiply zero point five liters by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":0.5,\"unit\":\"liter\",\"factor\":4}}"}
+{"prompt": "round four hundred and eighty-four point five six to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":484.56,\"precision\":\"whole\"}}"}
+{"prompt": "round nine hundred and forty-one point two nine eight to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":941.298,\"precision\":\"hundredth\"}}"}
+{"prompt": "multiply zero point five liters by two", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":0.5,\"unit\":\"liter\",\"factor\":2}}"}
+{"prompt": "scale two point five cups by three", "response": "{\"module\":\"math\",\"function\":\"scale_recipe\",\"args\":{\"amount\":2.5,\"scale\":3,\"unit\":\"cup\"}}"}
+{"prompt": "what is the average of four five four", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[4,5,4]}}"}
+{"prompt": "what is the square root of sixteen", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(16)\"}}"}
+{"prompt": "what is two thirds of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.6666666666666666 * 10\"}}"}
+{"prompt": "what is three and a half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3.5 * 10\"}}"}
+{"prompt": "how big is the area of a circle with radius four", "response": "{\"module\":\"math\",\"function\":\"area_circle\",\"args\":{\"radius\":4}}"}
+{"prompt": "what is a half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.5 * 10\"}}"}
+{"prompt": "what is the average of two six two", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[2,6,2]}}"}
+{"prompt": "convert one hundred degrees f to c", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":100,\"scale\":\"f\"}}"}
+{"prompt": "add a ten percent tip to one hundred", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":100,\"tip_percent\":10}}"}
+{"prompt": "round six hundred and ninety-one point eight eight to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":691.88,\"precision\":\"tenth\"}}"}
+{"prompt": "what is the square root of thirty-six", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(36)\"}}"}
+{"prompt": "what is the square root of nine", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(9)\"}}"}
+{"prompt": "how many meters is two point five foots", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":2.5,\"from_unit\":\"foot\",\"to_unit\":\"meter\"}}"}
+{"prompt": "what is thirty percent of two hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.3 * 200\"}}"}
+{"prompt": "what is five percent of one hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.05 * 100\"}}"}
+{"prompt": "what is five percent of sixty", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.05 * 60\"}}"}
+{"prompt": "round three hundred and forty-three point four six one to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":343.461,\"precision\":\"whole\"}}"}
+{"prompt": "area of a rectangle that's five by ten", "response": "{\"module\":\"math\",\"function\":\"area_rectangle\",\"args\":{\"length\":5,\"width\":10}}"}
+{"prompt": "add a ten percent tip to fifteen", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":15,\"tip_percent\":10}}"}
+{"prompt": "add a twenty percent tip to fifteen", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":15,\"tip_percent\":20}}"}
+{"prompt": "round nine hundred and seventy-one point zero three to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":971.03,\"precision\":\"hundredth\"}}"}
+{"prompt": "what is the average of seven nine two", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[7,9,2]}}"}
+{"prompt": "what is half of two teaspoons", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":2,\"unit\":\"teaspoon\"}}"}
+{"prompt": "what is the average of four seven six", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[4,7,6]}}"}
+{"prompt": "multiply zero point five liters by two", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":0.5,\"unit\":\"liter\",\"factor\":2}}"}
+{"prompt": "round six hundred and twenty-eight point three five eight to the nearest tenth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":628.358,\"precision\":\"tenth\"}}"}
+{"prompt": "what is twenty percent of one hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.2 * 100\"}}"}
+{"prompt": "round eight hundred and fifty-six point six one to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":856.61,\"precision\":\"whole\"}}"}
+{"prompt": "convert zero degrees f to c", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":0,\"scale\":\"f\"}}"}
+{"prompt": "what is a half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.5 * 10\"}}"}
+{"prompt": "what is the average of eight nine nine", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[8,9,9]}}"}
+{"prompt": "add a fifteen percent tip to one hundred", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":100,\"tip_percent\":15}}"}
+{"prompt": "how big is the area of a circle with radius four", "response": "{\"module\":\"math\",\"function\":\"area_circle\",\"args\":{\"radius\":4}}"}
+{"prompt": "what is the area of a triangle with base six and height seven", "response": "{\"module\":\"math\",\"function\":\"area_triangle\",\"args\":{\"base\":6,\"height\":7}}"}
+{"prompt": "how many gallons is one liters", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":1,\"from_unit\":\"liter\",\"to_unit\":\"gallon\"}}"}
+{"prompt": "what is three and a half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3.5 * 10\"}}"}
+{"prompt": "what is the average of eight seven four", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[8,7,4]}}"}
+{"prompt": "what is half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.5 * 10\"}}"}
+{"prompt": "what is the average of six eight one", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[6,8,1]}}"}
+{"prompt": "add a ten percent tip to forty-two point five", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":42.5,\"tip_percent\":10}}"}
+{"prompt": "how many ounces is two point five grams", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":2.5,\"from_unit\":\"gram\",\"to_unit\":\"ounce\"}}"}
+{"prompt": "multiply one point two five cups by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"cup\",\"factor\":4}}"}
+{"prompt": "how many gallons is five liters", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":5,\"from_unit\":\"liter\",\"to_unit\":\"gallon\"}}"}
+{"prompt": "how many meters is five foots", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":5,\"from_unit\":\"foot\",\"to_unit\":\"meter\"}}"}
+{"prompt": "what is the average of three three one", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[3,3,1]}}"}
+{"prompt": "area of a rectangle that's five by ten", "response": "{\"module\":\"math\",\"function\":\"area_rectangle\",\"args\":{\"length\":5,\"width\":10}}"}
+{"prompt": "what is four to the power of two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"4**2\"}}"}
+{"prompt": "convert thirty-two degrees c to f", "response": "{\"module\":\"math\",\"function\":\"convert_temp\",\"args\":{\"value\":32,\"scale\":\"c\"}}"}
+{"prompt": "multiply one point two five liters by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"liter\",\"factor\":4}}"}
+{"prompt": "add a ten percent tip to fifteen", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":15,\"tip_percent\":10}}"}
+{"prompt": "add a fifteen percent tip to one hundred", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":100,\"tip_percent\":15}}"}
+{"prompt": "multiply three cups by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":3,\"unit\":\"cup\",\"factor\":4}}"}
+{"prompt": "what is one and a half of ten", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"1.5 * 10\"}}"}
+{"prompt": "what is thirty percent of eighty", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.3 * 80\"}}"}
+{"prompt": "multiply one point two five tablespoons by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":1.25,\"unit\":\"tablespoon\",\"factor\":4}}"}
+{"prompt": "multiply zero point five liters by two", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":0.5,\"unit\":\"liter\",\"factor\":2}}"}
+{"prompt": "what is the square root of nine", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(9)\"}}"}
+{"prompt": "round four hundred and ninety-seven point four four one to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":497.441,\"precision\":\"hundredth\"}}"}
+{"prompt": "what is thirty percent of one hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.3 * 100\"}}"}
+{"prompt": "multiply zero point five tablespoons by four", "response": "{\"module\":\"math\",\"function\":\"multiply\",\"args\":{\"amount\":0.5,\"unit\":\"tablespoon\",\"factor\":4}}"}
+{"prompt": "what is the average of eight seven three", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[8,7,3]}}"}
+{"prompt": "what is half of six liters", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":6,\"unit\":\"liter\"}}"}
+{"prompt": "what is twenty percent of two hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.2 * 200\"}}"}
+{"prompt": "how many ounces is one grams", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":1,\"from_unit\":\"gram\",\"to_unit\":\"ounce\"}}"}
+{"prompt": "add a twenty percent tip to forty-two point five", "response": "{\"module\":\"math\",\"function\":\"tip_calculator\",\"args\":{\"amount\":42.5,\"tip_percent\":20}}"}
+{"prompt": "what is the average of seven two seven", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[7,2,7]}}"}
+{"prompt": "what is half of two liters", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":2,\"unit\":\"liter\"}}"}
+{"prompt": "what is the average of three two six", "response": "{\"module\":\"math\",\"function\":\"average_numbers\",\"args\":{\"numbers\":[3,2,6]}}"}
+{"prompt": "what is ten percent of one hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.1 * 100\"}}"}
+{"prompt": "round four hundred and forty-five point three five to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":445.35,\"precision\":\"whole\"}}"}
+{"prompt": "round nine hundred and six point five two eight to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":906.528,\"precision\":\"whole\"}}"}
+{"prompt": "what is five to the power of three", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"5**3\"}}"}
+{"prompt": "what is three to the power of two", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"3**2\"}}"}
+{"prompt": "how many gallons is five liters", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":5,\"from_unit\":\"liter\",\"to_unit\":\"gallon\"}}"}
+{"prompt": "what is the square root of thirty-six", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(36)\"}}"}
+{"prompt": "what is twenty percent of one hundred", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.2 * 100\"}}"}
+{"prompt": "what is the square root of eighty-one", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"sqrt(81)\"}}"}
+{"prompt": "how many meters is one foots", "response": "{\"module\":\"math\",\"function\":\"convert_units\",\"args\":{\"amount\":1,\"from_unit\":\"foot\",\"to_unit\":\"meter\"}}"}
+{"prompt": "round two hundred and thirty-seven point five eight one to the nearest whole", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":237.581,\"precision\":\"whole\"}}"}
+{"prompt": "what is twenty-five percent of eighty", "response": "{\"module\":\"math\",\"function\":\"calculate\",\"args\":{\"expression\":\"0.25 * 80\"}}"}
+{"prompt": "what is half of ten teaspoons", "response": "{\"module\":\"math\",\"function\":\"halve_quantity\",\"args\":{\"amount\":10,\"unit\":\"teaspoon\"}}"}
+{"prompt": "round six hundred and seventy-five point seven eight seven to the nearest hundredth", "response": "{\"module\":\"math\",\"function\":\"round_number\",\"args\":{\"value\":675.787,\"precision\":\"hundredth\"}}"}

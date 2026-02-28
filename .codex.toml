@@ -1,0 +1,84 @@
+[description]
+short = "Local LLM model lifecycle manager: discover, download, convert (EXL2/AWQ/GPTQ), validate packs, and atomically switch active chat/intent models via stable symlinks; includes an API + simple web UI and ops helpers for TGW/PM2/systemd."
+stack = "Python CLI (argparse) + FastAPI/uvicorn API + vanilla JS web UI; model tooling for Hugging Face + EXL2/AWQ/GPTQ pipelines; symlink-based activation; ops hooks for systemd and PM2; curl/jq smoke tests."
+purpose = "Make local model operations safe and boring: reproducible conversions, clear validation, and zero-downtime swaps through stable symlink targets so the rest of 2bananas can depend on fixed model names instead of brittle model folders."
+service = ["llm-manager-api.service"]
+long = """
+llm-manager standardizes local-model ops under /srv/2bananas/projects/llm-manager so the rest of the stack can treat models as stable “roles” (chat/intent/small) instead of hand-managed directories.
+
+What it does:
+- Registry & discovery: scans model roots, detects pack kinds (Transformers, EXL2, AWQ/GPTQ), and builds a consistent listing for UI/automation.
+- Download & conversion: supports Hugging Face downloads and reproducible conversion pipelines (EXL2/AWQ/GPTQ) with logged args and deterministic output folders.
+- Pack validation: checks for required files (config/tokenizer/chat template hints) and flags common problems before a model is activated.
+- Activation via symlinks: flips active model targets atomically (e.g., chat/intent role symlinks) so switching is reversible and safe.
+- Runtime wiring: provides engine control endpoints and helper scripts for restarting/updating model-serving processes (systemd preferred; PM2 supported).
+- Health & smoke tests: exposes /health and model/status endpoints plus curl/jq-friendly checks for quick “is it loaded?” verification.
+- Training workflows: includes LoRA train/merge/convert utilities and test harnesses for validating intent models against the Smart Assistant API.
+
+Outcome:
+Model workflows become repeatable and auditable: you can download/convert/validate/switch with confidence, roll back quickly, and keep model consumers pointed at stable names.
+"""
+
+[[export.splits]]
+name = "backend"
+include_paths = [
+    "./*.py",
+    "scripts/**",
+    "tools/**",
+    "core/**",
+    "app/src/llm_manager/*.py",
+    "app/src/llm_manager/*/*.py",
+]
+exclude_paths = [
+    "**/__pycache__/**",
+    "**/text-generation-webui/**",
+    "**/exllamav2/**",
+    "app/src/llm_manager/exllamav2/**",
+    "**/artifacts/**",
+    "**/artifacts_*/**",
+    "data/**",
+    ".venv/**",
+    "venv/**",
+]
+
+[[export.splits]]
+name = "infra"
+include_paths = [
+    "Dockerfile",
+    "docker/**",
+    "compose/**",
+    "scripts/**",
+    "Makefile",
+    ".github/**",
+    "config/**",
+    "deployment/**",
+]
+exclude_paths = [
+    "**/text-generation-webui/**",
+    "**/exllamav2/**",
+    "**/artifacts/**",
+    "**/artifacts_*/**",
+    "data/**",
+]
+
+[[export.splits]]
+name = "frontend"
+include_paths = ["web/**", "web/**/**"]
+exclude_paths = ["web/**/node_modules/**", "web/**/dist/**", "web/**/build/**", "web/**/out/**", "web/**/logs/**"]
+
+[[export.splits]]
+name = "shared"
+include_paths = [
+    "README.md",
+    "docs/**",
+    "specs/**",
+    "design/**",
+]
+exclude_paths = [
+    "docs/**/assets/**",
+]
+
+[backup]
+sources = [
+  { id = "repo", path = ".", enabled = true },
+]

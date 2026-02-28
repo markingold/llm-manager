@@ -1,0 +1,123 @@
+{
+  "llama3.2-3b": {
+    "model_name": "meta-llama/Llama-3.2-3B-Instruct",
+    "trust_remote_code": true,
+    "target_modules": ["q_proj","k_proj","v_proj","o_proj","gate_proj","up_proj","down_proj"],
+    "max_length": 192,
+    "r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "bias": "none",
+    "convert_bits": 6.5,
+    "convert_groupsize": 2048,
+    "convert_script_path": "exllamav2/convert.py",
+    "chat_format": "llama3",
+    "bos_token_id": 128000,
+    "eos_token_id": 128001,
+    "pad_token_id": 0,
+    "generation_config": {
+      "do_sample": false,
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "top_k": 50,
+      "repetition_penalty": 1.0,
+      "max_new_tokens": 192
+    },
+    "test_prompt_prefix": "",
+    "response_parser_regex": "\\{.*?\\}",
+    "expected_output_format": "json",
+
+    "runtime": {
+      "lora_dir":        "lora_llama3.2-3b",
+      "display_name":    "LLaMA 3.2 (3B)",
+      "path":            "text-generation-webui/user_data/models/lora_llama3.2-3b",
+      "api_port":        5501,
+      "gpu":             1,
+      "enabled":         true
+    }
+  },
+
+  "qwen2.5-3b": {
+    "model_name": "Qwen/Qwen2.5-3B-Instruct",
+    "trust_remote_code": true,
+    "target_modules": ["q_proj","k_proj","v_proj","o_proj"],
+    "max_length": 192,
+    "r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "bias": "none",
+    "convert_bits": 6.5,
+    "convert_groupsize": 2048,
+    "convert_script_path": "exllamav2/convert.py",
+    "chat_format": "qwen",
+    "bos_token_id": 151643,
+    "eos_token_id": 151644,
+    "pad_token_id": 0,
+    "generation_config": {
+      "do_sample": false,
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "top_k": 50,
+      "repetition_penalty": 1.0,
+      "max_new_tokens": 192
+    },
+    "test_prompt_prefix": "",
+    "response_parser_regex": "\\{.*?\\}",
+    "expected_output_format": "json",
+
+    "runtime": {
+      "lora_dir":        "lora_qwen2.5-3b",
+      "display_name":    "Qwen 2.5 (3B)",
+      "path":            "text-generation-webui/user_data/models/lora_qwen2.5-3b",
+      "api_port":        5501,
+      "gpu":             1,
+      "enabled":         true
+    }
+  }  ,
+  "llama3.1-8b": {
+    "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+    "trust_remote_code": true,
+
+    "target_modules": [
+      "q_proj", "k_proj", "v_proj", "o_proj",
+      "gate_proj", "up_proj", "down_proj"
+    ],
+
+    "max_length": 192,
+    "r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "bias": "none",
+
+    "convert_bits": 6.5,
+    "convert_groupsize": 2048,
+    "convert_script_path": "exllamav2/convert.py",
+
+    "chat_format": "llama3",
+    "bos_token_id": 128000,
+    "eos_token_id": 128001,
+    "pad_token_id": 0,
+
+    "generation_config": {
+      "do_sample": false,
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "top_k": 50,
+      "repetition_penalty": 1.0,
+      "max_new_tokens": 192
+    },
+
+    "test_prompt_prefix": "",
+    "response_parser_regex": "\\{.*?\\}",
+    "expected_output_format": "json",
+
+    "runtime": {
+      "lora_dir":      "lora_llama3.1-8b",
+      "display_name":  "LLaMA 3.1 (8 B)",
+      "path":          "text-generation-webui/user_data/models/lora_llama3.1-8b",
+      "api_port":      5502,
+      "gpu":           0,
+      "enabled":       true
+    }
+  }
+}

@@ -1,0 +1,241 @@
+{"prompt": "Set a timer for five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\"}}"}
+{"prompt": "Set a timer for ten minutes for tea", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"tea\"}}"}
+{"prompt": "Start a fifteen minute meditation timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"minutes\", \"name\": \"meditation\"}}"}
+{"prompt": "Set a timer for one hour to do laundry", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"hours\", \"name\": \"laundry\"}}"}
+{"prompt": "Start a ninety second timer for espresso", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"seconds\", \"name\": \"espresso\"}}"}
+{"prompt": "Add thirty seconds to the tea timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"tea\", \"seconds\": 30}}"}
+{"prompt": "Pause the laundry timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"laundry\"}}"}
+{"prompt": "Resume the laundry timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"laundry\"}}"}
+{"prompt": "Stop the meditation timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"meditation\"}}"}
+{"prompt": "How much time is left on the laundry timer?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "What timers are currently running?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Clear all my timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "Set a twenty minute timer for my pasta with a five minute warning", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"minutes\", \"name\": \"pasta\", \"reminder_offsets\": [300]}}"}
+{"prompt": "Set a timer for thirty seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"seconds\"}}"}
+{"prompt": "Create a ten minute timer named stretching with a one minute heads up", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"stretching\", \"reminder_offsets\": [60]}}"}
+{"prompt": "Set a forty five minute timer called meeting", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 45, \"unit\": \"minutes\", \"name\": \"meeting\"}}"}
+{"prompt": "Pause the meeting timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"meeting\"}}"}
+{"prompt": "Resume the meeting timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"meeting\"}}"}
+{"prompt": "Stop the meeting timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"meeting\"}}"}
+{"prompt": "Set a thirty minute timer and remind me halfway", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"minutes\", \"reminder_offsets\": [900]}}"}
+{"prompt": "Start a ninety minute timer named roast", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"minutes\", \"name\": \"roast\"}}"}
+{"prompt": "Remind me when the roast has ten minutes left", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"minutes\", \"name\": \"roast\", \"reminder_offsets\": [600]}}"}
+{"prompt": "Start a timer for twenty five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 25, \"unit\": \"minutes\"}}"}
+{"prompt": "How much time is left on roast?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Add ten minutes to the roast timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"roast\", \"seconds\": 600}}"}
+{"prompt": "Set a three hour timer for my brisket with a thirty minute reminder", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"hours\", \"name\": \"brisket\", \"reminder_offsets\": [1800]}}"}
+{"prompt": "Clear all timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "What timers are still running?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Set a timer for twenty seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"seconds\"}}"}
+{"prompt": "Set a one hour timer for bread dough", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"hours\", \"name\": \"bread dough\"}}"}
+{"prompt": "Pause the tea timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"tea\"}}"}
+{"prompt": "Resume the tea timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"tea\"}}"}
+{"prompt": "Add five minutes to the meditation timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"meditation\", \"seconds\": 300}}"}
+{"prompt": "Cancel the espresso timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"espresso\"}}"}
+{"prompt": "Set a timer for twenty minutes and remind me at ten and five minutes left", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"minutes\", \"reminder_offsets\": [600, 300]}}"}
+{"prompt": "Start a ten second countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"seconds\"}}"}
+{"prompt": "Make a five minute timer and call it brushing teeth", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\", \"name\": \"brushing teeth\"}}"}
+{"prompt": "Set a two minute timer for Oakley’s toy rotation", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"minutes\", \"name\": \"Oakley’s toy rotation\"}}"}
+{"prompt": "Give me a one minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"minutes\"}}"}
+{"prompt": "Set an hour and a half timer named workout", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"minutes\", \"name\": \"workout\"}}"}
+{"prompt": "Remind me two minutes before the workout ends", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"minutes\", \"name\": \"workout\", \"reminder_offsets\": [120]}}"}
+{"prompt": "Add ninety seconds to the workout timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"workout\", \"seconds\": 90}}"}
+{"prompt": "What's left on the brushing teeth timer?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "I need a sixty second timer for stretching", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 60, \"unit\": \"seconds\", \"name\": \"stretching\"}}"}
+{"prompt": "Set a fifteen minute countdown for brownies with a two minute alert", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"minutes\", \"name\": \"brownies\", \"reminder_offsets\": [120]}}"}
+{"prompt": "Cancel all timers please", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "How many timers are still running?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Add three minutes to the brownies timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"brownies\", \"seconds\": 180}}"}
+{"prompt": "Set a fifteen minute timer for reading", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"minutes\", \"name\": \"reading\"}}"}
+{"prompt": "Start a three minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"minutes\"}}"}
+{"prompt": "Pause the reading timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"reading\"}}"}
+{"prompt": "Resume the reading timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"reading\"}}"}
+{"prompt": "Add two minutes to the reading timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"reading\", \"seconds\": 120}}"}
+{"prompt": "Cancel the reading timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"reading\"}}"}
+{"prompt": "Start a five minute focus timer with a warning at one minute left", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\", \"name\": \"focus\", \"reminder_offsets\": [60]}}"}
+{"prompt": "Give me a ten minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\"}}"}
+{"prompt": "How much longer on the focus timer?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "List all timers running", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Clear my timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "Start a one hour timer for housework", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"hours\", \"name\": \"housework\"}}"}
+{"prompt": "Add a full minute to the housework timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"housework\", \"seconds\": 60}}"}
+{"prompt": "Give me a three second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"seconds\"}}"}
+{"prompt": "Set a timer for three quarters of an hour for simmering", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 45, \"unit\": \"minutes\", \"name\": \"simmering\"}}"}
+{"prompt": "Give me a timer for two and a half minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 150, \"unit\": \"seconds\"}}"}
+{"prompt": "Set a countdown for five", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"seconds\"}}"}
+{"prompt": "Make a fifteen second countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"seconds\"}}"}
+{"prompt": "Start a timer called bath for twenty minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"minutes\", \"name\": \"bath\"}}"}
+{"prompt": "Add time to the bath timer — about five minutes", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"bath\", \"seconds\": 300}}"}
+{"prompt": "Pause bath", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"bath\"}}"}
+{"prompt": "Resume the bath one", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"bath\"}}"}
+{"prompt": "Give me a short timer, like twenty seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"seconds\"}}"}
+{"prompt": "Start a ten minute timer and let me know with two minutes left", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"reminder_offsets\": [120]}}"}
+{"prompt": "What timers are going right now?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Stop everything that's counting down", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "Make a timer for one and a quarter hours for slow cooking", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 75, \"unit\": \"minutes\", \"name\": \"slow cooking\"}}"}
+{"prompt": "Set a thirty minute timer for lunch prep", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"minutes\", \"name\": \"lunch prep\"}}"}
+{"prompt": "Extend the lunch prep timer by five minutes", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"lunch prep\", \"seconds\": 300}}"}
+{"prompt": "Set a one minute and thirty second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"seconds\"}}"}
+{"prompt": "Give me a timer to water plants in ten minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"water plants\"}}"}
+{"prompt": "Cancel the lunch prep one", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"lunch prep\"}}"}
+{"prompt": "Create a quick five second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"seconds\"}}"}
+{"prompt": "Start a two minute timer for boiling noodles", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"minutes\", \"name\": \"boiling noodles\"}}"}
+{"prompt": "Pause the noodle timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"boiling noodles\"}}"}
+{"prompt": "Resume the noodle one", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"boiling noodles\"}}"}
+{"prompt": "Set a long timer for two hours called oven roast", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"hours\", \"name\": \"oven roast\"}}"}
+{"prompt": "Let me know ten minutes before the roast is done", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"hours\", \"name\": \"oven roast\", \"reminder_offsets\": [600]}}"}
+{"prompt": "Give me a timer for one and three quarter hours", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 105, \"unit\": \"minutes\"}}"}
+{"prompt": "Create a thirty five minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 35, \"unit\": \"minutes\"}}"}
+{"prompt": "Add sixty seconds to the espresso", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"espresso\", \"seconds\": 60}}"}
+{"prompt": "Start a timer for brushing teeth — two minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"minutes\", \"name\": \"brushing teeth\"}}"}
+{"prompt": "What’s left on the teeth timer?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Give me a twenty five minute Pomodoro timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 25, \"unit\": \"minutes\", \"name\": \"Pomodoro\"}}"}
+{"prompt": "Pause Pomodoro", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"Pomodoro\"}}"}
+{"prompt": "Resume Pomodoro", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"Pomodoro\"}}"}
+{"prompt": "Give me a countdown that ends in fifteen seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"seconds\"}}"}
+{"prompt": "Cancel Pomodoro", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"Pomodoro\"}}"}
+{"prompt": "Start a ten minute countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\"}}"}
+{"prompt": "Set a five minute timer for tea and remind me a minute before it’s done", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\", \"name\": \"tea\", \"reminder_offsets\": [60]}}"}
+{"prompt": "Give me a fifteen second countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"seconds\"}}"}
+{"prompt": "Make a twenty minute timer for yoga", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"minutes\", \"name\": \"yoga\"}}"}
+{"prompt": "Set a two minute timer for washing face", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"minutes\", \"name\": \"washing face\"}}"}
+{"prompt": "Extend the yoga timer by three minutes", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"yoga\", \"seconds\": 180}}"}
+{"prompt": "Pause the yoga timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"yoga\"}}"}
+{"prompt": "Resume the yoga timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"yoga\"}}"}
+{"prompt": "Stop the yoga timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"yoga\"}}"}
+{"prompt": "How long is left on the washing face timer?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Are any timers running?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Cancel all my timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "Set a timer called laundry for forty minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 40, \"unit\": \"minutes\", \"name\": \"laundry\"}}"}
+{"prompt": "Let me know five minutes before laundry is done", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 40, \"unit\": \"minutes\", \"name\": \"laundry\", \"reminder_offsets\": [300]}}"}
+{"prompt": "Start a two hour timer for roast beef", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"hours\", \"name\": \"roast beef\"}}"}
+{"prompt": "Remind me halfway through the roast beef timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"hours\", \"name\": \"roast beef\", \"reminder_offsets\": [3600]}}"}
+{"prompt": "Add sixty seconds to the tea timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"tea\", \"seconds\": 60}}"}
+{"prompt": "What timers are still active?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Clear all running timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "Start a three minute timer named eye drops", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"minutes\", \"name\": \"eye drops\"}}"}
+{"prompt": "Give me a timer for twelve minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 12, \"unit\": \"minutes\"}}"}
+{"prompt": "Set a quick timer for one minute", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"minutes\"}}"}
+{"prompt": "Make a timer for thirty seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"seconds\"}}"}
+{"prompt": "Create a timer for brushing Oakley's teeth — two and a half minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 150, \"unit\": \"seconds\", \"name\": \"brushing Oakley's teeth\"}}"}
+{"prompt": "Add a minute and a half to Oakley’s timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"brushing Oakley's teeth\", \"seconds\": 90}}"}
+{"prompt": "Pause the roast beef one", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"roast beef\"}}"}
+{"prompt": "Resume roast beef timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"roast beef\"}}"}
+{"prompt": "Stop roast beef", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"roast beef\"}}"}
+{"prompt": "Create a timer for meditation — ten minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"meditation\"}}"}
+{"prompt": "Set a half hour timer for stretching", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"minutes\", \"name\": \"stretching\"}}"}
+{"prompt": "Add five more minutes to meditation", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"meditation\", \"seconds\": 300}}"}
+{"prompt": "Let me know two minutes before stretching is over", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"minutes\", \"name\": \"stretching\", \"reminder_offsets\": [120]}}"}
+{"prompt": "Give me a quick countdown — like twenty seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"seconds\"}}"}
+{"prompt": "Start a sixty second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 60, \"unit\": \"seconds\"}}"}
+{"prompt": "Timer for oven preheat — ten minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"oven preheat\"}}"}
+{"prompt": "Add three minutes to oven preheat", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"oven preheat\", \"seconds\": 180}}"}
+{"prompt": "Pause oven preheat", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"oven preheat\"}}"}
+{"prompt": "Resume the oven timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"oven preheat\"}}"}
+{"prompt": "Stop the oven preheat timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"oven preheat\"}}"}
+{"prompt": "Create a timer to take out the trash in fifteen minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"minutes\", \"name\": \"take out the trash\"}}"}
+{"prompt": "Set a timer for one and a half hours", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"minutes\"}}"}
+{"prompt": "Remind me three minutes before take out the trash", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"minutes\", \"name\": \"take out the trash\", \"reminder_offsets\": [180]}}"}
+{"prompt": "Start a thirty second focus timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"seconds\", \"name\": \"focus\"}}"}
+{"prompt": "What’s left on the focus timer?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Do I have any timers going?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Delete all timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "Set a two minute and fifteen second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 135, \"unit\": \"seconds\"}}"}
+{"prompt": "Start a countdown for thirty five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 35, \"unit\": \"minutes\"}}"}
+{"prompt": "Set a timer for one hour to marinate the chicken", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"hours\", \"name\": \"marinate the chicken\"}}"}
+{"prompt": "Start a ten minute power nap timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"power nap\"}}"}
+{"prompt": "Pause the nap timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"power nap\"}}"}
+{"prompt": "Resume the nap timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"power nap\"}}"}
+{"prompt": "Add two minutes to the nap", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"power nap\", \"seconds\": 120}}"}
+{"prompt": "Cancel the nap timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"power nap\"}}"}
+{"prompt": "Give me a timer for soaking beans — forty five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 45, \"unit\": \"minutes\", \"name\": \"soaking beans\"}}"}
+{"prompt": "Set a sixty minute timer for bread rising", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 60, \"unit\": \"minutes\", \"name\": \"bread rising\"}}"}
+{"prompt": "Start a quick ten second countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"seconds\"}}"}
+{"prompt": "Create a timer for six minutes and call it noodles", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 6, \"unit\": \"minutes\", \"name\": \"noodles\"}}"}
+{"prompt": "How long until the noodles are done?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Set a brushing timer for Oakley — two minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"minutes\", \"name\": \"brushing Oakley\"}}"}
+{"prompt": "Start a countdown for half an hour", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"minutes\"}}"}
+{"prompt": "Start a three minute timer and remind me with thirty seconds left", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"minutes\", \"reminder_offsets\": [30]}}"}
+{"prompt": "Set a baking timer for forty minutes with a ten minute heads up", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 40, \"unit\": \"minutes\", \"name\": \"baking\", \"reminder_offsets\": [600]}}"}
+{"prompt": "Remind me when there’s five minutes left on baking", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 40, \"unit\": \"minutes\", \"name\": \"baking\", \"reminder_offsets\": [300]}}"}
+{"prompt": "Give me a twenty five minute timer for focus time", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 25, \"unit\": \"minutes\", \"name\": \"focus time\"}}"}
+{"prompt": "Pause focus time", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"focus time\"}}"}
+{"prompt": "Resume the focus timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"focus time\"}}"}
+{"prompt": "Add ninety seconds to focus time", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"focus time\", \"seconds\": 90}}"}
+{"prompt": "Create a five second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"seconds\"}}"}
+{"prompt": "Cancel everything that’s counting down", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "Start a ten minute break timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"break\"}}"}
+{"prompt": "Give me a short timer for fifteen seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"seconds\"}}"}
+{"prompt": "Set a quick timer for stretching — five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\", \"name\": \"stretching\"}}"}
+{"prompt": "Let me know halfway through stretching", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\", \"name\": \"stretching\", \"reminder_offsets\": [150]}}"}
+{"prompt": "Timer for the dishwasher — thirty minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"minutes\", \"name\": \"dishwasher\"}}"}
+{"prompt": "Add three hundred seconds to the dishwasher timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"dishwasher\", \"seconds\": 300}}"}
+{"prompt": "Pause the dishwasher timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"dishwasher\"}}"}
+{"prompt": "Resume the dishwasher", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"dishwasher\"}}"}
+{"prompt": "Cancel the dishwasher timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"dishwasher\"}}"}
+{"prompt": "Set a timer to flip the steak in six minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 6, \"unit\": \"minutes\", \"name\": \"flip steak\"}}"}
+{"prompt": "Give me a timer for five and a half minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 330, \"unit\": \"seconds\"}}"}
+{"prompt": "Set a countdown for one hour and fifteen minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 75, \"unit\": \"minutes\"}}"}
+{"prompt": "Start a one minute timer called email check", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"minutes\", \"name\": \"email check\"}}"}
+{"prompt": "How much time is left on the steak timer?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Which timers are active?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Set a timer for brushing — two and a half minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 150, \"unit\": \"seconds\", \"name\": \"brushing\"}}"}
+{"prompt": "Give me a five minute tea timer with a two minute reminder", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\", \"name\": \"tea\", \"reminder_offsets\": [120]}}"}
+{"prompt": "Add one minute to brushing", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"brushing\", \"seconds\": 60}}"}
+{"prompt": "Create a ten minute timer for journaling", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"journaling\"}}"}
+{"prompt": "Set a timer for pizza dough — forty five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 45, \"unit\": \"minutes\", \"name\": \"pizza dough\"}}"}
+{"prompt": "Pause journaling", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"journaling\"}}"}
+{"prompt": "Resume journaling", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"journaling\"}}"}
+{"prompt": "Stop the journaling timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"journaling\"}}"}
+{"prompt": "Clear every timer", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "What’s running right now?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Give me a two minute warning before the pizza dough is ready", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 45, \"unit\": \"minutes\", \"name\": \"pizza dough\", \"reminder_offsets\": [120]}}"}
+{"prompt": "Set a timer for five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\"}}"}
+{"prompt": "Start a ten minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\"}}"}
+{"prompt": "Set a one hour timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"hours\"}}"}
+{"prompt": "Start a thirty second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"seconds\"}}"}
+{"prompt": "Create a two minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"minutes\"}}"}
+{"prompt": "Give me a three minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"minutes\"}}"}
+{"prompt": "Set a twenty minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"minutes\"}}"}
+{"prompt": "Start a timer for fifteen minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"minutes\"}}"}
+{"prompt": "Give me a timer for one minute", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"minutes\"}}"}
+{"prompt": "Set a timer for ten seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"seconds\"}}"}
+{"prompt": "Start a timer for four minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 4, \"unit\": \"minutes\"}}"}
+{"prompt": "Make a six minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 6, \"unit\": \"minutes\"}}"}
+{"prompt": "Set a timer for twenty five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 25, \"unit\": \"minutes\"}}"}
+{"prompt": "Start a timer for eight minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 8, \"unit\": \"minutes\"}}"}
+{"prompt": "Start a nine minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 9, \"unit\": \"minutes\"}}"}
+{"prompt": "Create a thirty minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"minutes\"}}"}
+{"prompt": "Set a forty five minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 45, \"unit\": \"minutes\"}}"}
+{"prompt": "Start a timer for ninety seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"seconds\"}}"}
+{"prompt": "Give me a timer for sixty seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 60, \"unit\": \"seconds\"}}"}
+{"prompt": "Set a one and a half minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"seconds\"}}"}
+{"prompt": "Stop the timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"default\"}}"}
+{"prompt": "Pause the timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"default\"}}"}
+{"prompt": "Resume the timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"default\"}}"}
+{"prompt": "Add sixty seconds to the timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"default\", \"seconds\": 60}}"}
+{"prompt": "Check the timer", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Clear all timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "What timers are running?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Cancel all my timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "List all active timers", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Set a twenty second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"seconds\"}}"}
+{"prompt": "Create a two hour timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"hours\"}}"}
+{"prompt": "Give me a ninety minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"minutes\"}}"}
+{"prompt": "Start a sixty minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 60, \"unit\": \"minutes\"}}"}
+{"prompt": "Create a timer for three minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"minutes\"}}"}
+{"prompt": "Set a timer for ten minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\"}}"}
+{"prompt": "Start a four minute countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 4, \"unit\": \"minutes\"}}"}
+{"prompt": "Give me a timer for seven minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 7, \"unit\": \"minutes\"}}"}
+{"prompt": "Make a twenty second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"seconds\"}}"}
+{"prompt": "Create a countdown for ten seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"seconds\"}}"}
+{"prompt": "Set a quick timer for five seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"seconds\"}}"}
+{"prompt": "Start a timer for two hours", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"hours\"}}"}
+{"prompt": "Set a fifteen second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"seconds\"}}"}
+{"prompt": "Give me a two minute countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"minutes\"}}"}
+{"prompt": "Create a sixty second countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 60, \"unit\": \"seconds\"}}"}
+{"prompt": "Start a countdown for five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\"}}"}
+{"prompt": "Set a countdown for twenty minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"minutes\"}}"}
+{"prompt": "Start a countdown for one hour", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"hours\"}}"}
+{"prompt": "Give me a three second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"seconds\"}}"}
+{"prompt": "Create a timer for nine minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 9, \"unit\": \"minutes\"}}"}

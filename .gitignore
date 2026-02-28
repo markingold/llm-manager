@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+*.so
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Secrets (NEVER commit)
+secrets/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+
+# Model weights & large binaries (symlinks are fine)
+llm-a
+llm-b
+llm-c
+text-generation-webui/
+artifacts/models/
+output/
+*.safetensors
+*.pth
+*.bin
+*.gguf
+*.exl2
+
+# Backup directories
+run/fixups/backups/
+
+# Codex AI-generated index (regenerable)
+.codex/
+
+# Data snapshots (keep originals, ignore timestamped copies)
+data/combined_intent_data_*.jsonl
+
+# Misc
+*.log
+*.log.*
+.env
+node_modules/

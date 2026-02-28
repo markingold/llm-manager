@@ -1,0 +1,520 @@
+{"prompt": "will it be below freezing on january first\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it be below freezing on january first\"}}"}
+{"prompt": "huh what's the humidity looking like\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"huh what's the humidity looking like\"}}"}
+{"prompt": "forecast for tamarindo this weekend\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"forecast for tamarindo this weekend\"}}"}
+{"prompt": "Start a nine minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 9, \"unit\": \"minutes\"}}"}
+{"prompt": "What timers are still active?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "what is the visibility expected on friday afternoon\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the visibility expected on friday afternoon\"}}"}
+{"prompt": "Check the timer", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Stop the oven preheat timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"oven preheat\"}}"}
+{"prompt": "Create a quick five second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"seconds\"}}"}
+{"prompt": "chance of hail on april first", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"chance of hail on april first\"}}"}
+{"prompt": "what is the probability of precipitation on tuesday morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the probability of precipitation on tuesday morning\"}}"}
+{"prompt": "what's the wind speed right now on my patio", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the wind speed right now on my patio\"}}"}
+{"prompt": "Create a timer to take out the trash in fifteen minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"minutes\", \"name\": \"take out the trash\"}}"}
+{"prompt": "Set a twenty second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"seconds\"}}"}
+{"prompt": "Create a countdown for ten seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"seconds\"}}"}
+{"prompt": "temperature at midnight", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"temperature at midnight\"}}"}
+{"prompt": "yall think it’ll be hot as hell tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"yall think it’ll be hot as hell tomorrow\"}}"}
+{"prompt": "Set a one hour timer for bread dough", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"hours\", \"name\": \"bread dough\"}}"}
+{"prompt": "Are any timers running?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Is It Going To Storm On July Fifth?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"Is It Going To Storm On July Fifth?\"}}"}
+{"prompt": "will the weather be better than a freezer on mars\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will the weather be better than a freezer on mars\"}}"}
+{"prompt": "Forecast for Next FRIDAY Evening?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"Forecast for Next FRIDAY Evening?\"}}"}
+{"prompt": "Set a thirty minute timer for lunch prep", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"minutes\", \"name\": \"lunch prep\"}}"}
+{"prompt": "What timers are currently running?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Set a half hour timer for stretching", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"minutes\", \"name\": \"stretching\"}}"}
+{"prompt": "how warm will it be this evening\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how warm will it be this evening\"}}"}
+{"prompt": "any severe weather expected this weekend", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"any severe weather expected this weekend\"}}"}
+{"prompt": "Give me a timer for seven minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 7, \"unit\": \"minutes\"}}"}
+{"prompt": "What’s running right now?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "how strong will wind gusts be tomorrow evening\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how strong will wind gusts be tomorrow evening\"}}"}
+{"prompt": "WHAT'S THE FORECAST FOR TOMORROW NIGHT?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"WHAT'S THE FORECAST FOR TOMORROW NIGHT?\"}}"}
+{"prompt": "what will the rain probability be on july twentieth\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the rain probability be on july twentieth\"}}"}
+{"prompt": "Cancel Pomodoro", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"Pomodoro\"}}"}
+{"prompt": "Set a timer for three quarters of an hour for simmering", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 45, \"unit\": \"minutes\", \"name\": \"simmering\"}}"}
+{"prompt": "How windy Will it be at Ten aM?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"How windy Will it be at Ten aM?\"}}"}
+{"prompt": "Start a three minute timer named eye drops", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"minutes\", \"name\": \"eye drops\"}}"}
+{"prompt": "Set a timer for five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\"}}"}
+{"prompt": "Make a twenty second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"seconds\"}}"}
+{"prompt": "ice risk on the roads before sunrise tomorrow", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"ice risk on the roads before sunrise tomorrow\"}}"}
+{"prompt": "weather for the day after the day after tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"weather for the day after the day after tomorrow\"}}"}
+{"prompt": "what will the wind speed be at twelve Pm", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the wind speed be at twelve Pm\"}}"}
+{"prompt": "is it safe to grill outside tonight", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it safe to grill outside tonight\"}}"}
+{"prompt": "is it going to hail tomorrow afternoon\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it going to hail tomorrow afternoon\"}}"}
+{"prompt": "tell me the forecast for next week\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"tell me the forecast for next week\"}}"}
+{"prompt": "Set a brushing timer for Oakley — two minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"minutes\", \"name\": \"brushing Oakley\"}}"}
+{"prompt": "is there a frost advisory tomorrow", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is there a frost advisory tomorrow\"}}"}
+{"prompt": "what will the WIND SPEED be at twelve pm?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the WIND SPEED be at twelve pm?\"}}"}
+{"prompt": "will it drizzle on saturday morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it drizzle on saturday morning\"}}"}
+{"prompt": "will there be unicorns in the sky tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will there be unicorns in the sky tomorrow\"}}"}
+{"prompt": "tell me if it's hot and dusty\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"tell me if it's hot and dusty\"}}"}
+{"prompt": "I need a sixty second timer for stretching", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 60, \"unit\": \"seconds\", \"name\": \"stretching\"}}"}
+{"prompt": "how cool will it be on july first\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how cool will it be on july first\"}}"}
+{"prompt": "what time does sunrise happen on october first\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what time does sunrise happen on october first\"}}"}
+{"prompt": "what will the feels like temperature be tomorrow at noon\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the feels like temperature be tomorrow at noon\"}}"}
+{"prompt": "when is sunrise on the summer solstice\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"when is sunrise on the summer solstice\"}}"}
+{"prompt": "will there be lightning overnight", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will there be lightning overnight\"}}"}
+{"prompt": "is it going to storm on july fifth", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it going to storm on july fifth\"}}"}
+{"prompt": "Make a fifteen second countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"seconds\"}}"}
+{"prompt": "how warm will it feel at three pm\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how warm will it feel at three pm\"}}"}
+{"prompt": "how hot will it be in the afternoon on august second\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how hot will it be in the afternoon on august second\"}}"}
+{"prompt": "what will the dawn temperature be\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the dawn temperature be\"}}"}
+{"prompt": "Let me know five minutes before laundry is done", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 40, \"unit\": \"minutes\", \"name\": \"laundry\", \"reminder_offsets\": [300]}}"}
+{"prompt": "Set a timer to flip the steak in six minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 6, \"unit\": \"minutes\", \"name\": \"flip steak\"}}"}
+{"prompt": "Pause journaling", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"journaling\"}}"}
+{"prompt": "any thunderstorms this weekend in austin", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"any thunderstorms this weekend in austin\"}}"}
+{"prompt": "what is the expected precipitation tomorrow afternoon\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the expected precipitation tomorrow afternoon\"}}"}
+{"prompt": "Set a one minute and thirty second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"seconds\"}}"}
+{"prompt": "Remind me when the roast has ten minutes left", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"minutes\", \"name\": \"roast\", \"reminder_offsets\": [600]}}"}
+{"prompt": "what is the forecast for the first day of summer\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the forecast for the first day of summer\"}}"}
+{"prompt": "How long is left on the washing face timer?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "what is the daily summary for today\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the daily summary for today\"}}"}
+{"prompt": "what's the humidity at two am monday", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the humidity at two am monday\"}}"}
+{"prompt": "Clear all timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "Pause the tea timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"tea\"}}"}
+{"prompt": "Pause the timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"default\"}}"}
+{"prompt": "Let me know ten minutes before the roast is done", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"hours\", \"name\": \"oven roast\", \"reminder_offsets\": [600]}}"}
+{"prompt": "will it snow more than five inches tonight in seattle", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it snow more than five inches tonight in seattle\"}}"}
+{"prompt": "weather like\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"weather like\"}}"}
+{"prompt": "forecast for the twenty third hour from now\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"forecast for the twenty third hour from now\"}}"}
+{"prompt": "Resume the oven timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"oven preheat\"}}"}
+{"prompt": "is there frost expected on october thirty-first", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is there frost expected on october thirty-first\"}}"}
+{"prompt": "Set a baking timer for forty minutes with a ten minute heads up", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 40, \"unit\": \"minutes\", \"name\": \"baking\", \"reminder_offsets\": [600]}}"}
+{"prompt": "What’s left on the focus timer?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "what is the humidity expected on saturday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the humidity expected on saturday\"}}"}
+{"prompt": "will the wind chill drop below zero tomorrow in chicago", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will the wind chill drop below zero tomorrow in chicago\"}}"}
+{"prompt": "Create a timer for brushing Oakley's teeth — two and a half minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 150, \"unit\": \"seconds\", \"name\": \"brushing Oakley's teeth\"}}"}
+{"prompt": "What Time Is Sunrise On June First?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"What Time Is Sunrise On June First?\"}}"}
+{"prompt": "heat index at three pm today", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"heat index at three pm today\"}}"}
+{"prompt": "Pause focus time", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"focus time\"}}"}
+{"prompt": "Give me a quick countdown — like twenty seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"seconds\"}}"}
+{"prompt": "lowest temperature in the last twenty four hours", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"lowest temperature in the last twenty four hours\"}}"}
+{"prompt": "will there be sleet this evening\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will there be sleet this evening\"}}"}
+{"prompt": "is there any fog advisory in effect", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is there any fog advisory in effect\"}}"}
+{"prompt": "will it rain tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it rain tomorrow\"}}"}
+{"prompt": "List all timers running", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "what are the chances of rain on sunday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what are the chances of rain on sunday\"}}"}
+{"prompt": "Set a forty five minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 45, \"unit\": \"minutes\"}}"}
+{"prompt": "Will The Temperature Drop Below Thirty TONIGHT?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"Will The Temperature Drop Below Thirty TONIGHT?\"}}"}
+{"prompt": "Let me know halfway through stretching", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\", \"name\": \"stretching\", \"reminder_offsets\": [150]}}"}
+{"prompt": "will it be sunny on sunday afternoon", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it be sunny on sunday afternoon\"}}"}
+{"prompt": "Give me a timer for soaking beans — forty five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 45, \"unit\": \"minutes\", \"name\": \"soaking beans\"}}"}
+{"prompt": "Add three hundred seconds to the dishwasher timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"dishwasher\", \"seconds\": 300}}"}
+{"prompt": "Create a timer for nine minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 9, \"unit\": \"minutes\"}}"}
+{"prompt": "how cold will it be in the early morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how cold will it be in the early morning\"}}"}
+{"prompt": "um excuse me what's coming down tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"um excuse me what's coming down tomorrow\"}}"}
+{"prompt": "Set a timer for twenty seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"seconds\"}}"}
+{"prompt": "how clear are the skies at three pM", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how clear are the skies at three pM\"}}"}
+{"prompt": "what is the current wind speed\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the current wind speed\"}}"}
+{"prompt": "will it be windy at two pm on friday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it be windy at two pm on friday\"}}"}
+{"prompt": "What will the low be tomorrow Morning?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"What will the low be tomorrow Morning?\"}}"}
+{"prompt": "Add a minute and a half to Oakley’s timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"brushing Oakley's teeth\", \"seconds\": 90}}"}
+{"prompt": "what time does the sun rise tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what time does the sun rise tomorrow\"}}"}
+{"prompt": "Start a two hour timer for roast beef", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"hours\", \"name\": \"roast beef\"}}"}
+{"prompt": "what is the wind chill at eleven Am", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the wind chill at eleven Am\"}}"}
+{"prompt": "will there be snow on halloween night\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will there be snow on halloween night\"}}"}
+{"prompt": "Set a timer for brushing — two and a half minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 150, \"unit\": \"seconds\", \"name\": \"brushing\"}}"}
+{"prompt": "Create a two hour timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"hours\"}}"}
+{"prompt": "prolly no one cares but what's the uv index at two am\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"prolly no one cares but what's the uv index at two am\"}}"}
+{"prompt": "Set a timer for five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\"}}"}
+{"prompt": "Timer for oven preheat — ten minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"oven preheat\"}}"}
+{"prompt": "what is the chance of rain in the next hour\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the chance of rain in the next hour\"}}"}
+{"prompt": "Start a five minute focus timer with a warning at one minute left", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\", \"name\": \"focus\", \"reminder_offsets\": [60]}}"}
+{"prompt": "Give me a two minute countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"minutes\"}}"}
+{"prompt": "Create a thirty five minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 35, \"unit\": \"minutes\"}}"}
+{"prompt": "Start a countdown for one hour", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"hours\"}}"}
+{"prompt": "Pause the meeting timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"meeting\"}}"}
+{"prompt": "what time will sunset be on june thirtieth\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what time will sunset be on june thirtieth\"}}"}
+{"prompt": "how much rain tomorrow morning at seven", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how much rain tomorrow morning at seven\"}}"}
+{"prompt": "Cancel all my timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "IS THERE A FROST ADVISORY TOMORROW?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"IS THERE A FROST ADVISORY TOMORROW?\"}}"}
+{"prompt": "Add ninety seconds to the workout timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"workout\", \"seconds\": 90}}"}
+{"prompt": "what are the chances of rain on july fourth\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what are the chances of rain on july fourth\"}}"}
+{"prompt": "i'm heading to walla walla next friday, will it snow", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"i'm heading to walla walla next friday, will it snow\"}}"}
+{"prompt": "snow probability on february fourteenth two thousand twenty-six", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"snow probability on february fourteenth two thousand twenty-six\"}}"}
+{"prompt": "what will the temperature be at six am tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the temperature be at six am tomorrow\"}}"}
+{"prompt": "Resume roast beef timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"roast beef\"}}"}
+{"prompt": "will the temperature drop below fifty degrees tonight\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will the temperature drop below fifty degrees tonight\"}}"}
+{"prompt": "Set a timer called laundry for forty minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 40, \"unit\": \"minutes\", \"name\": \"laundry\"}}"}
+{"prompt": "Stop the meeting timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"meeting\"}}"}
+{"prompt": "will it freeze overnight\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it freeze overnight\"}}"}
+{"prompt": "Remind me three minutes before take out the trash", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"minutes\", \"name\": \"take out the trash\", \"reminder_offsets\": [180]}}"}
+{"prompt": "wind speed in tulsa on december twenty-fifth", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"wind speed in tulsa on december twenty-fifth\"}}"}
+{"prompt": "Make a timer for one and a quarter hours for slow cooking", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 75, \"unit\": \"minutes\", \"name\": \"slow cooking\"}}"}
+{"prompt": "Create a timer for six minutes and call it noodles", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 6, \"unit\": \"minutes\", \"name\": \"noodles\"}}"}
+{"prompt": "temperature tomorrow afternoon", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"temperature tomorrow afternoon\"}}"}
+{"prompt": "will it rain after three pm today?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it rain after three pm today?\"}}"}
+{"prompt": "Give me a ten minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\"}}"}
+{"prompt": "wind gusts expected in albuquerque tomorrow", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"wind gusts expected in albuquerque tomorrow\"}}"}
+{"prompt": "Resume the noodle one", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"boiling noodles\"}}"}
+{"prompt": "Set a timer for thirty seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"seconds\"}}"}
+{"prompt": "Set an hour and a half timer named workout", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"minutes\", \"name\": \"workout\"}}"}
+{"prompt": "is it hot outside right now?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it hot outside right now?\"}}"}
+{"prompt": "how cold will it be at six am tomorrow", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how cold will it be at six am tomorrow\"}}"}
+{"prompt": "what is the current feels like temperature\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the current feels like temperature\"}}"}
+{"prompt": "Start a sixty second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 60, \"unit\": \"seconds\"}}"}
+{"prompt": "Set a timer for one hour to do laundry", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"hours\", \"name\": \"laundry\"}}"}
+{"prompt": "Add a full minute to the housework timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"housework\", \"seconds\": 60}}"}
+{"prompt": "hey jarvis, what's the dew point this afternoon", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"hey jarvis, what's the dew point this afternoon\"}}"}
+{"prompt": "storm warnings within fifty miles", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"storm warnings within fifty miles\"}}"}
+{"prompt": "moonrise in playa grande tonight at eight", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"moonrise in playa grande tonight at eight\"}}"}
+{"prompt": "Make a twenty minute timer for yoga", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"minutes\", \"name\": \"yoga\"}}"}
+{"prompt": "what's the forecast for tomorrow night", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the forecast for tomorrow night\"}}"}
+{"prompt": "rain chances for playa grande this afternoon\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"rain chances for playa grande this afternoon\"}}"}
+{"prompt": "WHAT IS THE WIND CHILL AT Eleven aM?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"WHAT IS THE WIND CHILL AT Eleven aM?\"}}"}
+{"prompt": "should i plan a picnic next saturday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"should i plan a picnic next saturday\"}}"}
+{"prompt": "How much time is left on roast?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Which timers are active?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "weather tomorrow", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"weather tomorrow\"}}"}
+{"prompt": "how hot will it get on july fourth", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how hot will it get on july fourth\"}}"}
+{"prompt": "Do I have any timers going?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Resume the timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"default\"}}"}
+{"prompt": "do i need a coat tonight", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"do i need a coat tonight\"}}"}
+{"prompt": "Give me a timer for twelve minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 12, \"unit\": \"minutes\"}}"}
+{"prompt": "are there any weather alerts for today\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"are there any weather alerts for today\"}}"}
+{"prompt": "Stop the timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"default\"}}"}
+{"prompt": "Pause oven preheat", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"oven preheat\"}}"}
+{"prompt": "what will the wind chill be tonight\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the wind chill be tonight\"}}"}
+{"prompt": "Start a ninety second timer for espresso", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"seconds\", \"name\": \"espresso\"}}"}
+{"prompt": "will there be fog next monday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will there be fog next monday\"}}"}
+{"prompt": "Let me know two minutes before stretching is over", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"minutes\", \"name\": \"stretching\", \"reminder_offsets\": [120]}}"}
+{"prompt": "Set a quick timer for stretching — five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\", \"name\": \"stretching\"}}"}
+{"prompt": "how much rain is expected this weekend\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how much rain is expected this weekend\"}}"}
+{"prompt": "Set a timer for ten minutes for tea", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"tea\"}}"}
+{"prompt": "Start a countdown for five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\"}}"}
+{"prompt": "what is the forecast for the last day of february\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the forecast for the last day of february\"}}"}
+{"prompt": "Resume Pomodoro", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"Pomodoro\"}}"}
+{"prompt": "how windy will it be on july fourth\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how windy will it be on july fourth\"}}"}
+{"prompt": "how many inches of rain fell yesterday", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how many inches of rain fell yesterday\"}}"}
+{"prompt": "Cancel the nap timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"power nap\"}}"}
+{"prompt": "what will the uvi index reach on august fifteenth\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the uvi index reach on august fifteenth\"}}"}
+{"prompt": "will the sky be overcast sunday morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will the sky be overcast sunday morning\"}}"}
+{"prompt": "Start a ten second countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"seconds\"}}"}
+{"prompt": "what's the high temperature today?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the high temperature today?\"}}"}
+{"prompt": "shall it rain on the morrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"shall it rain on the morrow\"}}"}
+{"prompt": "Give me a timer for five and a half minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 330, \"unit\": \"seconds\"}}"}
+{"prompt": "TEMPERATURE at MIDNIGHT?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"TEMPERATURE at MIDNIGHT?\"}}"}
+{"prompt": "Give me a timer for two and a half minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 150, \"unit\": \"seconds\"}}"}
+{"prompt": "Clear all running timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "mo let’s know if hail is expected\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"mo let’s know if hail is expected\"}}"}
+{"prompt": "what will the wind speed be at six pm\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the wind speed be at six pm\"}}"}
+{"prompt": "what's the temperature difference between today and yesterday", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the temperature difference between today and yesterday\"}}"}
+{"prompt": "are there any weather alerts for tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"are there any weather alerts for tomorrow\"}}"}
+{"prompt": "what will the weather be like on labor day\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the weather be like on labor day\"}}"}
+{"prompt": "is it safe to drive with visibility right now", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it safe to drive with visibility right now\"}}"}
+{"prompt": "temp this afternoon", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"temp this afternoon\"}}"}
+{"prompt": "how clear will the skies be on wednesday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how clear will the skies be on wednesday\"}}"}
+{"prompt": "Give me a short timer for fifteen seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"seconds\"}}"}
+{"prompt": "Pause the dishwasher timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"dishwasher\"}}"}
+{"prompt": "is it going to be overcast tomorrow morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it going to be overcast tomorrow morning\"}}"}
+{"prompt": "is it foggy outside the house", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it foggy outside the house\"}}"}
+{"prompt": "will it rain on MONDAY morning", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it rain on MONDAY morning\"}}"}
+{"prompt": "Create a thirty minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"minutes\"}}"}
+{"prompt": "are there any tornado alerts right now", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"are there any tornado alerts right now\"}}"}
+{"prompt": "Add two minutes to the reading timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"reading\", \"seconds\": 120}}"}
+{"prompt": "will there be a heat wave next week\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will there be a heat wave next week\"}}"}
+{"prompt": "how much snow is forecast for tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how much snow is forecast for tomorrow\"}}"}
+{"prompt": "Set a countdown for five", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"seconds\"}}"}
+{"prompt": "Give me a countdown that ends in fifteen seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"seconds\"}}"}
+{"prompt": "What is the Humidity at nine am?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"What is the Humidity at nine am?\"}}"}
+{"prompt": "Make a five minute timer and call it brushing teeth", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\", \"name\": \"brushing teeth\"}}"}
+{"prompt": "Pause Pomodoro", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"Pomodoro\"}}"}
+{"prompt": "is there a chance of frost on march fifteenth\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is there a chance of frost on march fifteenth\"}}"}
+{"prompt": "Pause the roast beef one", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"roast beef\"}}"}
+{"prompt": "when will the next sunrise occur\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"when will the next sunrise occur\"}}"}
+{"prompt": "Give me a timer to water plants in ten minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"water plants\"}}"}
+{"prompt": "what will the wind direction be on saturday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the wind direction be on saturday\"}}"}
+{"prompt": "Start a thirty second focus timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"seconds\", \"name\": \"focus\"}}"}
+{"prompt": "Resume the laundry timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"laundry\"}}"}
+{"prompt": "What’s left on the teeth timer?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "moon phase tomorrow night", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"moon phase tomorrow night\"}}"}
+{"prompt": "How long until the noodles are done?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Create a ten minute timer for journaling", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"journaling\"}}"}
+{"prompt": "Create a ten minute timer named stretching with a one minute heads up", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"stretching\", \"reminder_offsets\": [60]}}"}
+{"prompt": "what are the hourly temperatures for today\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what are the hourly temperatures for today\"}}"}
+{"prompt": "WILL IT BE HUMID ON Tuesday AFTERNOON?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"WILL IT BE HUMID ON Tuesday AFTERNOON?\"}}"}
+{"prompt": "Set a long timer for two hours called oven roast", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"hours\", \"name\": \"oven roast\"}}"}
+{"prompt": "how hot will it be on august tenth\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how hot will it be on august tenth\"}}"}
+{"prompt": "will the wind chill drop below ten degrees tomorrow morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will the wind chill drop below ten degrees tomorrow morning\"}}"}
+{"prompt": "what's the forecast should i cancel my al fresco dinner\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the forecast should i cancel my al fresco dinner\"}}"}
+{"prompt": "Create a timer for three minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"minutes\"}}"}
+{"prompt": "what is the uv index today\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the uv index today\"}}"}
+{"prompt": "temperature next tuesday at noon", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"temperature next tuesday at noon\"}}"}
+{"prompt": "Set a one hour timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"hours\"}}"}
+{"prompt": "Start a three minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"minutes\"}}"}
+{"prompt": "Set a fifteen minute countdown for brownies with a two minute alert", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"minutes\", \"name\": \"brownies\", \"reminder_offsets\": [120]}}"}
+{"prompt": "Chance Of Precipitation At Nine PM Tonight?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"Chance Of Precipitation At Nine PM Tonight?\"}}"}
+{"prompt": "what temperature can i expect at midnight\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what temperature can i expect at midnight\"}}"}
+{"prompt": "how hot is it?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how hot is it?\"}}"}
+{"prompt": "Extend the lunch prep timer by five minutes", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"lunch prep\", \"seconds\": 300}}"}
+{"prompt": "Cancel the dishwasher timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"dishwasher\"}}"}
+{"prompt": "Stop the meditation timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"meditation\"}}"}
+{"prompt": "Set a two minute timer for Oakley’s toy rotation", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"minutes\", \"name\": \"Oakley’s toy rotation\"}}"}
+{"prompt": "will it snow on christmas morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it snow on christmas morning\"}}"}
+{"prompt": "Add sixty seconds to the espresso", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"espresso\", \"seconds\": 60}}"}
+{"prompt": "how humid will it be on august first\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how humid will it be on august first\"}}"}
+{"prompt": "Give me a fifteen second countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"seconds\"}}"}
+{"prompt": "what is the UV index at five Am", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the UV index at five Am\"}}"}
+{"prompt": "How much time is left on the laundry timer?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "what is the weather forecast for christmas day\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the weather forecast for christmas day\"}}"}
+{"prompt": "what is the expected high and low tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the expected high and low tomorrow\"}}"}
+{"prompt": "Pause the noodle timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"boiling noodles\"}}"}
+{"prompt": "what is the humidity level today\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the humidity level today\"}}"}
+{"prompt": "Rain forecast for Muskogee at Four pm?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"Rain forecast for Muskogee at Four pm?\"}}"}
+{"prompt": "Give me a short timer, like twenty seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"seconds\"}}"}
+{"prompt": "what is the temperature at sunrise tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the temperature at sunrise tomorrow\"}}"}
+{"prompt": "Delete all timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "Start a ten minute timer and let me know with two minutes left", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"reminder_offsets\": [120]}}"}
+{"prompt": "is it going to snow on christmas day\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it going to snow on christmas day\"}}"}
+{"prompt": "will the wind gusts exceed twenty miles per hour today\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will the wind gusts exceed twenty miles per hour today\"}}"}
+{"prompt": "what is the cloud cover forecast for tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the cloud cover forecast for tomorrow\"}}"}
+{"prompt": "forecast for july twenteth twenty twenty five in oklahoma city", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"forecast for july twenteth twenty twenty five in oklahoma city\"}}"}
+{"prompt": "What timers are running?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "sunset time on june twenty-first", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"sunset time on june twenty-first\"}}"}
+{"prompt": "what will the low be tomorrow morning", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the low be tomorrow morning\"}}"}
+{"prompt": "will it be humid on tuesday afternoon", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it be humid on tuesday afternoon\"}}"}
+{"prompt": "Pause the yoga timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"yoga\"}}"}
+{"prompt": "will i need an umbrella on valentine’s day\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will i need an umbrella on valentine’s day\"}}"}
+{"prompt": "jeez is it gonna storm tonight\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"jeez is it gonna storm tonight\"}}"}
+{"prompt": "what is the cloud cover percentage tomorrow morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the cloud cover percentage tomorrow morning\"}}"}
+{"prompt": "sunrise time tomorrow in austin", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"sunrise time tomorrow in austin\"}}"}
+{"prompt": "Start a timer for fifteen minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"minutes\"}}"}
+{"prompt": "can i see the stars tonight or will it be cloudy", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"can i see the stars tonight or will it be cloudy\"}}"}
+{"prompt": "is it going to be muggy tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it going to be muggy tomorrow\"}}"}
+{"prompt": "what's the dew point right now in the living room", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the dew point right now in the living room\"}}"}
+{"prompt": "Add ninety seconds to focus time", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"focus time\", \"seconds\": 90}}"}
+{"prompt": "Create a timer for meditation — ten minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"meditation\"}}"}
+{"prompt": "Resume the focus timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"focus time\"}}"}
+{"prompt": "WHAT IS THE uv INDEX AT FIVE am?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"WHAT IS THE uv INDEX AT FIVE am?\"}}"}
+{"prompt": "what is the weather forecast for the day after tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the weather forecast for the day after tomorrow\"}}"}
+{"prompt": "Dew Point Reading For Oklahoma City?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"Dew Point Reading For Oklahoma City?\"}}"}
+{"prompt": "Start a timer for ninety seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"seconds\"}}"}
+{"prompt": "what are the cloud conditions for next thursday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what are the cloud conditions for next thursday\"}}"}
+{"prompt": "Set a timer for twenty minutes and remind me at ten and five minutes left", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"minutes\", \"reminder_offsets\": [600, 300]}}"}
+{"prompt": "Remind me when there’s five minutes left on baking", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 40, \"unit\": \"minutes\", \"name\": \"baking\", \"reminder_offsets\": [300]}}"}
+{"prompt": "rain total for the last forty-eight hours", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"rain total for the last forty-eight hours\"}}"}
+{"prompt": "what will the hourly weather summary be today\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the hourly weather summary be today\"}}"}
+{"prompt": "Resume the tea timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"tea\"}}"}
+{"prompt": "Clear all my timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "what's the weather in atlantis right now\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the weather in atlantis right now\"}}"}
+{"prompt": "Set a countdown for one hour and fifteen minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 75, \"unit\": \"minutes\"}}"}
+{"prompt": "Give me a one minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"minutes\"}}"}
+{"prompt": "what's the uv index at three pm for beach day", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the uv index at three pm for beach day\"}}"}
+{"prompt": "is it going to rain in the next two hours\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it going to rain in the next two hours\"}}"}
+{"prompt": "Give me a twenty five minute timer for focus time", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 25, \"unit\": \"minutes\", \"name\": \"focus time\"}}"}
+{"prompt": "is the sky gonna be clear or grey next thursday night\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is the sky gonna be clear or grey next thursday night\"}}"}
+{"prompt": "temperature this evening", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"temperature this evening\"}}"}
+{"prompt": "what is the temperature in oklahoma city right now\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the temperature in oklahoma city right now\"}}"}
+{"prompt": "Add sixty seconds to the tea timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"tea\", \"seconds\": 60}}"}
+{"prompt": "Make a six minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 6, \"unit\": \"minutes\"}}"}
+{"prompt": "what’s the weather like today\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what’s the weather like today\"}}"}
+{"prompt": "will the uv index hit ten tomorrow afternoon", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will the uv index hit ten tomorrow afternoon\"}}"}
+{"prompt": "don't tell me jokes tell me if it's going to rain tonight\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"don't tell me jokes tell me if it's going to rain tonight\"}}"}
+{"prompt": "will the sky be clear on saturday night\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will the sky be clear on saturday night\"}}"}
+{"prompt": "is it gonna drizzle or drench\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it gonna drizzle or drench\"}}"}
+{"prompt": "how windy will it be at ten Am", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how windy will it be at ten Am\"}}"}
+{"prompt": "um what’s the weather doing today\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"um what’s the weather doing today\"}}"}
+{"prompt": "what will the weather be like this afternoon\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the weather be like this afternoon\"}}"}
+{"prompt": "what is the temperature expected to be at midnight\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the temperature expected to be at midnight\"}}"}
+{"prompt": "what will the humidity be tomorrow afternoon\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the humidity be tomorrow afternoon\"}}"}
+{"prompt": "is it cold outside right now?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it cold outside right now?\"}}"}
+{"prompt": "Set a quick timer for five seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"seconds\"}}"}
+{"prompt": "will there be thunderstorms friday evening\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will there be thunderstorms friday evening\"}}"}
+{"prompt": "tell me if there's a tornado warning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"tell me if there's a tornado warning\"}}"}
+{"prompt": "how's it looking outside\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how's it looking outside\"}}"}
+{"prompt": "what will the uv index be at noon\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the uv index be at noon\"}}"}
+{"prompt": "how strong will the wind be on new year’s eve\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how strong will the wind be on new year’s eve\"}}"}
+{"prompt": "any weather alerts for heavy rain right now", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"any weather alerts for heavy rain right now\"}}"}
+{"prompt": "Set a fifteen second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"seconds\"}}"}
+{"prompt": "Add sixty seconds to the timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"default\", \"seconds\": 60}}"}
+{"prompt": "How Much Snow Is Expected On Christmas Eve?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"How Much Snow Is Expected On Christmas Eve?\"}}"}
+{"prompt": "forecast on february twenty ninth\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"forecast on february twenty ninth\"}}"}
+{"prompt": "what is the visibility like right now\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the visibility like right now\"}}"}
+{"prompt": "How much longer on the focus timer?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Set a fifteen minute timer for reading", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"minutes\", \"name\": \"reading\"}}"}
+{"prompt": "what will the uv index be on june twenty third\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the uv index be on june twenty third\"}}"}
+{"prompt": "should i bring a coat on easter sunday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"should i bring a coat on easter sunday\"}}"}
+{"prompt": "is the barometer trending up or down\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is the barometer trending up or down\"}}"}
+{"prompt": "will there be rain on wednesday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will there be rain on wednesday\"}}"}
+{"prompt": "Set a timer for ten seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"seconds\"}}"}
+{"prompt": "is it freezing right now in muskogee\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it freezing right now in muskogee\"}}"}
+{"prompt": "weather tomorrow morning", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"weather tomorrow morning\"}}"}
+{"prompt": "i need to know if i should water my garden next wednesday morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"i need to know if i should water my garden next wednesday morning\"}}"}
+{"prompt": "Set a forty five minute timer called meeting", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 45, \"unit\": \"minutes\", \"name\": \"meeting\"}}"}
+{"prompt": "what's the weather going to do when the eclipse happens\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the weather going to do when the eclipse happens\"}}"}
+{"prompt": "Start a sixty minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 60, \"unit\": \"minutes\"}}"}
+{"prompt": "Cancel all timers please", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "Start a countdown for half an hour", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"minutes\"}}"}
+{"prompt": "forecast for next friday evening", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"forecast for next friday evening\"}}"}
+{"prompt": "will it be raining or snowing today\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it be raining or snowing today\"}}"}
+{"prompt": "what time will sunrise be on september first\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what time will sunrise be on september first\"}}"}
+{"prompt": "will there be lightning tonight\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will there be lightning tonight\"}}"}
+{"prompt": "Start a timer for twenty five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 25, \"unit\": \"minutes\"}}"}
+{"prompt": "weather this evening", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"weather this evening\"}}"}
+{"prompt": "is it going to be foggy tomorrow night\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it going to be foggy tomorrow night\"}}"}
+{"prompt": "Set a two minute and fifteen second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 135, \"unit\": \"seconds\"}}"}
+{"prompt": "Start a two minute timer for boiling noodles", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"minutes\", \"name\": \"boiling noodles\"}}"}
+{"prompt": "do i need an umbrella at noon friday", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"do i need an umbrella at noon friday\"}}"}
+{"prompt": "What timers are still running?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "will it be humid this evening\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it be humid this evening\"}}"}
+{"prompt": "how cold is it outside?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how cold is it outside?\"}}"}
+{"prompt": "Set a timer for one hour to marinate the chicken", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"hours\", \"name\": \"marinate the chicken\"}}"}
+{"prompt": "Clear all timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "Set a timer for twenty five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 25, \"unit\": \"minutes\"}}"}
+{"prompt": "what is the dew point right now\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the dew point right now\"}}"}
+{"prompt": "will there be thunderstorms on saturday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will there be thunderstorms on saturday\"}}"}
+{"prompt": "Start a ten minute power nap timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"power nap\"}}"}
+{"prompt": "Set a five minute timer for tea and remind me a minute before it’s done", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\", \"name\": \"tea\", \"reminder_offsets\": [60]}}"}
+{"prompt": "what's the humidity for tomorrow morning?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the humidity for tomorrow morning?\"}}"}
+{"prompt": "temperature tomorrow morning", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"temperature tomorrow morning\"}}"}
+{"prompt": "dew point reading for OKLAHOMA CITY", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"dew point reading for OKLAHOMA CITY\"}}"}
+{"prompt": "Start a one hour timer for housework", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"hours\", \"name\": \"housework\"}}"}
+{"prompt": "Clear my timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "is the uv index safe for kids today", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is the uv index safe for kids today\"}}"}
+{"prompt": "is there a chance of a thunderstorm on memorial day\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is there a chance of a thunderstorm on memorial day\"}}"}
+{"prompt": "will there be fog in the morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will there be fog in the morning\"}}"}
+{"prompt": "will there be hail on the first day of spring\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will there be hail on the first day of spring\"}}"}
+{"prompt": "uv index in playa grande at eleven am", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"uv index in playa grande at eleven am\"}}"}
+{"prompt": "Add thirty seconds to the tea timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"tea\", \"seconds\": 30}}"}
+{"prompt": "what will the snowfall totals be by tuesday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the snowfall totals be by tuesday\"}}"}
+{"prompt": "Start a ten minute break timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\", \"name\": \"break\"}}"}
+{"prompt": "Timer for the dishwasher — thirty minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"minutes\", \"name\": \"dishwasher\"}}"}
+{"prompt": "Stop roast beef", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"roast beef\"}}"}
+{"prompt": "Stop the journaling timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"journaling\"}}"}
+{"prompt": "what time does sunset happen on december twenty fifth\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what time does sunset happen on december twenty fifth\"}}"}
+{"prompt": "Create a two minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"minutes\"}}"}
+{"prompt": "Add five minutes to the meditation timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"meditation\", \"seconds\": 300}}"}
+{"prompt": "what is the wind direction now\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the wind direction now\"}}"}
+{"prompt": "what's the humidity in the library\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the humidity in the library\"}}"}
+{"prompt": "how high will the winds get on next tuesday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how high will the winds get on next tuesday\"}}"}
+{"prompt": "explain cloud cover tomorrow morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"explain cloud cover tomorrow morning\"}}"}
+{"prompt": "Add two minutes to the nap", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"power nap\", \"seconds\": 120}}"}
+{"prompt": "Set a three hour timer for my brisket with a thirty minute reminder", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"hours\", \"name\": \"brisket\", \"reminder_offsets\": [1800]}}"}
+{"prompt": "Will it rain on monday Morning?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"Will it rain on monday Morning?\"}}"}
+{"prompt": "Stop the yoga timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"yoga\"}}"}
+{"prompt": "Give me a three second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"seconds\"}}"}
+{"prompt": "will the humidity drop below thirty percent this evening", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will the humidity drop below thirty percent this evening\"}}"}
+{"prompt": "what will the low temperature be on christmas eve\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the low temperature be on christmas eve\"}}"}
+{"prompt": "Give me a timer for one minute", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"minutes\"}}"}
+{"prompt": "How much time is left on the steak timer?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Give me a five minute tea timer with a two minute reminder", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"minutes\", \"name\": \"tea\", \"reminder_offsets\": [120]}}"}
+{"prompt": "Start a timer for two hours", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"hours\"}}"}
+{"prompt": "how strong will the gusts be on a windy day\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how strong will the gusts be on a windy day\"}}"}
+{"prompt": "how hot will it get this afternoon\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how hot will it get this afternoon\"}}"}
+{"prompt": "Create a sixty second countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 60, \"unit\": \"seconds\"}}"}
+{"prompt": "what is the forecast for next sunday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the forecast for next sunday\"}}"}
+{"prompt": "whatcha reckon will it rain\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"whatcha reckon will it rain\"}}"}
+{"prompt": "Set a timer for ten minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\"}}"}
+{"prompt": "what will the sunrise time be on november first\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the sunrise time be on november first\"}}"}
+{"prompt": "temperature at midnight tonight", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"temperature at midnight tonight\"}}"}
+{"prompt": "what's the feels-like temperature right now", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the feels-like temperature right now\"}}"}
+{"prompt": "will it be clear on october thirty first\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it be clear on october thirty first\"}}"}
+{"prompt": "weather tomorrow afternoon", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"weather tomorrow afternoon\"}}"}
+{"prompt": "Pause bath", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"bath\"}}"}
+{"prompt": "Start a one minute timer called email check", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"minutes\", \"name\": \"email check\"}}"}
+{"prompt": "Set a timer for one and a half hours", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"minutes\"}}"}
+{"prompt": "what's the cloud cover percentage this evening", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the cloud cover percentage this evening\"}}"}
+{"prompt": "forecast highs and lows for the next three days", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"forecast highs and lows for the next three days\"}}"}
+{"prompt": "Cancel the lunch prep one", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"lunch prep\"}}"}
+{"prompt": "Resume the reading timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"reading\"}}"}
+{"prompt": "how much snow is expected on christmas eve", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how much snow is expected on christmas eve\"}}"}
+{"prompt": "Resume the yoga timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"yoga\"}}"}
+{"prompt": "Set a twenty minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"minutes\"}}"}
+{"prompt": "Stop everything that's counting down", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "Give me a twenty five minute Pomodoro timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 25, \"unit\": \"minutes\", \"name\": \"Pomodoro\"}}"}
+{"prompt": "Add five more minutes to meditation", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"meditation\", \"seconds\": 300}}"}
+{"prompt": "What timers are going right now?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Resume the bath one", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"bath\"}}"}
+{"prompt": "Give me a timer for sixty seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 60, \"unit\": \"seconds\"}}"}
+{"prompt": "Give me a three minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"minutes\"}}"}
+{"prompt": "mark in the kitchen asks, is it going to hail today", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it going to hail today\", \"user\": \"mark\", \"room\": \"kitchen\", \"device\": \"raspi_kitchen\"}}"}
+{"prompt": "uv index reading for the rooftop at noon", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"uv index reading for the rooftop at noon\"}}"}
+{"prompt": "will there be lightning in the forecast for wednesday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will there be lightning in the forecast for wednesday\"}}"}
+{"prompt": "will it be over one hundred degrees next thursday", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it be over one hundred degrees next thursday\"}}"}
+{"prompt": "Add ten minutes to the roast timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"roast\", \"seconds\": 600}}"}
+{"prompt": "Remind me halfway through the roast beef timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"hours\", \"name\": \"roast beef\", \"reminder_offsets\": [3600]}}"}
+{"prompt": "is it below freezing in tulsa right now", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it below freezing in tulsa right now\"}}"}
+{"prompt": "what is the weather forecast for next monday in tulsa\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the weather forecast for next monday in tulsa\"}}"}
+{"prompt": "what is the barometric pressure today\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the barometric pressure today\"}}"}
+{"prompt": "Resume the meeting timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"meeting\"}}"}
+{"prompt": "what time does the sun set on friday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what time does the sun set on friday\"}}"}
+{"prompt": "List all active timers", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Start a thirty second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"seconds\"}}"}
+{"prompt": "what is the weather like twenty four hours from now\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the weather like twenty four hours from now\"}}"}
+{"prompt": "Extend the yoga timer by three minutes", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"yoga\", \"seconds\": 180}}"}
+{"prompt": "Set a sixty minute timer for bread rising", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 60, \"unit\": \"minutes\", \"name\": \"bread rising\"}}"}
+{"prompt": "do i need sunscreen on my bike ride at nine am", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"do i need sunscreen on my bike ride at nine am\"}}"}
+{"prompt": "Cancel all my timers", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "Pause the reading timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"reading\"}}"}
+{"prompt": "is the barometric pressure rising", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is the barometric pressure rising\"}}"}
+{"prompt": "what is the humidity at nine AM", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the humidity at nine AM\"}}"}
+{"prompt": "Start a ninety minute timer named roast", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"minutes\", \"name\": \"roast\"}}"}
+{"prompt": "rain forecast for muskogee tonight", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"rain forecast for muskogee tonight\"}}"}
+{"prompt": "Start a timer for eight minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 8, \"unit\": \"minutes\"}}"}
+{"prompt": "Start a ten minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\"}}"}
+{"prompt": "Clear every timer", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "what will the feels like temperature be this morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the feels like temperature be this morning\"}}"}
+{"prompt": "How many timers are still running?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "what will the low temperature be on halloween\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the low temperature be on halloween\"}}"}
+{"prompt": "Cancel the reading timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"reading\"}}"}
+{"prompt": "rain or shine what's it looking like\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"rain or shine what's it looking like\"}}"}
+{"prompt": "Give me a timer for one and three quarter hours", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 105, \"unit\": \"minutes\"}}"}
+{"prompt": "tell me temperature and humidity for friday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"tell me temperature and humidity for friday\"}}"}
+{"prompt": "Pause the nap timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"power nap\"}}"}
+{"prompt": "Set a two minute timer for washing face", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"minutes\", \"name\": \"washing face\"}}"}
+{"prompt": "Start a four minute countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 4, \"unit\": \"minutes\"}}"}
+{"prompt": "chance of rain during my six am run", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"chance of rain during my six am run\"}}"}
+{"prompt": "Resume the nap timer", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"power nap\"}}"}
+{"prompt": "Create a five second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 5, \"unit\": \"seconds\"}}"}
+{"prompt": "Add three minutes to the brownies timer", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"brownies\", \"seconds\": 180}}"}
+{"prompt": "will it be windy this weekend\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it be windy this weekend\"}}"}
+{"prompt": "Add one minute to brushing", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"brushing\", \"seconds\": 60}}"}
+{"prompt": "weather this afternoon", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"weather this afternoon\"}}"}
+{"prompt": "Start a ten minute countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"minutes\"}}"}
+{"prompt": "when will the rain stop this afternoon", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"when will the rain stop this afternoon\"}}"}
+{"prompt": "Give me a ninety minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"minutes\"}}"}
+{"prompt": "Set a twenty minute timer for my pasta with a five minute warning", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"minutes\", \"name\": \"pasta\", \"reminder_offsets\": [300]}}"}
+{"prompt": "Remind me two minutes before the workout ends", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"minutes\", \"name\": \"workout\", \"reminder_offsets\": [120]}}"}
+{"prompt": "Start a fifteen minute meditation timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 15, \"unit\": \"minutes\", \"name\": \"meditation\"}}"}
+{"prompt": "Resume journaling", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"journaling\"}}"}
+{"prompt": "chance of precipitation at nine pM tonight", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"chance of precipitation at nine pM tonight\"}}"}
+{"prompt": "Start a three minute timer and remind me with thirty seconds left", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"minutes\", \"reminder_offsets\": [30]}}"}
+{"prompt": "Cancel the espresso timer", "response": "{\"module\": \"timer\", \"function\": \"stop_timer\", \"args\": {\"name\": \"espresso\"}}"}
+{"prompt": "Pause the laundry timer", "response": "{\"module\": \"timer\", \"function\": \"pause_timer\", \"args\": {\"name\": \"laundry\"}}"}
+{"prompt": "what time is sunrise on june first", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what time is sunrise on june first\"}}"}
+{"prompt": "how much precipitation is expected on easter sunday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how much precipitation is expected on easter sunday\"}}"}
+{"prompt": "how cold will it be tonight\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how cold will it be tonight\"}}"}
+{"prompt": "what will the temperature be at three am\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what will the temperature be at three am\"}}"}
+{"prompt": "how windy will it be this afternoon", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how windy will it be this afternoon\"}}"}
+{"prompt": "is it going to pour on monday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it going to pour on monday\"}}"}
+{"prompt": "Give me a two minute warning before the pizza dough is ready", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 45, \"unit\": \"minutes\", \"name\": \"pizza dough\", \"reminder_offsets\": [120]}}"}
+{"prompt": "Start a timer for brushing teeth — two minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 2, \"unit\": \"minutes\", \"name\": \"brushing teeth\"}}"}
+{"prompt": "Start a countdown for thirty five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 35, \"unit\": \"minutes\"}}"}
+{"prompt": "is it safe to fly a drone with today's wind", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it safe to fly a drone with today's wind\"}}"}
+{"prompt": "rain forecast for muskOGEE at four PM", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"rain forecast for muskOGEE at four PM\"}}"}
+{"prompt": "Set a thirty minute timer and remind me halfway", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"minutes\", \"reminder_offsets\": [900]}}"}
+{"prompt": "Start a timer for four minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 4, \"unit\": \"minutes\"}}"}
+{"prompt": "what's the low temperature tonight?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what's the low temperature tonight?\"}}"}
+{"prompt": "temperature tomorrow", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"temperature tomorrow\"}}"}
+{"prompt": "Cancel everything that’s counting down", "response": "{\"module\": \"timer\", \"function\": \"clear_all_timers\", \"args\": {}}"}
+{"prompt": "Set a timer for pizza dough — forty five minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 45, \"unit\": \"minutes\", \"name\": \"pizza dough\"}}"}
+{"prompt": "Add three minutes to oven preheat", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"oven preheat\", \"seconds\": 180}}"}
+{"prompt": "Set a countdown for twenty minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"minutes\"}}"}
+{"prompt": "will it be sunny on thursday morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will it be sunny on thursday morning\"}}"}
+{"prompt": "Give me a three second timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 3, \"unit\": \"seconds\"}}"}
+{"prompt": "i don't care about anything else just tell me if it's going to rain tomorrow\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"i don't care about anything else just tell me if it's going to rain tomorrow\"}}"}
+{"prompt": "What's left on the brushing teeth timer?", "response": "{\"module\": \"timer\", \"function\": \"check_timers\", \"args\": {}}"}
+{"prompt": "Start a quick ten second countdown", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 10, \"unit\": \"seconds\"}}"}
+{"prompt": "what is the expected dew point tomorrow morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what is the expected dew point tomorrow morning\"}}"}
+{"prompt": "Start a timer called bath for twenty minutes", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 20, \"unit\": \"minutes\", \"name\": \"bath\"}}"}
+{"prompt": "what temperature will it reach by noon\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"what temperature will it reach by noon\"}}"}
+{"prompt": "Make a timer for thirty seconds", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 30, \"unit\": \"seconds\"}}"}
+{"prompt": "will the temperature drop below thirty tonight", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"will the temperature drop below thirty tonight\"}}"}
+{"prompt": "how hot will it get next sunday afternoon\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"how hot will it get next sunday afternoon\"}}"}
+{"prompt": "How Clear are the skies at three PM?", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"How Clear are the skies at three PM?\"}}"}
+{"prompt": "Resume the dishwasher", "response": "{\"module\": \"timer\", \"function\": \"resume_timer\", \"args\": {\"name\": \"dishwasher\"}}"}
+{"prompt": "Set a one and a half minute timer", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 90, \"unit\": \"seconds\"}}"}
+{"prompt": "Add time to the bath timer — about five minutes", "response": "{\"module\": \"timer\", \"function\": \"add_time_to_timer\", \"args\": {\"name\": \"bath\", \"seconds\": 300}}"}
+{"prompt": "is it going to be cloudy tomorrow morning\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"is it going to be cloudy tomorrow morning\"}}"}
+{"prompt": "Set a quick timer for one minute", "response": "{\"module\": \"timer\", \"function\": \"start_timer\", \"args\": {\"duration\": 1, \"unit\": \"minutes\"}}"}
+{"prompt": "i hope it doesn't rain but what are rain odds saturday\"", "response": "{\"module\": \"weather\", \"function\": \"answer_weather_question\", \"args\": {\"question\": \"i hope it doesn't rain but what are rain odds saturday\"}}"}

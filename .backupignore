@@ -1,0 +1,58 @@
+# VCS / deps / builds / caches
+**/.git/**
+**/__pycache__/**
+**/.venv/**
+**/venv/**
+**/env/**
+**/envs/**
+**/node_modules/**
+**/dist/**
+**/build/**
+**/out/**
+**/target/**
+**/coverage/**
+**/logs/**
+**/log/**
+**/.cache/**
+**/cache/**
+**/tmp/**
+
+# ML artifacts & datasets
+artifacts/**
+artifacts_*/**
+**/runs/**
+**/wandb/**
+**/tensorboard/**
+**/lightning_logs/**
+**/checkpoints/**
+**/models/**
+**/model-cache/**
+**/huggingface/**
+**/hf_cache/**
+**/transformers_cache/**
+text-generation-webui/**
+**/text-generation-webui/**
+
+# Large model file types
+*.safetensors
+*.gguf
+*.pt
+*.pth
+*.bin
+*.onnx
+*.tflite
+*.ckpt
+
+# Vendored exllamav2 (skip all of it)
+app/src/llm_manager/exllamav2/**
+**/exllamav2/**
+
+# (Optional) Large images that sneak in via docs/vendor code
+**/*.png
+**/*.gif
+**/*.jpg
+**/*.jpeg
+**/*.webp
+# exllamav2 subtree (wasn't excluded yet)
+**/exllamav2/**
+app/src/llm_manager/exllamav2/**

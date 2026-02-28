@@ -1,0 +1,482 @@
+{"prompt": "what time does Target close?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Target\"}}"}
+{"prompt": "is the Home Depot open right now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Home Depot\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "find Thai restaurants open now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Thai restaurant\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "show me gas stations within 5 miles", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"gas station\",\"custom_radius_miles\":5}}"}
+{"prompt": "find open pharmacies within 10 km", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pharmacy\",\"filters\":{\"open_now\":true},\"custom_radius_km\":10}}"}
+{"prompt": "list pizza places rated above 4.5", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pizza\",\"filters\":{\"min_rating\":4.5},\"multiple\":true}}"}
+{"prompt": "coffee shops near Oklahoma City that are open", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"coffee shops\",\"filters\":{\"open_now\":true},\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "find bookstores near me", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bookstore\"}}"}
+{"prompt": "list all nearby Chinese restaurants", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Chinese restaurants\",\"multiple\":true}}"}
+{"prompt": "what’s the rating for Whole Foods in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Whole Foods Tulsa\"}}"}
+{"prompt": "closest open hardware store with rating over 4", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"hardware store\",\"filters\":{\"open_now\":true,\"min_rating\":4.0}}}"}
+{"prompt": "show me the best open sushi bars", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sushi bars\",\"filters\":{\"open_now\":true},\"multiple\":true}}"}
+{"prompt": "are any pharmacies open right now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pharmacy\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "find auto repair places within 3 miles", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"auto repair\",\"custom_radius_miles\":3}}"}
+{"prompt": "where can I find ice cream shops open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"ice cream\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "give me a list of open gyms near me", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"gym\",\"filters\":{\"open_now\":true},\"multiple\":true}}"}
+{"prompt": "what's the address for the closest CVS?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"CVS\"}}"}
+{"prompt": "show all open taco spots in downtown Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"taco\",\"filters\":{\"open_now\":true},\"location_override\":\"downtown Tulsa\",\"multiple\":true}}"}
+{"prompt": "which laundromats are open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"laundromat\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "find smoothie shops with 4.2 stars or better", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"smoothie shop\",\"filters\":{\"min_rating\":4.2},\"multiple\":true}}"}
+{"prompt": "is Sprouts Farmers Market open late?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Sprouts Farmers Market\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "any donut places within 2 km?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"donut\",\"custom_radius_km\":2}}"}
+{"prompt": "list all nearby fast food joints", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"fast food\",\"multiple\":true}}"}
+{"prompt": "where’s the nearest open urgent care?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"urgent care\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "top rated Vietnamese restaurants open now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Vietnamese restaurant\",\"filters\":{\"open_now\":true,\"min_rating\":4.5},\"multiple\":true}}"}
+{"prompt": "what time does Panda Express close today?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Panda Express\"}}"}
+{"prompt": "are any liquor stores open in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"liquor store\",\"filters\":{\"open_now\":true},\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "closest barber shop open now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"barber shop\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "where can I get boba nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"boba\"}}"}
+{"prompt": "list places to eat open in midtown Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"restaurants\",\"filters\":{\"open_now\":true},\"location_override\":\"midtown Tulsa\",\"multiple\":true}}"}
+{"prompt": "is Braum's open right now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Braum's\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "recommend top 3 coffee spots open now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"coffee\",\"filters\":{\"open_now\":true},\"multiple\":true}}"}
+{"prompt": "nearest open nail salon with good reviews", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"nail salon\",\"filters\":{\"open_now\":true,\"min_rating\":4.0}}}"}
+{"prompt": "show all nearby open bakeries", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bakery\",\"filters\":{\"open_now\":true},\"multiple\":true}}"}
+{"prompt": "what’s the rating of that new Mexican place?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Mexican restaurant\"}}"}
+{"prompt": "find a breakfast spot within 8 miles", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"breakfast\",\"custom_radius_miles\":8}}"}
+{"prompt": "which taco place is still open tonight?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"taco\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "nearest open UPS store?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"UPS store\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "where can I get Thai food rated at least 4.3?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Thai food\",\"filters\":{\"min_rating\":4.3}}}"}
+{"prompt": "locate best coffee shops open now in Jenks", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"coffee shops\",\"filters\":{\"open_now\":true},\"location_override\":\"Jenks\",\"multiple\":true}}"}
+{"prompt": "Where can I get a good cup of coffee?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"coffee shop\"}}"}
+{"prompt": "Any gas stations open nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"gas station\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find me a pharmacy in Tulsa that's still open", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pharmacy\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any bookstores in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bookstore\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "What's the best-rated taco place nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"tacos\",\"filters\":{\"min_rating\":4.5}}}"}
+{"prompt": "I need a donut shop close by", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"donut shop\"}}"}
+{"prompt": "Show me ramen spots in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"ramen\",\"multiple\":true}}"}
+{"prompt": "Where can I find a smoke shop in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"smoke shop\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Is there a UPS store near me that's open?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"UPS Store\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find me candle stores within 5 miles", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"candle store\",\"custom_radius_miles\":5}}"}
+{"prompt": "Where's the nearest Target?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Target\"}}"}
+{"prompt": "Any open Mexican restaurants nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Mexican restaurant\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any pizza places in Tulsa with good reviews?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pizza\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "Find sushi spots in Oklahoma City", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sushi\",\"location_override\":\"Oklahoma City\",\"multiple\":true}}"}
+{"prompt": "Is there a nail salon near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"nail salon\"}}"}
+{"prompt": "Find me fast food places that are open now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"fast food\",\"filters\":{\"open_now\":true},\"multiple\":true}}"}
+{"prompt": "Are there any gyms near downtown Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"gym\"}}"}
+{"prompt": "What's the closest car wash?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"car wash\"}}"}
+{"prompt": "Locate some breakfast spots open right now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"breakfast\",\"filters\":{\"open_now\":true},\"multiple\":true}}"}
+{"prompt": "Any vegan restaurants in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"vegan restaurant\",\"location_override\":\"Broken Arrow\",\"multiple\":true}}"}
+{"prompt": "Show me burger joints within 3 miles", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"burger\",\"custom_radius_miles\":3}}"}
+{"prompt": "Any liquor stores open in Tulsa right now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"liquor store\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there dry cleaners near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"dry cleaner\"}}"}
+{"prompt": "Is there a Home Depot in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Home Depot\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Find coffee shops in Tulsa rated at least 4.2", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"coffee shop\",\"filters\":{\"min_rating\":4.2}}}"}
+{"prompt": "Where can I get barbecue in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"barbecue\",\"multiple\":true}}"}
+{"prompt": "Any good Chinese takeout near here?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Chinese takeout\"}}"}
+{"prompt": "Are there any laundromats open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"laundromat\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find me smoothie places around Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"smoothie\",\"multiple\":true}}"}
+{"prompt": "Show me sandwich shops near Tulsa with high ratings", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sandwich shop\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "Are there any good seafood restaurants in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"seafood\",\"location_override\":\"Oklahoma City\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "Where can I buy flowers nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"florist\"}}"}
+{"prompt": "Find an open nail salon in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"nail salon\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Is there a pet store near Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pet store\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Where’s the nearest CVS?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"CVS\"}}"}
+{"prompt": "Are there any Walmarts around Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Walmart\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Any barbecue joints still open?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"barbecue\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find open yoga studios in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"yoga studio\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Is there a candle store in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"candle store\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Show me the best Thai food places near me", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Thai\",\"filters\":{\"min_rating\":4.3}}}"}
+{"prompt": "Any breakfast diners open now in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"diner\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I get an oil change?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"oil change\"}}"}
+{"prompt": "Locate nearby chicken places rated over 4 stars", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"chicken\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "Any bars open now in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bar\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Is there a hardware store in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"hardware store\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Find me a massage spa in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"massage spa\"}}"}
+{"prompt": "Where's a nearby pawn shop?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pawn shop\"}}"}
+{"prompt": "Are there any open art supply stores near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"art supply store\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "What are the best-rated Mexican places in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Mexican\",\"filters\":{\"min_rating\":4.5},\"multiple\":true}}"}
+{"prompt": "Where can I grab coffee in downtown Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"coffee shop\"}}"}
+{"prompt": "Any pharmacies open right now in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pharmacy\",\"location_override\":\"Broken Arrow\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find me a good Italian restaurant nearby", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Italian restaurant\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "What's the closest gas station to me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"gas station\"}}"}
+{"prompt": "Show me late-night food options in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"restaurant\",\"filters\":{\"open_now\":true},\"multiple\":true}}"}
+{"prompt": "Are there any art galleries in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"art gallery\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Any good donut places around?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"donut shop\"}}"}
+{"prompt": "Where can I buy party supplies near Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"party supply store\"}}"}
+{"prompt": "Locate a dog groomer nearby", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"dog groomer\"}}"}
+{"prompt": "Is there a decent sandwich shop in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sandwich shop\",\"location_override\":\"Norman\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "What’s the best sushi place near Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sushi\",\"filters\":{\"min_rating\":4.5}}}"}
+{"prompt": "Are there any spas open in Tulsa now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"spa\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Show me cafes within 2 kilometers", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"cafe\",\"custom_radius_km\":2}}"}
+{"prompt": "Where can I get Mexican food in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Mexican restaurant\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Find a place to get wings near me", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"wings\"}}"}
+{"prompt": "Any candle shops in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"candle store\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Find nearby juice bars open now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"juice bar\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I find a guitar shop in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"guitar shop\"}}"}
+{"prompt": "Show me the closest Chick-fil-A", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Chick-fil-A\"}}"}
+{"prompt": "Are there any bakeries open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bakery\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I get a tattoo around here?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"tattoo shop\"}}"}
+{"prompt": "I need an urgent care clinic in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"urgent care clinic\"}}"}
+{"prompt": "Find bike repair shops near me", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bike repair\"}}"}
+{"prompt": "Any dessert spots open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"dessert\",\"filters\":{\"open_now\":true},\"multiple\":true}}"}
+{"prompt": "Where can I buy a birthday card in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"greeting card store\"}}"}
+{"prompt": "Are there any hair salons with good reviews?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"hair salon\",\"filters\":{\"min_rating\":4.2}}}"}
+{"prompt": "Show me Indian restaurants in Broken Arrow", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Indian restaurant\",\"location_override\":\"Broken Arrow\",\"multiple\":true}}"}
+{"prompt": "Where’s the nearest Dollar General?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Dollar General\"}}"}
+{"prompt": "Find dessert cafes in Tulsa rated above 4.3", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"dessert cafe\",\"filters\":{\"min_rating\":4.3}}}"}
+{"prompt": "Are there auto parts stores near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"auto parts\"}}"}
+{"prompt": "Locate a place that sells vape supplies", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"vape shop\"}}"}
+{"prompt": "Any open food trucks in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"food truck\",\"location_override\":\"Oklahoma City\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Is there a GameStop nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"GameStop\"}}"}
+{"prompt": "Where can I get flowers delivered from?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"florist\"}}"}
+{"prompt": "Any toy stores in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"toy store\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Show me fitness centers open 24/7", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"fitness center\"}}"}
+{"prompt": "Where can I buy a mattress near Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"mattress store\"}}"}
+{"prompt": "Find a locksmith that’s open right now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"locksmith\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any cool thrift stores nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"thrift store\"}}"}
+{"prompt": "Where can I get fresh juice in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"juice bar\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Find a nail spa rated above 4.4", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"nail spa\",\"filters\":{\"min_rating\":4.4}}}"}
+{"prompt": "Locate a nearby mattress store", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"mattress store\"}}"}
+{"prompt": "Are there any good ramen places open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"ramen\",\"filters\":{\"open_now\":true},\"multiple\":true}}"}
+{"prompt": "Is there a candle shop in Oklahoma City open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"candle store\",\"location_override\":\"Oklahoma City\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I find poke bowls in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"poke\",\"multiple\":true}}"}
+{"prompt": "Any healthy restaurants near Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"healthy restaurant\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Find the nearest T-Mobile store", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"T-Mobile\"}}"}
+{"prompt": "Show me Asian fusion spots with high ratings", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Asian fusion\",\"filters\":{\"min_rating\":4.3},\"multiple\":true}}"}
+{"prompt": "Are there any butcher shops near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"butcher shop\"}}"}
+{"prompt": "Is there a good breakfast cafe in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"breakfast cafe\",\"location_override\":\"Norman\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "Where can I get tacos late at night?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"tacos\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any smoothie places in Tulsa with good reviews?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"smoothie\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "Show me nearby car dealerships", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"car dealership\"}}"}
+{"prompt": "Find an open UPS drop-off in Broken Arrow", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"UPS drop-off\",\"location_override\":\"Broken Arrow\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any good ice cream spots around Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"ice cream\",\"multiple\":true}}"}
+{"prompt": "Where’s the closest Walgreens?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Walgreens\"}}"}
+{"prompt": "Find wine bars in Oklahoma City", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"wine bar\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Are there any bowling alleys nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bowling alley\"}}"}
+{"prompt": "What's a good barbecue spot near Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"barbecue\",\"location_override\":\"Norman\",\"filters\":{\"min_rating\":4.2}}}"}
+{"prompt": "Show me sushi restaurants within 10 miles", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sushi\",\"custom_radius_miles\":10}}"}
+{"prompt": "Find open sandwich shops in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sandwich shop\",\"filters\":{\"open_now\":true},\"multiple\":true}}"}
+{"prompt": "Is there a gaming cafe around here?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"gaming cafe\"}}"}
+{"prompt": "Where can I get a birthday cake near Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bakery\"}}"}
+{"prompt": "Are there any Mexican restaurants open right now in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Mexican\",\"location_override\":\"Oklahoma City\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where’s the closest 7-Eleven?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"7-Eleven\"}}"}
+{"prompt": "Find Thai restaurants with high ratings", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Thai\",\"filters\":{\"min_rating\":4.5},\"multiple\":true}}"}
+{"prompt": "Is there an IKEA near Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"IKEA\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Locate open coffee shops near me", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"coffee shop\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I find organic grocery stores?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"organic grocery\"}}"}
+{"prompt": "Any craft stores open in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"craft store\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find a comic book store in Broken Arrow", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"comic book store\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Are there any arcades nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"arcade\"}}"}
+{"prompt": "Show me nearby car rental locations", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"car rental\"}}"}
+{"prompt": "What's a good Chinese buffet around Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Chinese buffet\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "Find music stores in Oklahoma City", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"music store\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Any paint supply stores open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"paint store\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where’s the nearest Apple Store?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Apple Store\"}}"}
+{"prompt": "Find movie theaters in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"movie theater\",\"multiple\":true}}"}
+{"prompt": "Are there any cocktail bars nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"cocktail bar\"}}"}
+{"prompt": "Where can I get cupcakes near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"cupcake shop\"}}"}
+{"prompt": "Any furniture stores in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"furniture store\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Show me late-night coffee options in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"coffee shop\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any nearby laser tag places?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"laser tag\"}}"}
+{"prompt": "Where can I get my shoes repaired?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"shoe repair\"}}"}
+{"prompt": "Find an open dollar store near me", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"dollar store\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Locate toy stores with good reviews in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"toy store\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "Any healthy food places open near Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"healthy restaurant\",\"location_override\":\"Broken Arrow\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where’s the nearest Verizon store?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Verizon\"}}"}
+{"prompt": "Are there any bubble tea shops nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bubble tea\"}}"}
+{"prompt": "Show me open breakfast spots near Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"breakfast\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Is there a piano store in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"piano store\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Find sports bars with TVs near me", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sports bar\"}}"}
+{"prompt": "Where can I rent a tuxedo in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"tuxedo rental\"}}"}
+{"prompt": "Any plant nurseries nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"plant nursery\"}}"}
+{"prompt": "Locate barber shops open right now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"barber shop\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I find a driving school?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"driving school\"}}"}
+{"prompt": "Any dessert places in Norman open this late?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"dessert\",\"location_override\":\"Norman\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Show me cheese shops near Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"cheese shop\"}}"}
+{"prompt": "Are there any Indian grocery stores around?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Indian grocery\"}}"}
+{"prompt": "Where can I get a massage in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"massage spa\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Where can I find an open taco truck nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"taco truck\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any good cafes in downtown Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"cafe\",\"filters\":{\"min_rating\":4.2}}}"}
+{"prompt": "Find an open eye doctor in Broken Arrow", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"optometrist\",\"location_override\":\"Broken Arrow\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Is there a good Thai place near Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Thai\",\"location_override\":\"Norman\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "Show me pet grooming places in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pet grooming\"}}"}
+{"prompt": "Where can I get boba tea right now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"boba tea\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any gift shops open late?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"gift shop\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find vegan cafes in Oklahoma City", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"vegan cafe\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Are there any French bakeries in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"French bakery\"}}"}
+{"prompt": "Where can I get a milkshake near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"milkshake\"}}"}
+{"prompt": "Show me a good deli around Broken Arrow", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"deli\",\"location_override\":\"Broken Arrow\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "Is there a hiking gear store nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"hiking gear\"}}"}
+{"prompt": "Where can I find late-night Chinese food?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Chinese\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any board game stores near Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"board game store\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Find bubble tea spots with good reviews", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bubble tea\",\"filters\":{\"min_rating\":4.3}}}"}
+{"prompt": "Is there a nearby escape room?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"escape room\"}}"}
+{"prompt": "Where can I buy vitamins in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"vitamin store\"}}"}
+{"prompt": "Locate a frozen yogurt shop open now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"frozen yogurt\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any coworking spaces in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"coworking space\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Show me the best-rated Indian food in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Indian restaurant\",\"filters\":{\"min_rating\":4.5}}}"}
+{"prompt": "Are there any museums near Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"museum\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Find repair shops that are open late", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"repair shop\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I get falafel in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"falafel\"}}"}
+{"prompt": "Any Mediterranean restaurants in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Mediterranean\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Is there a place for brunch open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"brunch\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where’s the nearest smoothie king?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Smoothie King\"}}"}
+{"prompt": "Show me the best Vietnamese restaurants in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Vietnamese\",\"filters\":{\"min_rating\":4.5}}}"}
+{"prompt": "Any hot dog stands near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"hot dog\"}}"}
+{"prompt": "Find a nearby passport photo service", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"passport photo\"}}"}
+{"prompt": "Are there any late-night bakeries open in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bakery\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Locate a florist with high ratings", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"florist\",\"filters\":{\"min_rating\":4.3}}}"}
+{"prompt": "Is there a cooking supply store in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"cooking supply\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Where can I find kids’ clothing stores?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"kids clothing\"}}"}
+{"prompt": "Any places open now that sell luggage?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"luggage store\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find gluten-free bakeries in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"gluten-free bakery\"}}"}
+{"prompt": "Are there any juice bars in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"juice bar\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Show me tattoo parlors with great reviews", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"tattoo parlor\",\"filters\":{\"min_rating\":4.5}}}"}
+{"prompt": "Where’s a place I can buy incense?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"incense store\"}}"}
+{"prompt": "Any small local bookstores near Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bookstore\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Find me a poke bowl place in Tulsa open now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"poke\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any bagel shops nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bagel shop\"}}"}
+{"prompt": "Where can I get gourmet popcorn in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"gourmet popcorn\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Locate nearby BBQ joints within 8 miles", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"BBQ\",\"custom_radius_miles\":8}}"}
+{"prompt": "Are there healthy food trucks near Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"healthy food truck\"}}"}
+{"prompt": "Find open coffee shops with high ratings", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"coffee shop\",\"filters\":{\"open_now\":true,\"min_rating\":4.5}}}"}
+{"prompt": "Is there a Korean restaurant near Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Korean\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Where can I buy candles in Tulsa late at night?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"candle store\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any French cafes open right now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"French cafe\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any local chocolate shops?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"chocolate shop\"}}"}
+{"prompt": "Find me a gelato place near Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"gelato\"}}"}
+{"prompt": "Where can I get a car battery replaced nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"auto repair\"}}"}
+{"prompt": "Any record stores open in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"record store\",\"location_override\":\"Oklahoma City\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Locate nearby candle shops with great reviews", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"candle store\",\"filters\":{\"min_rating\":4.5}}}"}
+{"prompt": "Where can I get a birthday balloon in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"party supply\"}}"}
+{"prompt": "Show me the best Korean BBQ in Norman", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Korean BBQ\",\"location_override\":\"Norman\",\"filters\":{\"min_rating\":4.5}}}"}
+{"prompt": "Are there any reptile pet stores nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"reptile store\"}}"}
+{"prompt": "Where can I buy sushi-grade fish in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"seafood market\"}}"}
+{"prompt": "Find me a dessert bar open late", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"dessert bar\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any themed cafes in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"themed cafe\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Where's a local farmer's market near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"farmer's market\"}}"}
+{"prompt": "Find me an open food court nearby", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"food court\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any plant-based restaurants in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"plant-based restaurant\"}}"}
+{"prompt": "Where can I get bubble waffles?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bubble waffle\"}}"}
+{"prompt": "Show me highly-rated spas in Broken Arrow", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"spa\",\"location_override\":\"Broken Arrow\",\"filters\":{\"min_rating\":4.4}}}"}
+{"prompt": "Is there a vintage clothing store in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"vintage clothing\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Find nearby florists open right now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"florist\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I buy essential oils?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"essential oils\"}}"}
+{"prompt": "Are there any open dessert trucks in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"dessert truck\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find me the closest rotisserie chicken", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"rotisserie chicken\"}}"}
+{"prompt": "Show me kombucha shops in Oklahoma City", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"kombucha\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Where can I get a walk-in haircut right now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"hair salon\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any open metaphysical shops around?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"metaphysical store\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find kitchen supply stores near Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"kitchen supply\"}}"}
+{"prompt": "Is there a matcha cafe in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"matcha cafe\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Where can I buy locally made soap?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"handmade soap\"}}"}
+{"prompt": "Show me French restaurants in Tulsa with high ratings", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"French restaurant\",\"filters\":{\"min_rating\":4.3}}}"}
+{"prompt": "Find a halal grocery store open right now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"halal grocery\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where's the nearest poke place in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"poke\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Any open juice trucks nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"juice truck\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any wood-fired pizza joints in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"wood-fired pizza\"}}"}
+{"prompt": "Where can I get nitro cold brew?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"nitro cold brew\"}}"}
+{"prompt": "Show me cozy brunch places in Oklahoma City", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"brunch\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Find me gluten-free dessert cafes", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"gluten-free dessert\"}}"}
+{"prompt": "Is there a magic shop in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"magic shop\"}}"}
+{"prompt": "Where can I buy bubble wrap locally?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"packing supplies\"}}"}
+{"prompt": "Any craft coffee roasters open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"coffee roaster\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any noodle bars in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"noodle bar\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Where can I get pierogies nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pierogi\"}}"}
+{"prompt": "Show me top-rated smoothie spots in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"smoothie\",\"filters\":{\"min_rating\":4.5}}}"}
+{"prompt": "Is there a Scandinavian bakery around?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Scandinavian bakery\"}}"}
+{"prompt": "Find me a good empanada shop", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"empanada\"}}"}
+{"prompt": "Where can I find a board game cafe open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"board game cafe\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any fondue restaurants nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"fondue\"}}"}
+{"prompt": "Find dog-friendly cafes in Oklahoma City", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"dog-friendly cafe\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Where’s a good crepe place in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"crepe\"}}"}
+{"prompt": "Show me pho restaurants in Norman", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pho\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Any open sandwich trucks around Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sandwich truck\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I find a fairy garden store?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"fairy garden\"}}"}
+{"prompt": "Find good street food vendors open now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"street food\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I get dim sum in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"dim sum\"}}"}
+{"prompt": "Find an open Mediterranean cafe in Norman", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Mediterranean cafe\",\"location_override\":\"Norman\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any drive-thru coffee stands near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"drive-thru coffee\"}}"}
+{"prompt": "Where's the closest Latin grocery store?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Latin grocery\"}}"}
+{"prompt": "Any open soup restaurants around Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"soup\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Show me creperies with high ratings in Oklahoma City", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"creperie\",\"location_override\":\"Oklahoma City\",\"filters\":{\"min_rating\":4.4}}}"}
+{"prompt": "Are there any falafel trucks open near Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"falafel truck\",\"location_override\":\"Broken Arrow\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I buy gourmet cheese in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"cheese shop\"}}"}
+{"prompt": "Find a ramen place that’s open right now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"ramen\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Show me a wine tasting room in Norman", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"wine tasting\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Is there a high-end steakhouse in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"steakhouse\",\"filters\":{\"min_rating\":4.5}}}"}
+{"prompt": "Locate an open sushi train restaurant", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sushi train\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any nearby restaurants serving Peruvian food?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Peruvian restaurant\"}}"}
+{"prompt": "Find a place with great chicken and waffles", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"chicken and waffles\",\"filters\":{\"min_rating\":4.2}}}"}
+{"prompt": "Where can I get Korean fried chicken in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Korean fried chicken\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Are there any local fish markets open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"fish market\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Show me macaron shops near Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"macaron shop\"}}"}
+{"prompt": "Where’s a dog-friendly bar near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"dog-friendly bar\"}}"}
+{"prompt": "Any open Italian delis in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Italian deli\",\"location_override\":\"Broken Arrow\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find me tapas restaurants in Norman", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"tapas\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Are there any Jamaican restaurants nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Jamaican restaurant\"}}"}
+{"prompt": "Locate pho restaurants open late in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pho\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I get acai bowls around here?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"acai bowl\"}}"}
+{"prompt": "Show me vegan bakeries in Oklahoma City", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"vegan bakery\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Are there any food co-ops near Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"food co-op\"}}"}
+{"prompt": "Where can I get bubble tea after 10pm?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bubble tea\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find a charcoal grill steakhouse in Norman", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"charcoal grill steakhouse\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Any Turkish cafes open near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Turkish cafe\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Locate a paella restaurant in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"paella\"}}"}
+{"prompt": "Where’s a gourmet burger joint with good reviews?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"gourmet burger\",\"filters\":{\"min_rating\":4.3}}}"}
+{"prompt": "Are there any Indian buffets in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Indian buffet\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Find a sushi place with conveyor belts", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"conveyor belt sushi\"}}"}
+{"prompt": "Any Caribbean food spots in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Caribbean restaurant\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Where can I get mochi ice cream in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"mochi ice cream\"}}"}
+{"prompt": "Locate a Spanish tapas bar open now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"tapas bar\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any German bakeries nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"German bakery\"}}"}
+{"prompt": "Find hot pot restaurants in Norman", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"hot pot\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Are there any cider houses in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"cider house\"}}"}
+{"prompt": "Show me Ethiopian restaurants open right now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Ethiopian\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where’s a good spot for brunch with mimosas?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"brunch with mimosas\"}}"}
+{"prompt": "Are there any New Orleans-style cafes near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"New Orleans cafe\"}}"}
+{"prompt": "Find yakitori places open in Oklahoma City", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"yakitori\",\"location_override\":\"Oklahoma City\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I buy mochi donuts?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"mochi donuts\"}}"}
+{"prompt": "Are there Cajun restaurants in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Cajun\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Find me a churro truck that’s still open", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"churro truck\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where’s the closest arepa shop?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"arepa\"}}"}
+{"prompt": "Any dumpling houses with high ratings?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"dumpling house\",\"filters\":{\"min_rating\":4.4}}}"}
+{"prompt": "Locate Georgian restaurants near Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Georgian restaurant\"}}"}
+{"prompt": "Are there sushi and karaoke combos nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sushi karaoke\"}}"}
+{"prompt": "Find late-night Indian food trucks in Norman", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Indian food truck\",\"location_override\":\"Norman\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I get shawarma in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"shawarma\"}}"}
+{"prompt": "Find poke bowl spots open near Broken Arrow", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"poke bowl\",\"location_override\":\"Broken Arrow\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any places that sell bento boxes in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bento box\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Show me rooftop bars in Tulsa with good ratings", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"rooftop bar\",\"filters\":{\"min_rating\":4.3}}}"}
+{"prompt": "Where can I get crepes late at night?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"crepe\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find a place with Turkish coffee", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Turkish coffee\"}}"}
+{"prompt": "Any Hawaiian food trucks near Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Hawaiian food truck\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Show me the best tapas bars in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"tapas bar\",\"filters\":{\"min_rating\":4.5}}}"}
+{"prompt": "Is there a Nepalese restaurant nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Nepalese restaurant\"}}"}
+{"prompt": "Where can I get pho with good reviews in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pho\",\"location_override\":\"Broken Arrow\",\"filters\":{\"min_rating\":4.2}}}"}
+{"prompt": "Any restaurants serving injera near Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"injera\"}}"}
+{"prompt": "Find me some sushi burritos in Oklahoma City", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sushi burrito\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Are there any kosher bakeries nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"kosher bakery\"}}"}
+{"prompt": "Show me drive-in diners near Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"drive-in diner\"}}"}
+{"prompt": "Where can I get Korean BBQ open late?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Korean BBQ\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any Scandinavian cafes in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Scandinavian cafe\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Find a high-end dessert spot in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"dessert\",\"filters\":{\"min_rating\":4.6}}}"}
+{"prompt": "Where can I buy matcha soft serve?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"matcha soft serve\"}}"}
+{"prompt": "Any late-night falafel places in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"falafel\",\"location_override\":\"Broken Arrow\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find Caribbean bakeries in Oklahoma City", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Caribbean bakery\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Where's a spot for loaded fries near Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"loaded fries\"}}"}
+{"prompt": "Show me open pierogi trucks", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pierogi truck\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any vegan BBQ joints in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"vegan BBQ\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Where can I find birria tacos near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"birria tacos\"}}"}
+{"prompt": "Find sushi buffets in Tulsa with good ratings", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sushi buffet\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "Is there a good udon place in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"udon\",\"location_override\":\"Oklahoma City\",\"filters\":{\"min_rating\":4.2}}}"}
+{"prompt": "Any poke bowl food trucks open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"poke food truck\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I get mole poblano in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"mole poblano\"}}"}
+{"prompt": "Show me good bánh mì shops nearby", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"banh mi\",\"filters\":{\"min_rating\":4.3}}}"}
+{"prompt": "Are there any Cambodian restaurants near Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Cambodian restaurant\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Find open Cuban food places in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Cuban\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any Scandinavian bakeries in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Scandinavian bakery\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Where can I get samosas near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"samosas\"}}"}
+{"prompt": "Show me Lebanese food trucks near Norman", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Lebanese food truck\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Are there places for halal burgers in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"halal burger\"}}"}
+{"prompt": "Find Malaysian restaurants open right now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Malaysian\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I get truffle fries near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"truffle fries\"}}"}
+{"prompt": "Any Ghanian restaurants in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Ghanian restaurant\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Show me Spanish dessert cafes with high reviews", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Spanish dessert cafe\",\"filters\":{\"min_rating\":4.5}}}"}
+{"prompt": "Is there a place for jerk chicken in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"jerk chicken\"}}"}
+{"prompt": "Where can I get Ethiopian coffee in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Ethiopian coffee\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Any taco trucks open in Norman right now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"taco truck\",\"location_override\":\"Norman\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find Nigerian restaurants near Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Nigerian restaurant\"}}"}
+{"prompt": "Show me open places that sell falooda", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"falooda\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I get Korean corn dogs in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Korean corn dog\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Are there Vietnamese coffee shops near Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Vietnamese coffee\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Find me Caribbean food trucks that are open", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Caribbean food truck\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any Moroccan restaurants around Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Moroccan restaurant\"}}"}
+{"prompt": "Where can I get Indian street food in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Indian street food\"}}"}
+{"prompt": "Find a breakfast burrito place open near me", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"breakfast burrito\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Show me vegan ice cream shops with good reviews", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"vegan ice cream\",\"filters\":{\"min_rating\":4.5}}}"}
+{"prompt": "Where can I find mole enchiladas in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"mole enchiladas\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Are there any British pubs near Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"British pub\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Find places with Korean tofu soup near Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Korean tofu soup\"}}"}
+{"prompt": "Where can I get elote in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"elote\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Any açai bowl trucks still open?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"acai bowl truck\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Show me Burmese restaurants around Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Burmese restaurant\"}}"}
+{"prompt": "Where can I get arepas with good reviews?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"arepas\",\"filters\":{\"min_rating\":4.4}}}"}
+{"prompt": "Find matcha dessert cafes in Oklahoma City", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"matcha dessert\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Are there any Filipino bakeries in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Filipino bakery\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Locate Korean fried cheese stick stands near me", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Korean cheese stick\"}}"}
+{"prompt": "Where can I find duck confit in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"duck confit\"}}"}
+{"prompt": "Any omakase sushi restaurants in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"omakase\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Find soul food restaurants with high ratings", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"soul food\",\"filters\":{\"min_rating\":4.5}}}"}
+{"prompt": "Where can I get tres leches cake nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"tres leches cake\"}}"}
+{"prompt": "Are there any Irish breakfast spots in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Irish breakfast\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Locate a Somali restaurant open now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Somali restaurant\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where’s the nearest bakery that sells babka?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"babka\"}}"}
+{"prompt": "Find sushi hand roll bars in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"hand roll sushi bar\"}}"}
+{"prompt": "Are there yakisoba food trucks in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"yakisoba food truck\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Where can I get good pozole near Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pozole\",\"location_override\":\"Broken Arrow\",\"filters\":{\"min_rating\":4.2}}}"}
+{"prompt": "Show me Japanese curry spots open late", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Japanese curry\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any halal Mexican food places in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"halal Mexican\"}}"}
+{"prompt": "Where can I find chimichurri steak?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"chimichurri steak\"}}"}
+{"prompt": "Any Cambodian dessert cafes in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Cambodian dessert\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Find a churro cafe with great reviews", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"churro cafe\",\"filters\":{\"min_rating\":4.5}}}"}
+{"prompt": "Where can I get vegan ramen in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"vegan ramen\"}}"}
+{"prompt": "Are there Filipino turo-turo places near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"turo-turo\"}}"}
+{"prompt": "Show me jerk chicken food trucks in Broken Arrow", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"jerk chicken truck\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Where’s the nearest Korean bingsu cafe?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bingsu\"}}"}
+{"prompt": "Find Ethiopian restaurants with vegetarian platters", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Ethiopian vegetarian\"}}"}
+{"prompt": "Are there any Lebanese dessert shops in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Lebanese dessert\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Show me ramen izakayas in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"ramen izakaya\"}}"}
+{"prompt": "Where can I get traditional tamales nearby?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"tamales\"}}"}
+{"prompt": "Any Korean street food places open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Korean street food\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find breakfast spots with shakshuka", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"shakshuka\"}}"}
+{"prompt": "Are there Indo-Chinese restaurants in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Indo-Chinese\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Where can I get a Vietnamese crepe near Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Vietnamese crepe\"}}"}
+{"prompt": "Locate Uyghur restaurants near me", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Uyghur restaurant\"}}"}
+{"prompt": "Show me Peruvian chicken restaurants in Broken Arrow", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Peruvian chicken\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Find African grocery stores open now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"African grocery\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where’s a place to get injera and lentils?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"injera and lentils\"}}"}
+{"prompt": "Any Bosnian bakeries in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Bosnian bakery\"}}"}
+{"prompt": "Where can I get Filipino lechon near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"lechon\"}}"}
+{"prompt": "Show me sushi donut shops with good reviews", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sushi donut\",\"filters\":{\"min_rating\":4.4}}}"}
+{"prompt": "Are there Balkan food trucks near Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Balkan food truck\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Find Taiwanese bubble tea shops open now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Taiwanese bubble tea\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I get a cheese-stuffed burger near Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"cheese-stuffed burger\"}}"}
+{"prompt": "Find Indian chaat stands open right now", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"chaat stand\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any tea houses with matcha lattes in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"tea house\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Where can I find bibimbap in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"bibimbap\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Show me open dessert bars that serve tiramisu", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"tiramisu\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there any Icelandic bakeries in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Icelandic bakery\"}}"}
+{"prompt": "Find a pancake house with great ratings", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pancake house\",\"filters\":{\"min_rating\":4.4}}}"}
+{"prompt": "Where can I get duck ramen in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"duck ramen\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Any open late-night taco shops near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"taco shop\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Are there Chinese dumpling houses in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Chinese dumplings\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Show me Ethiopian restaurants with injera and kitfo", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"kitfo\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "Where can I buy roasted chestnuts near Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"roasted chestnuts\"}}"}
+{"prompt": "Find a place serving shakshuka in Broken Arrow", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"shakshuka\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Any Mongolian grill spots open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Mongolian grill\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I get traditional Russian pelmeni?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pelmeni\"}}"}
+{"prompt": "Are there any Venezuelan food trucks in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Venezuelan food truck\"}}"}
+{"prompt": "Find open food courts with Asian fusion stalls", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Asian fusion food court\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I find Sri Lankan curry in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Sri Lankan curry\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Any Dutch pancake cafes in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Dutch pancake\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Show me juice bars with açai bowls and smoothies", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"juice bar\",\"filters\":{\"min_rating\":4.3}}}"}
+{"prompt": "Where can I get sourdough bread near Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sourdough bread\"}}"}
+{"prompt": "Are there any Burmese tea shops open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Burmese tea shop\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find me Turkish breakfast platters in Norman", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Turkish breakfast\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Where can I get fresh naan and curry?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"naan and curry\"}}"}
+{"prompt": "Any Szechuan restaurants in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Szechuan\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Show me open sushi omakase bars in Tulsa", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"sushi omakase\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Where can I get good loco moco near Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"loco moco\",\"location_override\":\"Broken Arrow\",\"filters\":{\"min_rating\":4.3}}}"}
+{"prompt": "Find Indian buffets with dosa and chutney", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Indian buffet\",\"filters\":{\"min_rating\":4.0}}}"}
+{"prompt": "Are there Japanese dessert cafes near me?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Japanese dessert cafe\"}}"}
+{"prompt": "Where can I get Vietnamese iced coffee in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Vietnamese iced coffee\"}}"}
+{"prompt": "Any Indonesian restaurants open in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Indonesian restaurant\",\"location_override\":\"Norman\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find a cafe that serves affogato near me", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"affogato\"}}"}
+{"prompt": "Are there Lebanese wrap stands in Oklahoma City?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Lebanese wraps\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Show me Thai places with mango sticky rice", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"mango sticky rice\"}}"}
+{"prompt": "Where can I buy Indian mithai in Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"mithai\"}}"}
+{"prompt": "Any Greek gyros food trucks in Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"gyro truck\",\"location_override\":\"Broken Arrow\"}}"}
+{"prompt": "Where can I find open Japanese mochi shops?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"mochi\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find African restaurants with jollof rice", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"jollof rice\"}}"}
+{"prompt": "Are there poke bowl shops with spicy tuna?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"spicy tuna poke\"}}"}
+{"prompt": "Where can I get pho with brisket in Norman?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pho brisket\",\"location_override\":\"Norman\"}}"}
+{"prompt": "Show me Cuban cafés with pastelitos", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"pastelito\"}}"}
+{"prompt": "Any Polish bakeries with paczki near Tulsa?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"paczki\"}}"}
+{"prompt": "Where can I find Turkish döner kebab open now?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"doner kebab\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Find street food markets near Oklahoma City", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"street food market\",\"location_override\":\"Oklahoma City\"}}"}
+{"prompt": "Where can I get a Belgian waffle with toppings?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Belgian waffle\"}}"}
+{"prompt": "Show me open Latin American fusion spots", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Latin fusion\",\"filters\":{\"open_now\":true}}}"}
+{"prompt": "Any Indian dhabas near Broken Arrow?", "response": "{\"module\":\"places\",\"function\":\"search_place_info\",\"args\":{\"command\":\"Indian dhaba\",\"location_override\":\"Broken Arrow\"}}"}

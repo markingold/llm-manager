@@ -1,0 +1,298 @@
+{"prompt": "Play something upbeat", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"upbeat\"}}"}
+{"prompt": "Turn the volume down to 20%", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"20%\"}}"}
+{"prompt": "What song is playing right now?", "response": "{\"module\": \"spotify\", \"function\": \"currently_playing\", \"args\": {\"command\": \"current\"}}"}
+{"prompt": "Pause the music in the kitchen", "response": "{\"module\": \"spotify\", \"function\": \"pause_music\", \"args\": {\"command\": \"kitchen\"}}"}
+{"prompt": "Play the next track", "response": "{\"module\": \"spotify\", \"function\": \"next_track\", \"args\": {\"command\": \"next\"}}"}
+{"prompt": "Put on my workout playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"workout\"}}"}
+{"prompt": "Play music by Billie Eilish", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Billie Eilish\"}}"}
+{"prompt": "Add this song to Oakley's bedtime playlist", "response": "{\"module\": \"spotify\", \"function\": \"add_current_song_to_playlist\", \"args\": {\"command\": \"Oakley's bedtime\"}}"}
+{"prompt": "Play the album 'The Wall'", "response": "{\"module\": \"spotify\", \"function\": \"play_album\", \"args\": {\"command\": \"The Wall\"}}"}
+{"prompt": "Shuffle this playlist", "response": "{\"module\": \"spotify\", \"function\": \"toggle_shuffle\", \"args\": {\"command\": \"shuffle\"}}"}
+{"prompt": "Repeat the current song", "response": "{\"module\": \"spotify\", \"function\": \"set_repeat_mode\", \"args\": {\"command\": \"track\"}}"}
+{"prompt": "Play that song that goes 'I'm the problem, it's me'", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"I'm the problem, it's me\"}}"}
+{"prompt": "Turn the music up in the living room", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"living room 100%\"}}"}
+{"prompt": "Play something relaxing", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"relaxing\"}}"}
+{"prompt": "Play recommended songs", "response": "{\"module\": \"spotify\", \"function\": \"play_recommended_music\", \"args\": {\"command\": \"recommended\"}}"}
+{"prompt": "Play some party music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"party\"}}"}
+{"prompt": "Play my chill vibes in the backyard", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"chill vibes backyard\"}}"}
+{"prompt": "Pause", "response": "{\"module\": \"spotify\", \"function\": \"pause_music\", \"args\": {\"command\": \"pause\"}}"}
+{"prompt": "Play something Oakley can listen to", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"kid-friendly\"}}"}
+{"prompt": "Play that song that goes 'blinded by the lights'", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"blinded by the lights\"}}"}
+{"prompt": "Next song please", "response": "{\"module\": \"spotify\", \"function\": \"next_track\", \"args\": {\"command\": \"next\"}}"}
+{"prompt": "Set repeat to off", "response": "{\"module\": \"spotify\", \"function\": \"set_repeat_mode\", \"args\": {\"command\": \"off\"}}"}
+{"prompt": "Turn the volume to 5 percent for Oakley", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"5% Oakley\"}}"}
+{"prompt": "Play Taylor Swift's top songs", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Taylor Swift\"}}"}
+{"prompt": "Play something energetic in the garage", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"energetic garage\"}}"}
+{"prompt": "Play the album Abbey Road", "response": "{\"module\": \"spotify\", \"function\": \"play_album\", \"args\": {\"command\": \"Abbey Road\"}}"}
+{"prompt": "Play my dinner mix", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"dinner mix\"}}"}
+{"prompt": "Shuffle music in the theater", "response": "{\"module\": \"spotify\", \"function\": \"toggle_shuffle\", \"args\": {\"command\": \"theater\"}}"}
+{"prompt": "Add this track to my summer playlist", "response": "{\"module\": \"spotify\", \"function\": \"add_current_song_to_playlist\", \"args\": {\"command\": \"summer\"}}"}
+{"prompt": "Can you play something good?", "response": "{\"module\": \"spotify\", \"function\": \"play_recommended_music\", \"args\": {\"command\": \"good\"}}"}
+{"prompt": "Repeat the whole album", "response": "{\"module\": \"spotify\", \"function\": \"set_repeat_mode\", \"args\": {\"command\": \"context\"}}"}
+{"prompt": "What song is this?", "response": "{\"module\": \"spotify\", \"function\": \"currently_playing\", \"args\": {\"command\": \"what\"}}"}
+{"prompt": "Back to the previous song", "response": "{\"module\": \"spotify\", \"function\": \"previous_track\", \"args\": {\"command\": \"previous\"}}"}
+{"prompt": "Play something for a rainy day", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"rainy day\"}}"}
+{"prompt": "Play my happy songs", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"happy songs\"}}"}
+{"prompt": "Turn on repeat one", "response": "{\"module\": \"spotify\", \"function\": \"set_repeat_mode\", \"args\": {\"command\": \"track\"}}"}
+{"prompt": "Turn off shuffle", "response": "{\"module\": \"spotify\", \"function\": \"toggle_shuffle\", \"args\": {\"command\": \"off\"}}"}
+{"prompt": "Crank it up", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"100%\"}}"}
+{"prompt": "Lower the volume just a bit", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"lower\"}}"}
+{"prompt": "Add this to my favorites", "response": "{\"module\": \"spotify\", \"function\": \"add_current_song_to_playlist\", \"args\": {\"command\": \"favorites\"}}"}
+{"prompt": "Play the artist Nirvana", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Nirvana\"}}"}
+{"prompt": "Play some jazz", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"jazz\"}}"}
+{"prompt": "Play music", "response": "{\"module\": \"spotify\", \"function\": \"play_music\", \"args\": {\"command\": \"play music\"}}"}
+{"prompt": "Pause everything", "response": "{\"module\": \"spotify\", \"function\": \"pause_music\", \"args\": {\"command\": \"pause all\"}}"}
+{"prompt": "Start the playlist for cleaning", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"cleaning\"}}"}
+{"prompt": "Play something soft for Oakley", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"soft Oakley\"}}"}
+{"prompt": "Can you play that song with 'I got a feeling'?", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"I got a feeling\"}}"}
+{"prompt": "Repeat everything", "response": "{\"module\": \"spotify\", \"function\": \"set_repeat_mode\", \"args\": {\"command\": \"context\"}}"}
+{"prompt": "Play some calm background music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"calm\"}}"}
+{"prompt": "Put on some focus music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"focus\"}}"}
+{"prompt": "Play my driving playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"driving\"}}"}
+{"prompt": "Set the volume to 60", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"60%\"}}"}
+{"prompt": "Skip this one", "response": "{\"module\": \"spotify\", \"function\": \"next_track\", \"args\": {\"command\": \"skip\"}}"}
+{"prompt": "Play the new album by Dua Lipa", "response": "{\"module\": \"spotify\", \"function\": \"play_album\", \"args\": {\"command\": \"Dua Lipa new\"}}"}
+{"prompt": "Pause the song", "response": "{\"module\": \"spotify\", \"function\": \"pause_music\", \"args\": {\"command\": \"pause\"}}"}
+{"prompt": "Can you play some relaxing music in the bedroom?", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"relaxing bedroom\"}}"}
+{"prompt": "What's this song?", "response": "{\"module\": \"spotify\", \"function\": \"currently_playing\", \"args\": {\"command\": \"current\"}}"}
+{"prompt": "Play something with no lyrics", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"instrumental\"}}"}
+{"prompt": "Turn it up just a little", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"increase\"}}"}
+{"prompt": "Play my top songs", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"top songs\"}}"}
+{"prompt": "Shuffle the music", "response": "{\"module\": \"spotify\", \"function\": \"toggle_shuffle\", \"args\": {\"command\": \"shuffle\"}}"}
+{"prompt": "Play that song with the line 'hello from the other side'", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"hello from the other side\"}}"}
+{"prompt": "Turn on repeat all", "response": "{\"module\": \"spotify\", \"function\": \"set_repeat_mode\", \"args\": {\"command\": \"context\"}}"}
+{"prompt": "Play Taylor Swift in the theater", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Taylor Swift theater\"}}"}
+{"prompt": "Play my favorites", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"favorites\"}}"}
+{"prompt": "Add this to Oakley's playlist", "response": "{\"module\": \"spotify\", \"function\": \"add_current_song_to_playlist\", \"args\": {\"command\": \"Oakley\"}}"}
+{"prompt": "Put on something fun", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"fun\"}}"}
+{"prompt": "Back one track", "response": "{\"module\": \"spotify\", \"function\": \"previous_track\", \"args\": {\"command\": \"previous\"}}"}
+{"prompt": "Play something hype for my workout", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"hype workout\"}}"}
+{"prompt": "Repeat this playlist", "response": "{\"module\": \"spotify\", \"function\": \"set_repeat_mode\", \"args\": {\"command\": \"context\"}}"}
+{"prompt": "Set volume to max in the garage", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"100% garage\"}}"}
+{"prompt": "Play jazz in the background", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"jazz\"}}"}
+{"prompt": "Play songs I might like", "response": "{\"module\": \"spotify\", \"function\": \"play_recommended_music\", \"args\": {\"command\": \"recommendations\"}}"}
+{"prompt": "Play the album Evermore", "response": "{\"module\": \"spotify\", \"function\": \"play_album\", \"args\": {\"command\": \"Evermore\"}}"}
+{"prompt": "Play my relaxing vibes mix", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"relaxing vibes\"}}"}
+{"prompt": "Turn shuffle off", "response": "{\"module\": \"spotify\", \"function\": \"toggle_shuffle\", \"args\": {\"command\": \"off\"}}"}
+{"prompt": "Play some happy songs for Oakley", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"happy Oakley\"}}"}
+{"prompt": "Pause music everywhere", "response": "{\"module\": \"spotify\", \"function\": \"pause_music\", \"args\": {\"command\": \"all\"}}"}
+{"prompt": "Play that one that goes 'never gonna give you up'", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"never gonna give you up\"}}"}
+{"prompt": "Play the Beatles", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"The Beatles\"}}"}
+{"prompt": "Queue up my cleaning mix", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"cleaning\"}}"}
+{"prompt": "Put on something moody", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"moody\"}}"}
+{"prompt": "Set the volume to 35%", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"35%\"}}"}
+{"prompt": "What am I listening to right now?", "response": "{\"module\": \"spotify\", \"function\": \"currently_playing\", \"args\": {\"command\": \"current\"}}"}
+{"prompt": "Play something clean for Oakley", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"clean Oakley\"}}"}
+{"prompt": "Repeat the whole thing", "response": "{\"module\": \"spotify\", \"function\": \"set_repeat_mode\", \"args\": {\"command\": \"context\"}}"}
+{"prompt": "Play the newest Billie Eilish song", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Billie Eilish\"}}"}
+{"prompt": "Resume the playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_music\", \"args\": {\"command\": \"resume\"}}"}
+{"prompt": "Play something mellow in the back porch", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"mellow back porch\"}}"}
+{"prompt": "Play that one with the chorus 'can't stop the feeling'", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"can't stop the feeling\"}}"}
+{"prompt": "Add to my kids playlist", "response": "{\"module\": \"spotify\", \"function\": \"add_current_song_to_playlist\", \"args\": {\"command\": \"kids\"}}"}
+{"prompt": "Play something calm", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"calm\"}}"}
+{"prompt": "Blast some rock music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"rock\"}}"}
+{"prompt": "Play my nostalgia playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"nostalgia\"}}"}
+{"prompt": "Go back to the last track", "response": "{\"module\": \"spotify\", \"function\": \"previous_track\", \"args\": {\"command\": \"back\"}}"}
+{"prompt": "Turn down the volume to 15%", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"15%\"}}"}
+{"prompt": "Play some tunes", "response": "{\"module\": \"spotify\", \"function\": \"play_music\", \"args\": {\"command\": \"tunes\"}}"}
+{"prompt": "Shuffle everything", "response": "{\"module\": \"spotify\", \"function\": \"toggle_shuffle\", \"args\": {\"command\": \"on\"}}"}
+{"prompt": "Play my sunset mix", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"sunset mix\"}}"}
+{"prompt": "Can you play something jazzy?", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"jazzy\"}}"}
+{"prompt": "Play the bedtime playlist in Oakley's room", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"bedtime Oakley\"}}"}
+{"prompt": "Turn down the music a little", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"decrease\"}}"}
+{"prompt": "Play that one song with the line 'dancing with my eyes closed'", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"dancing with my eyes closed\"}}"}
+{"prompt": "Play a playlist that’s good for cooking", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"cooking\"}}"}
+{"prompt": "Skip this track and play the next", "response": "{\"module\": \"spotify\", \"function\": \"next_track\", \"args\": {\"command\": \"next\"}}"}
+{"prompt": "Play songs Oakley likes", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"clean kid Oakley\"}}"}
+{"prompt": "Play something that matches my mood", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"mood\"}}"}
+{"prompt": "Repeat that last track please", "response": "{\"module\": \"spotify\", \"function\": \"set_repeat_mode\", \"args\": {\"command\": \"track\"}}"}
+{"prompt": "Put on some indie pop", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"indie pop\"}}"}
+{"prompt": "What's the current song in the kitchen?", "response": "{\"module\": \"spotify\", \"function\": \"currently_playing\", \"args\": {\"command\": \"kitchen\"}}"}
+{"prompt": "Go back one song", "response": "{\"module\": \"spotify\", \"function\": \"previous_track\", \"args\": {\"command\": \"back\"}}"}
+{"prompt": "Add the current song to my workout mix", "response": "{\"module\": \"spotify\", \"function\": \"add_current_song_to_playlist\", \"args\": {\"command\": \"workout mix\"}}"}
+{"prompt": "Play a song I haven’t heard in a while", "response": "{\"module\": \"spotify\", \"function\": \"play_recommended_music\", \"args\": {\"command\": \"nostalgic\"}}"}
+{"prompt": "Play Drake’s new album", "response": "{\"module\": \"spotify\", \"function\": \"play_album\", \"args\": {\"command\": \"Drake new\"}}"}
+{"prompt": "Make it quieter in the bathroom", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"lower bathroom\"}}"}
+{"prompt": "Play a playlist for rainy weather", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"rainy day\"}}"}
+{"prompt": "Pause everything for a sec", "response": "{\"module\": \"spotify\", \"function\": \"pause_music\", \"args\": {\"command\": \"all\"}}"}
+{"prompt": "Can you play 'Legends Never Die'?", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"Legends Never Die\"}}"}
+{"prompt": "Turn on shuffle", "response": "{\"module\": \"spotify\", \"function\": \"toggle_shuffle\", \"args\": {\"command\": \"on\"}}"}
+{"prompt": "Set the music to half volume", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"50%\"}}"}
+{"prompt": "Start some music for dinner guests", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"dinner\"}}"}
+{"prompt": "Play music that’s okay for kids", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"clean kid\"}}"}
+{"prompt": "Put on my favorite album", "response": "{\"module\": \"spotify\", \"function\": \"play_album\", \"args\": {\"command\": \"favorites\"}}"}
+{"prompt": "Play that sad piano playlist I like", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"sad piano\"}}"}
+{"prompt": "Shuffle mode off", "response": "{\"module\": \"spotify\", \"function\": \"toggle_shuffle\", \"args\": {\"command\": \"off\"}}"}
+{"prompt": "Turn the music way up", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"100%\"}}"}
+{"prompt": "What’s this called?", "response": "{\"module\": \"spotify\", \"function\": \"currently_playing\", \"args\": {\"command\": \"current\"}}"}
+{"prompt": "Play more stuff like this", "response": "{\"module\": \"spotify\", \"function\": \"play_recommended_music\", \"args\": {\"command\": \"similar\"}}"}
+{"prompt": "Play the 'Deep Focus' playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"Deep Focus\"}}"}
+{"prompt": "Start some hype music in the gym", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"hype gym\"}}"}
+{"prompt": "Play something for Oakley that's clean", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Oakley clean\"}}"}
+{"prompt": "Play something — I don’t care what", "response": "{\"module\": \"spotify\", \"function\": \"play_recommended_music\", \"args\": {\"command\": \"anything\"}}"}
+{"prompt": "Resume music", "response": "{\"module\": \"spotify\", \"function\": \"play_music\", \"args\": {\"command\": \"resume\"}}"}
+{"prompt": "Play something from the 90s", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"90s\"}}"}
+{"prompt": "Add the song that's playing to my chill mix", "response": "{\"module\": \"spotify\", \"function\": \"add_current_song_to_playlist\", \"args\": {\"command\": \"chill mix\"}}"}
+{"prompt": "Put on that song that goes 'fire to the rain'", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"fire to the rain\"}}"}
+{"prompt": "Repeat the song over and over", "response": "{\"module\": \"spotify\", \"function\": \"set_repeat_mode\", \"args\": {\"command\": \"track\"}}"}
+{"prompt": "Play a happy song", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"happy\"}}"}
+{"prompt": "Play the Hamilton soundtrack", "response": "{\"module\": \"spotify\", \"function\": \"play_album\", \"args\": {\"command\": \"Hamilton\"}}"}
+{"prompt": "Turn the music off", "response": "{\"module\": \"spotify\", \"function\": \"pause_music\", \"args\": {\"command\": \"pause\"}}"}
+{"prompt": "Play relaxing music in the living room", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"relaxing living room\"}}"}
+{"prompt": "Play anything acoustic", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"acoustic\"}}"}
+{"prompt": "Pump it up", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"max\"}}"}
+{"prompt": "Give me something slow", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"slow\"}}"}
+{"prompt": "Play the latest music by Imagine Dragons", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Imagine Dragons\"}}"}
+{"prompt": "Set the music to 10 percent for Oakley", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"10% Oakley\"}}"}
+{"prompt": "Can you shuffle the queue?", "response": "{\"module\": \"spotify\", \"function\": \"toggle_shuffle\", \"args\": {\"command\": \"queue\"}}"}
+{"prompt": "Play something ambient", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"ambient\"}}"}
+{"prompt": "Put on my sleep sounds mix", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"sleep sounds\"}}"}
+{"prompt": "Turn the volume up to 80", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"80%\"}}"}
+{"prompt": "Skip this track and play the next one", "response": "{\"module\": \"spotify\", \"function\": \"next_track\", \"args\": {\"command\": \"next\"}}"}
+{"prompt": "Play something from the 70s", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"70s\"}}"}
+{"prompt": "Pause the music in the theater room", "response": "{\"module\": \"spotify\", \"function\": \"pause_music\", \"args\": {\"command\": \"theater\"}}"}
+{"prompt": "Play the Frozen soundtrack for Oakley", "response": "{\"module\": \"spotify\", \"function\": \"play_album\", \"args\": {\"command\": \"Frozen Oakley\"}}"}
+{"prompt": "Turn shuffle back on", "response": "{\"module\": \"spotify\", \"function\": \"toggle_shuffle\", \"args\": {\"command\": \"on\"}}"}
+{"prompt": "Repeat the whole playlist", "response": "{\"module\": \"spotify\", \"function\": \"set_repeat_mode\", \"args\": {\"command\": \"context\"}}"}
+{"prompt": "Add this song to my driving playlist", "response": "{\"module\": \"spotify\", \"function\": \"add_current_song_to_playlist\", \"args\": {\"command\": \"driving\"}}"}
+{"prompt": "What’s playing in the kitchen?", "response": "{\"module\": \"spotify\", \"function\": \"currently_playing\", \"args\": {\"command\": \"kitchen\"}}"}
+{"prompt": "Play some energetic music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"energetic\"}}"}
+{"prompt": "Can you play something instrumental?", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"instrumental\"}}"}
+{"prompt": "Play something mellow in the bedroom", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"mellow bedroom\"}}"}
+{"prompt": "Crank it to the max", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"100%\"}}"}
+{"prompt": "Play that song with the chorus 'let it go'", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"let it go\"}}"}
+{"prompt": "Put on some soft background music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"soft background\"}}"}
+{"prompt": "Lower the volume just for Oakley", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"low Oakley\"}}"}
+{"prompt": "Play the 'Chill Hits' playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"Chill Hits\"}}"}
+{"prompt": "Play something relaxing in the living room", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"relaxing living room\"}}"}
+{"prompt": "Go back to the last song", "response": "{\"module\": \"spotify\", \"function\": \"previous_track\", \"args\": {\"command\": \"previous\"}}"}
+{"prompt": "Repeat mode off", "response": "{\"module\": \"spotify\", \"function\": \"set_repeat_mode\", \"args\": {\"command\": \"off\"}}"}
+{"prompt": "Play 'Good 4 U' by Olivia Rodrigo", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"Good 4 U Olivia Rodrigo\"}}"}
+{"prompt": "Turn shuffle off in the backyard", "response": "{\"module\": \"spotify\", \"function\": \"toggle_shuffle\", \"args\": {\"command\": \"off backyard\"}}"}
+{"prompt": "Put on some country music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"country\"}}"}
+{"prompt": "Add this to my favorites", "response": "{\"module\": \"spotify\", \"function\": \"add_current_song_to_playlist\", \"args\": {\"command\": \"favorites\"}}"}
+{"prompt": "Resume music playback", "response": "{\"module\": \"spotify\", \"function\": \"play_music\", \"args\": {\"command\": \"resume\"}}"}
+{"prompt": "Play something slow and emotional", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"slow emotional\"}}"}
+{"prompt": "Play my throwback playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"throwback\"}}"}
+{"prompt": "What’s the name of this track?", "response": "{\"module\": \"spotify\", \"function\": \"currently_playing\", \"args\": {\"command\": \"name\"}}"}
+{"prompt": "Set the volume to 25 percent", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"25%\"}}"}
+{"prompt": "Play something for a rainy evening", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"rainy evening\"}}"}
+{"prompt": "Play an artist I like", "response": "{\"module\": \"spotify\", \"function\": \"play_recommended_music\", \"args\": {\"command\": \"artist I like\"}}"}
+{"prompt": "Play my mix for Oakley", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"Oakley mix\"}}"}
+{"prompt": "Put on something to help me concentrate", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"concentration\"}}"}
+{"prompt": "Shuffle all songs", "response": "{\"module\": \"spotify\", \"function\": \"toggle_shuffle\", \"args\": {\"command\": \"on\"}}"}
+{"prompt": "Play Taylor Swift's newest release", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Taylor Swift new\"}}"}
+{"prompt": "Play that track that goes 'I’m unstoppable'", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"I'm unstoppable\"}}"}
+{"prompt": "Play something dramatic", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"dramatic\"}}"}
+{"prompt": "Play a bedtime playlist for the whole house", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"bedtime all\"}}"}
+{"prompt": "Play the artist Adele", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Adele\"}}"}
+{"prompt": "Make the music quieter in the living room", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"down living room\"}}"}
+{"prompt": "Play some dance hits", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"dance\"}}"}
+{"prompt": "Play my study mix", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"study mix\"}}"}
+{"prompt": "Loop this song", "response": "{\"module\": \"spotify\", \"function\": \"set_repeat_mode\", \"args\": {\"command\": \"track\"}}"}
+{"prompt": "Add this to Oakley’s night playlist", "response": "{\"module\": \"spotify\", \"function\": \"add_current_song_to_playlist\", \"args\": {\"command\": \"Oakley night\"}}"}
+{"prompt": "Play something peaceful", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"peaceful\"}}"}
+{"prompt": "Turn down the music just a notch", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"decrease\"}}"}
+{"prompt": "Play a kid-friendly album", "response": "{\"module\": \"spotify\", \"function\": \"play_album\", \"args\": {\"command\": \"kid-friendly\"}}"}
+{"prompt": "Play anything you'd recommend", "response": "{\"module\": \"spotify\", \"function\": \"play_recommended_music\", \"args\": {\"command\": \"any\"}}"}
+{"prompt": "Play some classic rock", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"classic rock\"}}"}
+{"prompt": "Put on some reggae", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"reggae\"}}"}
+{"prompt": "Play the album 'To Pimp a Butterfly'", "response": "{\"module\": \"spotify\", \"function\": \"play_album\", \"args\": {\"command\": \"To Pimp a Butterfly\"}}"}
+{"prompt": "Play music for a road trip", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"road trip\"}}"}
+{"prompt": "Give me some lo-fi beats", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"lo-fi\"}}"}
+{"prompt": "Play something metal", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"metal\"}}"}
+{"prompt": "Play top Bollywood hits", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Bollywood\"}}"}
+{"prompt": "Play some k-pop", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"k-pop\"}}"}
+{"prompt": "Play the artist BTS", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"BTS\"}}"}
+{"prompt": "I want some Latin pop", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Latin pop\"}}"}
+{"prompt": "Put on some salsa music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"salsa\"}}"}
+{"prompt": "Play that song that goes 'I got a feeling that tonight's gonna be a good night'", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"tonight’s gonna be a good night\"}}"}
+{"prompt": "Play some 2000s hip hop", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"2000s hip hop\"}}"}
+{"prompt": "Start the 'Jazz Vibes' playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"Jazz Vibes\"}}"}
+{"prompt": "Play music from Nigeria", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Afrobeats\"}}"}
+{"prompt": "Play some EDM", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"EDM\"}}"}
+{"prompt": "Play something French", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"French\"}}"}
+{"prompt": "Give me anime soundtracks", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"anime soundtrack\"}}"}
+{"prompt": "Play Mozart", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Mozart\"}}"}
+{"prompt": "Play some classical piano", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"classical piano\"}}"}
+{"prompt": "Put on Nordic folk music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Nordic folk\"}}"}
+{"prompt": "Play Afrobeat in the living room", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Afrobeat living room\"}}"}
+{"prompt": "Play some trap", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"trap\"}}"}
+{"prompt": "Start the 'Throwback Latino' playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"Throwback Latino\"}}"}
+{"prompt": "Add this to my indie favorites", "response": "{\"module\": \"spotify\", \"function\": \"add_current_song_to_playlist\", \"args\": {\"command\": \"indie favorites\"}}"}
+{"prompt": "Play chill techno", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"chill techno\"}}"}
+{"prompt": "Play the artist Bad Bunny", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Bad Bunny\"}}"}
+{"prompt": "Play flamenco guitar music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"flamenco guitar\"}}"}
+{"prompt": "I want Japanese city pop", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Japanese city pop\"}}"}
+{"prompt": "Play synthwave in the theater room", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"synthwave theater\"}}"}
+{"prompt": "Play the album 'Donda'", "response": "{\"module\": \"spotify\", \"function\": \"play_album\", \"args\": {\"command\": \"Donda\"}}"}
+{"prompt": "Play 'Feel Good Inc.' by Gorillaz", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"Feel Good Inc. Gorillaz\"}}"}
+{"prompt": "Set the volume to 40 for the back porch", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"40% back porch\"}}"}
+{"prompt": "Play a chill Latin playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"chill Latin\"}}"}
+{"prompt": "Play Japanese lo-fi", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Japanese lo-fi\"}}"}
+{"prompt": "Play something indie rock", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"indie rock\"}}"}
+{"prompt": "Play a Turkish pop playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Turkish pop\"}}"}
+{"prompt": "Play ambient noise for meditation", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"meditation ambient\"}}"}
+{"prompt": "Add this to my 'Global Hits' list", "response": "{\"module\": \"spotify\", \"function\": \"add_current_song_to_playlist\", \"args\": {\"command\": \"Global Hits\"}}"}
+{"prompt": "Play modern Chinese pop", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Mandopop\"}}"}
+{"prompt": "Play some bachata", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"bachata\"}}"}
+{"prompt": "Play the artist Stromae", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Stromae\"}}"}
+{"prompt": "Play a playlist with African rhythms", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"African rhythms\"}}"}
+{"prompt": "Give me some deep house", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"deep house\"}}"}
+{"prompt": "Play something folk or acoustic", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"folk acoustic\"}}"}
+{"prompt": "Play the album 'Discovery' by Daft Punk", "response": "{\"module\": \"spotify\", \"function\": \"play_album\", \"args\": {\"command\": \"Discovery Daft Punk\"}}"}
+{"prompt": "Play trending music in Japan", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Japan trending\"}}"}
+{"prompt": "Play Nordic electronic music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Nordic electronic\"}}"}
+{"prompt": "Put on some French rap", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"French rap\"}}"}
+{"prompt": "Play the artist Rosalia", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Rosalia\"}}"}
+{"prompt": "Play some Irish folk music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Irish folk\"}}"}
+{"prompt": "Play the 'All Out 80s' playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"All Out 80s\"}}"}
+{"prompt": "Start the piano classics", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"piano classics\"}}"}
+{"prompt": "Play something mellow from the 60s", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"60s mellow\"}}"}
+{"prompt": "Give me some grime", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"grime\"}}"}
+{"prompt": "Play the latest Afrobeat hits", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Afrobeat latest\"}}"}
+{"prompt": "Play something in Spanish", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Spanish\"}}"}
+{"prompt": "Put on a morning motivation playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"morning motivation\"}}"}
+{"prompt": "Play some gospel music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"gospel\"}}"}
+{"prompt": "Play 'Smooth Operator' by Sade", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"Smooth Operator Sade\"}}"}
+{"prompt": "Put on some drum and bass", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"drum and bass\"}}"}
+{"prompt": "Play spooky Halloween music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Halloween\"}}"}
+{"prompt": "Play Caribbean vibes", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Caribbean\"}}"}
+{"prompt": "Give me something acoustic and peaceful", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"acoustic peaceful\"}}"}
+{"prompt": "Play the artist Enya", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Enya\"}}"}
+{"prompt": "Add this track to my world music playlist", "response": "{\"module\": \"spotify\", \"function\": \"add_current_song_to_playlist\", \"args\": {\"command\": \"world music\"}}"}
+{"prompt": "Play something from the Middle East", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Middle Eastern\"}}"}
+{"prompt": "Put on Bollywood love songs", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Bollywood love songs\"}}"}
+{"prompt": "Play old-school R&B", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"old-school R&B\"}}"}
+{"prompt": "Play the album 'Meteora' by Linkin Park", "response": "{\"module\": \"spotify\", \"function\": \"play_album\", \"args\": {\"command\": \"Meteora Linkin Park\"}}"}
+{"prompt": "Play Russian pop music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Russian pop\"}}"}
+{"prompt": "Give me a mix of classical and modern", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"classical modern\"}}"}
+{"prompt": "Play something cinematic", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"cinematic\"}}"}
+{"prompt": "Play nature sounds or something earthy", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"nature sounds\"}}"}
+{"prompt": "Play some Chinese traditional music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Chinese traditional\"}}"}
+{"prompt": "Put on high-energy dance tracks", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"high-energy dance\"}}"}
+{"prompt": "Play the artist Bob Marley", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Bob Marley\"}}"}
+{"prompt": "Play the 'Songs to Sing in the Shower' playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"Songs to Sing in the Shower\"}}"}
+{"prompt": "Start the 'Peaceful Guitar' playlist", "response": "{\"module\": \"spotify\", \"function\": \"play_playlist\", \"args\": {\"command\": \"Peaceful Guitar\"}}"}
+{"prompt": "Play trance music in the garage", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"trance garage\"}}"}
+{"prompt": "Play music that reminds me of Italy", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Italian\"}}"}
+{"prompt": "Give me some movie soundtracks", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"movie soundtracks\"}}"}
+{"prompt": "Put on lo-fi study beats", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"lo-fi study\"}}"}
+{"prompt": "Play something jazzy with vocals", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"vocal jazz\"}}"}
+{"prompt": "Play hard rock anthems", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"hard rock\"}}"}
+{"prompt": "Play traditional African drumming", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"African drumming\"}}"}
+{"prompt": "Play upbeat workout songs", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"upbeat workout\"}}"}
+{"prompt": "Play the artist Yiruma", "response": "{\"module\": \"spotify\", \"function\": \"play_artist\", \"args\": {\"command\": \"Yiruma\"}}"}
+{"prompt": "Play summer reggae hits", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"summer reggae\"}}"}
+{"prompt": "Put on some Viking music", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Viking\"}}"}
+{"prompt": "Add this track to my jazz collection", "response": "{\"module\": \"spotify\", \"function\": \"add_current_song_to_playlist\", \"args\": {\"command\": \"jazz collection\"}}"}
+{"prompt": "Play music for a cozy night", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"cozy night\"}}"}
+{"prompt": "Play that one with 'hakuna matata'", "response": "{\"module\": \"spotify\", \"function\": \"play_song_by_title_or_lyrics\", \"args\": {\"command\": \"hakuna matata\"}}"}
+{"prompt": "Give me top charts from Germany", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Germany top charts\"}}"}
+{"prompt": "Play upbeat Japanese pop in the kitchen", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"J-pop kitchen\"}}"}
+{"prompt": "Play something from Brazil", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Brazil\"}}"}
+{"prompt": "Put on meditation chants", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"meditation chants\"}}"}
+{"prompt": "Play Scandinavian metal", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"Scandinavian metal\"}}"}
+{"prompt": "Play some upbeat tunes in the backyard", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"upbeat backyard\"}}"}
+{"prompt": "Play lullabies for Oakley", "response": "{\"module\": \"spotify\", \"function\": \"play_mood_playlist\", \"args\": {\"command\": \"lullabies Oakley\"}}"}
+{"prompt": "Set the volume to 5 for Oakley's room", "response": "{\"module\": \"spotify\", \"function\": \"set_volume\", \"args\": {\"command\": \"5% Oakley\"}}"}
