@@ -21,24 +21,26 @@ import os, sys, json, shutil, subprocess, argparse
 from pathlib import Path
 
 # ── Local modules ───────────────────────────────────────────────────
+from utils import (
+    WEBUI_ROOT, WEBUI_MODELS_DIR, PM2_CHAT, PM2_INTENT,
+    load_configs, build_combined_dataset,
+)
 from train_lora       import train_model   as train_model_single
 from train_lora_dual  import train_model   as train_model_dual
-from train_lora       import build_combined_dataset
 from merge_lora       import merge_lora_model
 from convert_lora     import convert_to_exl2
 
 # ── Paths / Config ──────────────────────────────────────────────────
 CONFIG_PATH   = Path("model_configs.json")
-TEXTGEN_DIR = TEXTGEN_DIR
-EXL2_DEST_DIR = EXL2_DEST_DIR
+TEXTGEN_DIR   = WEBUI_ROOT
+EXL2_DEST_DIR = WEBUI_MODELS_DIR
 
 INTENT_LINK   = EXL2_DEST_DIR / "intent_active_model"
 CHAT_LINK     = EXL2_DEST_DIR / "chat_active_model"
-INTENT_PM2_PROCESS = INTENT_PM2_PROCESS
-CHAT_PM2_PROCESS = CHAT_PM2_PROCESS
+INTENT_PM2_PROCESS = PM2_INTENT
+CHAT_PM2_PROCESS   = PM2_CHAT
 
-with CONFIG_PATH.open() as f:
-    all_configs: dict[str, dict] = json.load(f)
+all_configs = load_configs()
 
 # ────────────────────────────────────────────────────────────────────
 # Utility helpers

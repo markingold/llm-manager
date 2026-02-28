@@ -12,10 +12,6 @@ Usage:
 import os
 import sys
 import json
-import glob
-import random
-import re
-import hashlib
 import gc
 import argparse
 from pathlib import Path
@@ -33,7 +29,7 @@ from transformers import (
     DataCollatorForLanguageModeling
 )
 from peft import LoraConfig, get_peft_model, TaskType
-from train_lora import choose_model  # your original interactive menu
+from utils import hash_file, choose_model, build_combined_dataset, load_configs
 
 # ── Hyper-params ────────────────────────────────────────────────────────────
 BATCH            = 3
@@ -51,8 +47,7 @@ FLASH_BLOCKLIST  = {"Qwen/Qwen3-4B"}
 # ── Load config & env ────────────────────────────────────────────────────────
 load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
-with open("model_configs.json") as f:
-    all_configs = json.load(f)
+all_configs = load_configs()
 
 # ── Distributed setup ────────────────────────────────────────────────────────
 local_rank = int(os.getenv("LOCAL_RANK", 0))
@@ -60,53 +55,7 @@ world_size = int(os.getenv("WORLD_SIZE", 1))
 multi_gpu  = world_size > 1
 
 # ── Utility functions ───────────────────────────────────────────────────────
-def hash_file(path: str) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        while chunk := f.read(8192):
-            h.update(chunk)
-    return h.hexdigest()
-
-def build_combined_dataset(output_path="data/combined_intent_data.jsonl") -> str:
-    pattern = "data/*_prompts.jsonl"
-    files = glob.glob(pattern)
-    combined = []
-    for p in files:
-        for num, line in enumerate(open(p, encoding="utf-8"), 1):
-            raw = line.strip()
-            if not raw:
-                continue
-            try:
-                obj = json.loads(raw)
-            except json.JSONDecodeError:
-                m = re.match(
-                    r'^\{"prompt":"(?P<prompt>.*?)","response":"(?P<inner>\{.*\})"\}$',
-                    raw
-                )
-                if not m:
-                    raise ValueError(f"Bad JSON at {p}:{num}\n  {raw}")
-                prompt_text = m.group("prompt")
-                inner = m.group("inner")
-                inner_obj = json.loads(inner)
-                obj = {
-                    "prompt": prompt_text,
-                    "response": json.dumps(inner_obj, ensure_ascii=False)
-                }
-            # ensure response is a JSON-string
-            if isinstance(obj.get("response"), dict):
-                obj["response"] = json.dumps(obj["response"], ensure_ascii=False)
-            combined.append(json.dumps(obj, ensure_ascii=False))
-
-    if not combined:
-        raise ValueError("No data found in any *_prompts.jsonl files.")
-
-    random.shuffle(combined)
-    Path(output_path).write_text("\n".join(combined) + "\n", encoding="utf-8")
-    snap = f"data/combined_intent_data_{datetime.now():%Y%m%d_%H%M%S}.jsonl"
-    Path(snap).write_text("\n".join(combined) + "\n", encoding="utf-8")
-    print(f"✅ Combined {len(combined)} examples → {output_path}")
-    print(f"🕒 Snapshot: {snap}")
-    return output_path
+# hash_file, build_combined_dataset, choose_model are now in utils.py
 
 def tokenize_dataset(path: str, tok: AutoTokenizer):
     ds = load_dataset("json", data_files={"train": path})["train"]

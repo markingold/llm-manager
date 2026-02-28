@@ -7,6 +7,8 @@ from pydantic import BaseModel
 import uvicorn
 import requests
 
+from model_inspector import inspect_one, inspect_batch, get_gpu_info, detect_kind, detect_loader
+
 # -----------------------------------------------------------------------------
 # Paths / config
 # -----------------------------------------------------------------------------
@@ -371,11 +373,30 @@ def system():
 
 @app.get("/models")
 def models():
+    chat_list = list_non_intent_models()
+    intent_list = list_intent_models()
+    small_list = list_non_intent_models()
+    active = current_links()
+    env = read_env()
+
+    # Slot visibility (honour ENABLE_* from .env)
+    slots_enabled = {
+        "chat":   env.get("ENABLE_CHAT", "1") == "1",
+        "intent": env.get("ENABLE_INTENT", "1") == "1",
+        "small":  env.get("ENABLE_SMALL", "1") == "1",
+    }
+
+    # Per-model metadata (kind, loader, bpw)
+    all_names = sorted(set(chat_list + intent_list + small_list))
+    meta = inspect_batch(all_names)
+
     return {
-        "chat": list_non_intent_models(),
-        "intent": list_intent_models(),
-        "small": list_non_intent_models(),
-        "active": current_links(),
+        "chat": chat_list,
+        "intent": intent_list,
+        "small": small_list,
+        "active": active,
+        "slots_enabled": slots_enabled,
+        "meta": meta,
     }
 
 @app.post("/switch")
@@ -401,6 +422,28 @@ def bounce(mode: str):
     if mode not in ("chat", "intent", "small"):
         raise HTTPException(400, "mode must be chat|intent|small")
     return _bounce_engine(mode)
+
+# -----------------------------------------------------------------------------
+# Model inspection & GPU info
+# -----------------------------------------------------------------------------
+@app.get("/inspect/{model_name:path}")
+def inspect_model(model_name: str):
+    """Inspect a model directory: detect format, loader, VRAM estimate, etc."""
+    return inspect_one(model_name)
+
+@app.get("/inspect")
+def inspect_all_models():
+    """Inspect all models in the models directory."""
+    all_names = list_non_intent_models() + list_intent_models()
+    return inspect_batch(all_names)
+
+@app.get("/vram")
+def vram():
+    """Current GPU VRAM usage from nvidia-smi."""
+    gpus = get_gpu_info()
+    if not gpus:
+        raise HTTPException(503, "nvidia-smi not available")
+    return {"gpus": gpus, "time": datetime.utcnow().isoformat() + "Z"}
 
 # -----------------------------------------------------------------------------
 # Test helpers (old UI expected these)

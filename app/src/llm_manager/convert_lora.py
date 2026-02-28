@@ -2,40 +2,15 @@
 
 import os
 import shutil
+import subprocess
 from pathlib import Path
 import argparse
 import json
-import hashlib
+
+from utils import hash_file, choose_model, load_configs, EXLLAMA_ROOT, CUDA_DEVICES
 
 # --- Load config ---
-with open("model_configs.json") as f:
-    all_configs = json.load(f)
-
-# --- Helper: SHA256 hash a file ---
-def hash_file(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        while chunk := f.read(8192):
-            h.update(chunk)
-    return h.hexdigest()
-
-# --- Menu Helper ---
-def choose_model():
-    keys = list(all_configs.keys())
-    print("\n📦 Available Merged Models to Convert:")
-    for i, key in enumerate(keys):
-        print(f"  {i+1}. {key}")
-    print(f"  {len(keys)+1}. 🔁 Convert ALL")
-    while True:
-        try:
-            choice = int(input("\nSelect a model to convert (number): "))
-            if 1 <= choice <= len(keys):
-                return keys[choice - 1], False
-            elif choice == len(keys) + 1:
-                return None, True
-        except ValueError:
-            pass
-        print("❌ Invalid selection. Try again.")
+all_configs = load_configs()
 
 # --- Convert Logic ---
 def convert_to_exl2(model_key, force=False):
@@ -43,7 +18,7 @@ def convert_to_exl2(model_key, force=False):
 
     source = Path(f"output/merged_{model_key}")
     dest = Path(f"output/lora_{model_key}")
-    script_path = Path(config.get("convert_script_path", str(EXLLAMA_ROOT) + "/convert.py"))
+    script_path = Path(config.get("convert_script_path", str(EXLLAMA_ROOT / "convert.py")))
     bits = config.get("convert_bits", 6.5)
     groupsize = config.get("convert_groupsize", 2048)
 
@@ -71,18 +46,22 @@ def convert_to_exl2(model_key, force=False):
     print(f"\n🔁 Converting: {model_key}")
     dest.mkdir(parents=True, exist_ok=True)
 
-    cmd = (
-        f"CUDA_VISIBLE_DEVICES={CUDA_DEVICES} "
-        f"python3 {script_path} "
-        f"-i {source} "
-        f"-o {dest} "
-        f"-b {bits} "
-        f"-ss {groupsize} "
-    )
+    cmd = [
+        "python3", str(script_path),
+        "-i", str(source),
+        "-o", str(dest),
+        "-b", str(bits),
+        "-ss", str(groupsize),
+    ]
 
+    env = os.environ.copy()
+    env["CUDA_VISIBLE_DEVICES"] = CUDA_DEVICES
 
-    print(f"[⚙️] Running conversion command:\n{cmd}\n")
-    os.system(cmd)
+    print(f"[⚙️] Running conversion command:\n{' '.join(cmd)}\n")
+    result = subprocess.run(cmd, env=env)
+    if result.returncode != 0:
+        print(f"❌ Conversion failed for {model_key} (exit code {result.returncode})")
+        return
 
     for fname in ["config.json", "generation_config.json", "tokenizer.json", "tokenizer_config.json", "tokenizer.model"]:
         src = source / fname
@@ -109,7 +88,7 @@ if __name__ == "__main__":
     elif args.model_key:
         keys_to_convert = [args.model_key]
     else:
-        chosen_key, do_all = choose_model()
+        chosen_key, do_all = choose_model(all_configs, "Merged Models to Convert")
         keys_to_convert = list(all_configs.keys()) if do_all else [chosen_key]
 
     # --- Run conversions ---

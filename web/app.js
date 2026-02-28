@@ -101,6 +101,16 @@ async function refreshModels() {
   const activeIntent = basename(m.active?.intent);
   const activeSmall = basename(m.active?.small);
 
+  // Slot visibility — hide entire engine card when ENABLE_*=0
+  const slots = m.slots_enabled || { chat: true, intent: true, small: true };
+  const toggleSlot = (id, visible) => {
+    const el = $(id);
+    if (el) el.style.display = visible ? "" : "none";
+  };
+  toggleSlot("engineChat",   slots.chat);
+  toggleSlot("engineIntent", slots.intent);
+  toggleSlot("engineSmall",  slots.small);
+
   // Dashboard
   setSelectOptions($("selChat"),   m.chat || [],   activeChat);
   setSelectOptions($("selIntent"), m.intent || [], activeIntent);
@@ -169,6 +179,17 @@ async function refreshAll() {
     setEngineButtonStates("chat", s.chat.systemd?.ActiveState, s.chat.listening);
     setEngineButtonStates("intent", s.intent.systemd?.ActiveState, s.intent.listening);
     setEngineButtonStates("small", s.small.systemd?.ActiveState, s.small.listening);
+
+    // VRAM info (non-fatal)
+    try {
+      const v = await api("/vram");
+      const vramEl = $("vramInfo");
+      if (vramEl && v.gpus) {
+        vramEl.textContent = v.gpus.map(g =>
+          `GPU ${g.index}: ${g.name}  ${g.vram_used_mb}/${g.vram_total_mb} MB  (${g.gpu_util_pct}%)`
+        ).join("  |  ");
+      }
+    } catch (_) { /* vram endpoint optional */ }
   } catch (e) {
     setStatus(`API error: ${e.message}`, "bad");
     const hint = $("cacheHint");

@@ -4,41 +4,19 @@ import os
 import json
 import argparse
 import torch
-import hashlib
 from pathlib import Path
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 from safetensors.torch import save_file
 
-# --- Load model config ---
-with open("model_configs.json") as f:
-    all_configs = json.load(f)
+from utils import hash_file, choose_model as _choose_model, load_configs
 
-# --- Helper: Hash a file ---
-def hash_file(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        while chunk := f.read(8192):
-            h.update(chunk)
-    return h.hexdigest()
+# --- Load model config ---
+all_configs = load_configs()
 
 # --- Menu Helper ---
 def choose_model():
-    keys = list(all_configs.keys())
-    print("\n📚 Available LoRA Models to Merge:")
-    for i, key in enumerate(keys):
-        print(f"  {i+1}. {key}")
-    print(f"  {len(keys)+1}. 🔁 Merge ALL")
-    while True:
-        try:
-            choice = int(input("\nSelect a model to merge (number): "))
-            if 1 <= choice <= len(keys):
-                return keys[choice - 1], False
-            elif choice == len(keys) + 1:
-                return None, True
-        except ValueError:
-            pass
-        print("❌ Invalid selection. Try again.")
+    return _choose_model(all_configs, "LoRA Models to Merge")
 
 # --- Merge Function ---
 def merge_lora_model(model_key, force=False):

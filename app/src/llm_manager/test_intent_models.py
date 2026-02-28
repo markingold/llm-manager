@@ -33,8 +33,8 @@ try:
         resolve_display_name,
     )
 
-except ModuleNotFoundError as e:
-    sys.exit("❌ Could not import lora_switcher.py - make sure it is on PYTHONPATH.")
+except ImportError as e:
+    sys.exit(f"❌ Could not import switch_model.py - make sure it is on PYTHONPATH.\n   {e}")
 
 # --------------------------------------------------------------------------- #
 #  Default paths & constants

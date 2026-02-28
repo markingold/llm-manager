@@ -1,9 +1,11 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"   # ⬅︎  must come first!
+
+# GPU selection: honour env (.env → systemd → caller), default to GPU 1
+from utils import CUDA_DEVICES as _CUDA, hash_file, choose_model as _choose_model, load_configs, build_combined_dataset
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", _CUDA)
 
 import json
 import argparse
-import hashlib
 import torch
 import glob
 import random
@@ -40,90 +42,11 @@ load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 # Load model configurations
-with open("model_configs.json") as f:
-    all_configs = json.load(f)
+all_configs = load_configs()
 
-# --- Utility: choose model from config ---
+# Re-export choose_model with a sensible label
 def choose_model():
-    keys = list(all_configs.keys())
-    print("\n📚 Available Models:")
-    for i, key in enumerate(keys):
-        print(f"  {i+1}. {key}")
-    print(f"  {len(keys)+1}. 🔁 Train ALL models")
-    while True:
-        try:
-            choice = int(input("\nSelect an option (number): "))
-            if 1 <= choice <= len(keys):
-                return keys[choice - 1], False
-            elif choice == len(keys) + 1:
-                return None, True
-        except ValueError:
-            pass
-        print("❌ Invalid selection. Try again.")
-
-# --- SHA256 file hash ---
-def hash_file(filepath):
-    h = hashlib.sha256()
-    with open(filepath, "rb") as f:
-        while chunk := f.read(8192):
-            h.update(chunk)
-    return h.hexdigest()
-
-# --- Build canonical JSONL dataset ---
-def build_combined_dataset(output_path="data/combined_intent_data.jsonl"):
-    pattern = "data/*_prompts.jsonl"
-    files = glob.glob(pattern)
-    combined = []
-
-    for path in files:
-        with open(path, encoding="utf-8") as f:
-            for num, line in enumerate(f, 1):
-                raw = line.strip()
-                if not raw:
-                    continue
-                try:
-                    rec = json.loads(raw)
-                except json.JSONDecodeError as e:
-                    # fallback for unescaped inner JSON
-                    if raw.startswith('{') and '"prompt":' in raw and ',"response":' in raw and raw.endswith('"}'):  # simple canonical pattern
-                        try:
-                            # split prompt and raw response parts
-                            prefix, resp_part = raw.split(',"response":"', 1)
-                            # extract prompt text
-                            prompt_prefix = '{"prompt":"'
-                            if not prefix.startswith(prompt_prefix):
-                                raise ValueError()
-                            prompt_text = prefix[len(prompt_prefix):]
-                            # remove trailing '"}' for raw JSON
-                            if not resp_part.endswith('"}'):
-                                raise ValueError()
-                            resp_json_str = resp_part[:-2]
-                            # validate JSON
-                            json.loads(resp_json_str)
-                            rec = {
-                                "prompt": prompt_text,
-                                "response": json.dumps(json.loads(resp_json_str), ensure_ascii=False)
-                            }
-                        except Exception:
-                            raise ValueError(f"Invalid JSON in {path}:{num}\n{e}\n{raw}")
-                    else:
-                        raise ValueError(f"Invalid JSON in {path}:{num}\n{e}\n{raw}")
-                # ensure response is a string
-                if isinstance(rec.get("response"), dict):
-                    rec["response"] = json.dumps(rec["response"], ensure_ascii=False)
-                combined.append(json.dumps(rec, ensure_ascii=False))
-
-    if not combined:
-        raise ValueError("No data found in any *_prompts.jsonl files.")
-
-    random.shuffle(combined)
-    Path(output_path).write_text("\n".join(combined) + "\n", encoding="utf-8")
-    snapshot = f"data/combined_intent_data_{datetime.now():%Y%m%d_%H%M%S}.jsonl"
-    Path(snapshot).write_text("\n".join(combined) + "\n", encoding="utf-8")
-
-    print(f"✅ Combined {len(files)} files into {output_path} ({len(combined)} items)")
-    print(f"🕒 Snapshot saved to {snapshot}")
-    return output_path
+    return _choose_model(all_configs, "Models to Train")
 
 # --- Tokenization for canonical data ---
 def get_tokenized_dataset(data_path, tokenizer, max_length=256):

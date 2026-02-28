@@ -24,27 +24,22 @@ $ ./switch_model.py --chat   LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2
 
 import argparse, json, subprocess, sys
 from pathlib import Path
+from utils import (
+    WEBUI_MODELS_DIR, PM2_INTENT, PM2_CHAT, load_configs, CONFIG_PATH,
+)
 
 # ── Paths ────────────────────────────────────────────────────────────────────
-CONFIG_PATH = Path('/srv/2bananas/projects/llm-manager/model_configs.json')
-MODELS_DIR = Path(WEBUI_MODELS_DIR)
+MODELS_DIR = WEBUI_MODELS_DIR
 INTENT_LINK = MODELS_DIR / 'intent_active_model'
 CHAT_LINK = MODELS_DIR / 'chat_active_model'
 
-# PM2 process names (edit if yours differ)
+# PM2 process names
 INTENT_PM2_PROCESS = PM2_INTENT
 CHAT_PM2_PROCESS = PM2_CHAT
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
-def load_cfg() -> dict:
-    """Optional display-name mapping stored in model_configs.json."""
-    if CONFIG_PATH.exists():
-        with CONFIG_PATH.open() as f:
-            return json.load(f)
-    return {}
-
-CFG = load_cfg()
+CFG = load_configs()
 
 def resolve_display_name(model_dir: str) -> str:
     """
