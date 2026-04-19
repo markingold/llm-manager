@@ -1,200 +1,841 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>LLM Manager</title>
   <style>
-    :root { color-scheme: dark; }
-    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0b1220; color: #e5e7eb; }
-    header { padding: 16px 18px; border-bottom: 1px solid rgba(148,163,184,0.2); background: rgba(2,6,23,0.65); position: sticky; top: 0; backdrop-filter: blur(8px); z-index: 20; }
-    h1 { font-size: 18px; margin: 0; letter-spacing: 0.2px; }
-    main { max-width: 1100px; margin: 0 auto; padding: 18px; display: grid; gap: 14px; }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .card { background: rgba(15,23,42,0.85); border: 1px solid rgba(148,163,184,0.18); border-radius: 16px; padding: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.25); }
-    .card h2 { font-size: 14px; margin: 0 0 10px; color: rgba(226,232,240,0.9); }
-    .muted { color: rgba(226,232,240,0.7); font-size: 12px; }
-    input, select, button {
+    :root {
+      color-scheme: dark;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: #0b1220;
+      color: #e5e7eb;
+    }
+
+    header {
+      padding: 16px 18px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(2, 6, 23, 0.65);
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(8px);
+      z-index: 20;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0;
+      letter-spacing: 0.2px;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .card h2 {
+      font-size: 14px;
+      margin: 0 0 10px;
+      color: rgba(226, 232, 240, 0.9);
+    }
+
+    .muted {
+      color: rgba(226, 232, 240, 0.7);
+      font-size: 12px;
+    }
+
+    input,
+    select,
+    button {
       border-radius: 12px;
-      border: 1px solid rgba(148,163,184,0.25);
-      background: rgba(2,6,23,0.6);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(2, 6, 23, 0.6);
       color: #e5e7eb;
       padding: 10px 12px;
     }
-    input { width: 100%; }
-    select { width: 100%; min-width: 260px; }
-    button { cursor: pointer; }
-    button:hover { border-color: rgba(226,232,240,0.45); }
-    button:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn.ok { border-color: rgba(34,197,94,0.6); }
-    .btn.warn { border-color: rgba(234,179,8,0.6); }
-    .btn.bad { border-color: rgba(239,68,68,0.6); }
-    .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius: 999px; border: 1px solid rgba(148,163,184,0.25); background: rgba(2,6,23,0.35); font-size: 12px; }
-    .pill.ok { border-color: rgba(34,197,94,0.6); }
-    .pill.warn { border-color: rgba(234,179,8,0.6); }
-    .pill.bad { border-color: rgba(239,68,68,0.6); }
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
-    @media (max-width: 980px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
-    pre { margin: 0; padding: 12px; background: rgba(2,6,23,0.55); border: 1px solid rgba(148,163,184,0.2); border-radius: 14px; overflow: auto; font-size: 12px; line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; }
-    .status { padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(148,163,184,0.25); background: rgba(2,6,23,0.35); }
-    .status.ok { border-color: rgba(34,197,94,0.6); }
-    .status.warn { border-color: rgba(234,179,8,0.6); }
-    .status.bad { border-color: rgba(239,68,68,0.6); }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-    html, body { max-width: 100%; overflow-x: hidden; }
+
+    input {
+      width: 100%;
+    }
+
+    select {
+      width: 100%;
+      min-width: 260px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: rgba(226, 232, 240, 0.45);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn.ok {
+      border-color: rgba(34, 197, 94, 0.6);
+    }
+
+    .btn.warn {
+      border-color: rgba(234, 179, 8, 0.6);
+    }
+
+    .btn.bad {
+      border-color: rgba(239, 68, 68, 0.6);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(2, 6, 23, 0.35);
+      font-size: 12px;
+    }
+
+    .pill.ok {
+      border-color: rgba(34, 197, 94, 0.6);
+    }
+
+    .pill.warn {
+      border-color: rgba(234, 179, 8, 0.6);
+    }
+
+    .pill.bad {
+      border-color: rgba(239, 68, 68, 0.6);
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .grid3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 980px) {
+
+      .grid2,
+      .grid3 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    pre {
+      margin: 0;
+      padding: 12px;
+      background: rgba(2, 6, 23, 0.55);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 14px;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      max-width: 100%;
+    }
+
+    .status {
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(2, 6, 23, 0.35);
+    }
+
+    .status.ok {
+      border-color: rgba(34, 197, 94, 0.6);
+    }
+
+    .status.warn {
+      border-color: rgba(234, 179, 8, 0.6);
+    }
+
+    .status.bad {
+      border-color: rgba(239, 68, 68, 0.6);
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .nav-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .nav-btn,
+    .surface-btn {
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .nav-btn.active,
+    .surface-btn.active {
+      border-color: rgba(34, 197, 94, 0.7);
+      background: rgba(22, 101, 52, 0.35);
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 12px;
+      background: rgba(2, 6, 23, 0.4);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+      font-size: 12px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: rgba(15, 23, 42, 0.95);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.55);
+      z-index: 90;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(760px, 96vw);
+      height: 100vh;
+      background: rgba(8, 14, 30, 0.98);
+      border-left: 1px solid rgba(148, 163, 184, 0.3);
+      z-index: 100;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      overflow: auto;
+      box-shadow: -20px 0 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .drawer h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px;
+    }
+
+    .compare-cell {
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 10px;
+      padding: 8px;
+      background: rgba(2, 6, 23, 0.45);
+    }
+
+    .compare-meta {
+      font-size: 11px;
+      color: rgba(226, 232, 240, 0.75);
+      margin-bottom: 6px;
+    }
+
+    .compare-out {
+      font-size: 12px;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    html,
+    body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
   </style>
 </head>
+
 <body>
-<header>
-  <h1>LLM Manager</h1>
-  <div class="muted">WebUI talks to <span class="mono">/llm-manager-api</span> via Apache reverse proxy.</div>
-</header>
-
-<main>
-  <div class="card">
-    <h2>Status</h2>
-    <div id="statusBox" class="status">Loading…</div>
-    <div id="vramInfo" class="muted" style="font-size:0.85em;margin-top:4px;font-family:monospace"></div>
-    <div class="row" style="margin-top:10px">
-      <button id="btnRefresh">Refresh</button>
-      <label class="muted"><input type="checkbox" id="autoRefresh" /> Auto-refresh (5s)</label>
-      <span id="cacheHint" class="pill warn" title="If dropdowns don't populate, this usually means cached JS. Hard refresh.">JS: loading…</span>
+  <header>
+    <h1>LLM Manager</h1>
+    <div class="muted">WebUI talks to <span class="mono">/llm-manager-api</span> via Apache reverse proxy.</div>
+    <div class="nav-row">
+      <button class="nav-btn" data-nav-btn="operations">Operations</button>
+      <button class="nav-btn" data-nav-btn="router">Router</button>
+      <button class="nav-btn" data-nav-btn="evaluation">Evaluation</button>
+      <button class="nav-btn" data-nav-btn="providers-budget">Providers/Budget</button>
+      <button class="nav-btn" data-nav-btn="jobs">Jobs</button>
     </div>
-  </div>
-
-  <div class="card">
-    <h2>Dashboard Model Switcher</h2>
-    <div class="muted" style="margin-bottom:10px">
-      This is the classic “pick a model then switch” flow. Engine cards below also have their own dropdowns so you can decide what you like long-term.
+    <div class="nav-row">
+      <span class="muted">Surface:</span>
+      <button class="surface-btn" data-surface-btn="all">All</button>
+      <button class="surface-btn" data-surface-btn="read">Read-only</button>
+      <button class="surface-btn" data-surface-btn="mutate">Mutations</button>
     </div>
+  </header>
 
-    <div class="row">
-      <div style="flex:1; min-width:280px">
-        <div class="muted">Chat (A)</div>
-        <select id="selChat"></select>
-      </div>
-      <button class="btn ok" id="btnSwitchChat">Switch Chat</button>
-
-      <div style="flex:1; min-width:280px">
-        <div class="muted">Intent (B)</div>
-        <select id="selIntent"></select>
-      </div>
-      <button class="btn ok" id="btnSwitchIntent">Switch Intent</button>
-
-      <div style="flex:1; min-width:280px">
-        <div class="muted">Small (C)</div>
-        <select id="selSmall"></select>
-      </div>
-      <button class="btn ok" id="btnSwitchSmall">Switch Small</button>
-    </div>
-
-    <div class="row" style="margin-top:10px">
-      <label class="muted"><input type="checkbox" id="chkBounce" checked /> Bounce engine after switch</label>
-      <span class="muted">Uses <span class="mono">/switch</span> (API) + optional bounce.</span>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Engine Controls (safe ops)</h2>
-    <div class="muted" style="margin-bottom:10px">
-      Use <b>Solo Start</b> when testing to stop the other engines first.
-    </div>
-
-    <div class="grid3">
-      <div class="card" id="engineChat">
-        <h2>Chat (A)</h2>
-        <div class="row" style="margin-bottom:10px">
-          <span id="chatState" class="pill">…</span>
-          <span class="muted mono" id="chatMeta" style="flex:1">…</span>
-        </div>
-
-        <div class="row">
-          <select id="chatModel"></select>
-          <button class="btn ok" id="chatSwitch">Switch</button>
-        </div>
-
-        <div class="row" style="margin-top:10px">
-          <button class="btn ok" id="chatStart">Start</button>
-          <button class="btn warn" id="chatStop">Stop</button>
-          <button id="chatRestart">Restart</button>
-          <button class="btn bad" id="chatSolo">Solo Start</button>
-        </div>
-        <div class="row" style="margin-top:10px">
-          <button id="chatLogs">Tail logs</button>
-          <button id="chatTest">Test</button>
-        </div>
-      </div>
-
-      <div class="card" id="engineIntent">
-        <h2>Intent (B)</h2>
-        <div class="row" style="margin-bottom:10px">
-          <span id="intentState" class="pill">…</span>
-          <span class="muted mono" id="intentMeta" style="flex:1">…</span>
-        </div>
-
-        <div class="row">
-          <select id="intentModel"></select>
-          <button class="btn ok" id="intentSwitch">Switch</button>
-        </div>
-
-        <div class="row" style="margin-top:10px">
-          <button class="btn ok" id="intentStart">Start</button>
-          <button class="btn warn" id="intentStop">Stop</button>
-          <button id="intentRestart">Restart</button>
-          <button class="btn bad" id="intentSolo">Solo Start</button>
-        </div>
-        <div class="row" style="margin-top:10px">
-          <button id="intentLogs">Tail logs</button>
-          <button id="intentTest">Test</button>
-        </div>
-      </div>
-
-      <div class="card" id="engineSmall">
-        <h2>Small (C)</h2>
-        <div class="row" style="margin-bottom:10px">
-          <span id="smallState" class="pill">…</span>
-          <span class="muted mono" id="smallMeta" style="flex:1">…</span>
-        </div>
-
-        <div class="row">
-          <select id="smallModel"></select>
-          <button class="btn ok" id="smallSwitch">Switch</button>
-        </div>
-
-        <div class="row" style="margin-top:10px">
-          <button class="btn ok" id="smallStart">Start</button>
-          <button class="btn warn" id="smallStop">Stop</button>
-          <button id="smallRestart">Restart</button>
-          <button class="btn bad" id="smallSolo">Solo Start</button>
-        </div>
-        <div class="row" style="margin-top:10px">
-          <button id="smallLogs">Tail logs</button>
-          <button id="smallTest">Test</button>
-        </div>
+  <main>
+    <section data-nav-section="operations">
+    <div class="card" data-surface="read">
+      <h2>Status</h2>
+      <div id="statusBox" class="status">Loading…</div>
+      <div id="budgetBanner" class="status warn" style="display:none;margin-top:8px"></div>
+      <div id="vramInfo" class="muted" style="font-size:0.85em;margin-top:4px;font-family:monospace"></div>
+      <div class="row" style="margin-top:10px">
+        <button id="btnRefresh">Refresh</button>
+        <label class="muted"><input type="checkbox" id="autoRefresh" /> Auto-refresh (5s)</label>
+        <span id="cacheHint" class="pill warn"
+          title="If dropdowns don't populate, this usually means cached JS. Hard refresh.">JS: loading…</span>
       </div>
     </div>
-  </div>
 
-  <div class="grid2">
-    <div class="card">
-      <h2>Quick Prompt Test</h2>
+    <div class="card" data-surface="mutate">
+      <h2>Dashboard Model Switcher</h2>
+      <div class="muted" style="margin-bottom:10px">
+        This is the classic “pick a model then switch” flow. Engine cards below also have their own dropdowns so you can
+        decide what you like long-term.
+      </div>
+
       <div class="row">
-        <input id="q" value="What is the capital of France?"/>
-        <button id="btnTestChat">Test chat</button>
-        <button id="btnTestIntent">Test intent</button>
-        <button id="btnTestUtil">Test small</button>
+        <div style="flex:1; min-width:280px">
+          <div class="muted">Chat (A)</div>
+          <select id="selChat"></select>
+        </div>
+        <button class="btn ok" id="btnSwitchChat">Switch Chat</button>
+
+        <div style="flex:1; min-width:280px">
+          <div class="muted">Intent (B)</div>
+          <select id="selIntent"></select>
+        </div>
+        <button class="btn ok" id="btnSwitchIntent">Switch Intent</button>
+
+        <div style="flex:1; min-width:280px">
+          <div class="muted">Small (C)</div>
+          <select id="selSmall"></select>
+        </div>
+        <button class="btn ok" id="btnSwitchSmall">Switch Small</button>
       </div>
-      <div class="muted" style="margin-top:10px">Outputs show the raw OpenAI-compatible payload.</div>
+
+      <div class="row" style="margin-top:10px">
+        <label class="muted"><input type="checkbox" id="chkBounce" checked /> Bounce engine after switch</label>
+        <span class="muted">Uses <span class="mono">/switch</span> (API) + optional bounce.</span>
+      </div>
     </div>
 
-    <div class="card">
-      <h2>Output</h2>
-      <pre id="out">…</pre>
-    </div>
-  </div>
-</main>
+    <div class="card" data-surface="mutate">
+      <h2>Engine Controls (safe ops)</h2>
+      <div class="muted" style="margin-bottom:10px">
+        Use <b>Solo Start</b> when testing to stop the other engines first.
+      </div>
 
-<script src="app.js?v=20251221_211439"></script>
+      <div class="grid3">
+        <div class="card" id="engineChat">
+          <h2>Chat (A)</h2>
+          <div class="row" style="margin-bottom:10px">
+            <span id="chatState" class="pill">…</span>
+            <span class="muted mono" id="chatMeta" style="flex:1">…</span>
+          </div>
+
+          <div class="row" style="margin-bottom:10px">
+            <span id="chatTgwState" class="pill warn">TGW UI OFF</span>
+            <span class="muted mono" id="chatTgwMeta" style="flex:1">TGW WebUI status unavailable.</span>
+          </div>
+
+          <div class="row">
+            <select id="chatModel"></select>
+            <button class="btn ok" id="chatSwitch">Switch</button>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <button class="btn ok" id="chatStart">Start</button>
+            <button class="btn warn" id="chatStop">Stop</button>
+            <button id="chatRestart">Restart</button>
+            <button class="btn bad" id="chatSolo">Solo Start</button>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button id="chatLogs">Tail logs</button>
+            <button id="chatTest">Test</button>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button id="chatTgwToggle">Enable TGW UI</button>
+            <button id="chatTgwOpen">Open TGW UI</button>
+          </div>
+        </div>
+
+        <div class="card" id="engineIntent">
+          <h2>Intent (B)</h2>
+          <div class="row" style="margin-bottom:10px">
+            <span id="intentState" class="pill">…</span>
+            <span class="muted mono" id="intentMeta" style="flex:1">…</span>
+          </div>
+
+          <div class="row">
+            <select id="intentModel"></select>
+            <button class="btn ok" id="intentSwitch">Switch</button>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <button class="btn ok" id="intentStart">Start</button>
+            <button class="btn warn" id="intentStop">Stop</button>
+            <button id="intentRestart">Restart</button>
+            <button class="btn bad" id="intentSolo">Solo Start</button>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button id="intentLogs">Tail logs</button>
+            <button id="intentTest">Test</button>
+          </div>
+        </div>
+
+        <div class="card" id="engineSmall">
+          <h2>Small (C)</h2>
+          <div class="row" style="margin-bottom:10px">
+            <span id="smallState" class="pill">…</span>
+            <span class="muted mono" id="smallMeta" style="flex:1">…</span>
+          </div>
+
+          <div class="row">
+            <select id="smallModel"></select>
+            <button class="btn ok" id="smallSwitch">Switch</button>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <button class="btn ok" id="smallStart">Start</button>
+            <button class="btn warn" id="smallStop">Stop</button>
+            <button id="smallRestart">Restart</button>
+            <button class="btn bad" id="smallSolo">Solo Start</button>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button id="smallLogs">Tail logs</button>
+            <button id="smallTest">Test</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2" data-surface="read">
+      <div class="card" data-surface="read">
+        <h2>Quick Prompt Test</h2>
+        <div class="row">
+          <input id="q" value="What is the capital of France?" />
+          <button id="btnTestChat">Test chat</button>
+          <button id="btnTestIntent">Test intent</button>
+          <button id="btnTestUtil">Test small</button>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer"><input type="checkbox" id="noThinking"> No thinking</label>
+        </div>
+        <div class="muted" style="margin-top:10px">Outputs show the raw OpenAI-compatible payload.</div>
+      </div>
+
+      <div class="card" data-surface="read">
+        <h2>Output</h2>
+        <pre id="out">…</pre>
+      </div>
+    </div>
+    </section>
+
+    <section data-nav-section="evaluation" style="display:none">
+    <div class="card" data-surface="mutate">
+      <h2>Evaluation Ops</h2>
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnEvalRefresh">Refresh Eval</button>
+        <span class="muted">Shows queue pressure, worker caps, and latest reports.</span>
+      </div>
+      <div class="row" style="margin-bottom:10px">
+        <input id="evalSuiteName" placeholder="suite name" style="max-width:220px" />
+        <input id="evalSuiteVersion" placeholder="version" value="1" style="max-width:120px" />
+        <label class="muted" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="evalRerunAsync" checked /> async</label>
+        <select id="evalPriority" style="max-width:160px">
+          <option value="interactive">interactive</option>
+          <option value="batch">batch</option>
+          <option value="evaluation" selected>evaluation</option>
+        </select>
+        <button id="btnEvalRerun">Rerun Suite</button>
+      </div>
+      <div class="row" style="margin-bottom:10px">
+        <span class="muted">Recent completed runs:</span>
+      </div>
+      <div id="evalRunActions" style="margin-bottom:10px"></div>
+      <pre id="evalSnapshot">…</pre>
+    </div>
+    <div class="card" data-surface="read">
+      <h2>Evaluation Runs</h2>
+      <div class="row" style="margin-bottom:10px">
+        <span id="evalQueueCtx" class="pill">queue: ...</span>
+        <span id="evalWorkerCtx" class="pill">workers: ...</span>
+        <span id="evalCapsCtx" class="pill">caps: ...</span>
+      </div>
+      <div class="row" style="margin-bottom:10px">
+        <select id="evalFilterPreset" style="max-width:240px">
+          <option value="">preset:none</option>
+          <option value="failures_recent">Failures: recent completed</option>
+          <option value="infra_errors">Infra: error status</option>
+          <option value="intent_regressions">Intent regressions</option>
+          <option value="openrouter_fallbacks">OpenRouter fallbacks</option>
+          <option value="queue_watch">Queue watch</option>
+        </select>
+        <button id="btnEvalApplyPreset">Apply Preset</button>
+        <select id="evalFilterStatus" style="max-width:170px">
+          <option value="">status:any</option>
+          <option value="queued">queued</option>
+          <option value="running">running</option>
+          <option value="completed">completed</option>
+          <option value="error">error</option>
+        </select>
+        <select id="evalFilterMode" style="max-width:170px">
+          <option value="">mode:any</option>
+          <option value="chat">chat</option>
+          <option value="intent">intent</option>
+          <option value="small">small</option>
+        </select>
+        <select id="evalFilterPass" style="max-width:170px">
+          <option value="">suite pass:any</option>
+          <option value="true">pass:true</option>
+          <option value="false">pass:false</option>
+        </select>
+        <input id="evalFilterProject" placeholder="project" style="max-width:170px" />
+        <input id="evalFilterProvider" placeholder="provider" style="max-width:170px" />
+      </div>
+      <div class="row" style="margin-bottom:10px">
+        <input id="evalFilterLane" placeholder="lane" style="max-width:170px" />
+        <input id="evalFilterModel" placeholder="candidate model" style="max-width:220px" />
+        <input id="evalFilterTag" placeholder="tag" style="max-width:170px" />
+        <input id="evalFilterSince" placeholder="since_ts (ISO)" style="max-width:260px" />
+        <select id="evalFilterLimit" style="max-width:130px">
+          <option value="10">limit:10</option>
+          <option value="25" selected>limit:25</option>
+          <option value="50">limit:50</option>
+          <option value="100">limit:100</option>
+        </select>
+        <button id="btnEvalApplyFilters">Apply</button>
+        <button id="btnEvalResetFilters">Reset</button>
+        <span id="evalRunsCount" class="pill">0 run(s)</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Run</th>
+              <th>Suite</th>
+              <th>Version</th>
+              <th>Mode</th>
+              <th>Status</th>
+              <th>Pass</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="evalRunsBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" data-surface="mutate">
+      <h2>Evaluation Suites</h2>
+      <div class="row" style="margin-bottom:10px">
+        <input id="suiteName" placeholder="suite name" style="max-width:240px" />
+        <input id="suiteVersion" placeholder="version" value="1" style="max-width:120px" />
+        <button id="btnSuiteTemplate">Template</button>
+        <button id="btnSuiteSave">Save/Upsert</button>
+        <button id="btnSuiteDelete">Delete</button>
+      </div>
+      <div class="row" style="margin-bottom:10px">
+        <label class="muted" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="suiteRunAsync" checked /> async rerun</label>
+        <select id="suiteRunPriority" style="max-width:160px">
+          <option value="interactive">interactive</option>
+          <option value="batch">batch</option>
+          <option value="evaluation" selected>evaluation</option>
+        </select>
+        <button id="btnSuiteRerunSelected">Rerun Selected</button>
+        <button id="btnSuiteRefresh">Refresh Suites</button>
+        <span id="evalSuiteCount" class="pill">0 suites</span>
+      </div>
+      <div class="table-wrap" style="margin-bottom:10px">
+        <table>
+          <thead>
+            <tr>
+              <th>Suite</th>
+              <th>Version</th>
+              <th>Mode</th>
+              <th>Cases</th>
+              <th>Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="evalSuiteListBody"></tbody>
+        </table>
+      </div>
+      <textarea id="suiteEditor" class="mono" style="width:100%;min-height:220px;background:rgba(2,6,23,0.45);color:#e5e7eb;border:1px solid rgba(148,163,184,0.3);border-radius:12px;padding:10px" placeholder="Suite payload JSON (target_mode, candidate_models, variants, cases, thresholds, metadata)"></textarea>
+    </div>
+    <aside id="evalRunDrawer" class="drawer" style="display:none" aria-label="Evaluation run details">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div>
+          <h3 id="evalDrawerTitle">Run Detail</h3>
+          <div id="evalDrawerMeta" class="muted"></div>
+        </div>
+        <button id="btnEvalDrawerClose">Close</button>
+      </div>
+
+      <div class="row">
+        <button id="btnEvalDrawerReport">Report</button>
+        <button id="btnEvalDrawerCompare">Compare</button>
+        <button id="btnEvalDrawerRaw">Raw</button>
+      </div>
+
+      <div class="card">
+        <h2>Summary</h2>
+        <pre id="evalDrawerSummary">{}</pre>
+      </div>
+
+      <div class="card">
+        <h2>Recommendations</h2>
+        <ul id="evalDrawerRecommendations" class="muted"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Compare Compact (Side-by-Side)</h2>
+        <div id="evalDrawerCompareMeta" class="muted" style="margin-bottom:8px">Click Compare to load side-by-side outputs.</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Case</th>
+                <th>Variant</th>
+                <th>Expected</th>
+                <th>Outputs (side-by-side)</th>
+              </tr>
+            </thead>
+            <tbody id="evalDrawerCompareBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Failed / Risky Case Outputs</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Case</th>
+                <th>Variant</th>
+                <th>Provider / Lane / Model</th>
+                <th>Status</th>
+                <th>Output</th>
+                <th>Error</th>
+              </tr>
+            </thead>
+            <tbody id="evalDrawerFailedBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </aside>
+    <div id="evalDrawerBackdrop" class="drawer-backdrop" style="display:none"></div>
+    </section>
+
+    <section data-nav-section="router" style="display:none">
+    <div class="card" data-surface="read">
+      <h2>Router Ops</h2>
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnRouterRefresh">Refresh Router</button>
+        <span class="muted">Provider health, fallback/cooldown signals, budget guardrails, and catalog state.</span>
+      </div>
+      <div class="row" style="margin-bottom:10px">
+        <span id="routerHealthPill" class="pill">health: ...</span>
+        <span id="routerFallbackPill" class="pill">fallbacks: ...</span>
+        <span id="routerQueuePill" class="pill">queue: ...</span>
+        <span id="routerBudgetPill" class="pill">budget: ...</span>
+        <span id="routerManualCandidatesPill" class="pill">manual candidates: ...</span>
+        <span id="routerManualActivePill" class="pill">manual active: ...</span>
+      </div>
+      <pre id="routerSnapshot">…</pre>
+      <div class="row" style="margin:10px 0 8px 0">
+        <span class="muted">Manual OpenRouter free-candidate state</span>
+        <button id="btnRouterFreeCandidatesRefresh">Refresh Manual Candidates</button>
+      </div>
+      <pre id="routerManualSnapshot">…</pre>
+    </div>
+    <div class="card" data-surface="mutate">
+      <h2>Router Mutations</h2>
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnRouterCatalogRefresh">Refresh OpenRouter Catalog</button>
+        <label class="muted" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="routerCatalogIncludeRankings" checked /> include rankings</label>
+        <span class="muted">Explicit metadata refresh for provider routing catalog.</span>
+      </div>
+      <div class="grid2" style="margin-bottom:10px">
+        <div>
+          <div class="row" style="margin-bottom:8px">
+            <button id="btnRouterDiscoverFree">Discover Free Candidates</button>
+            <button id="btnRouterClearActive">Clear Manual Active IDs</button>
+          </div>
+          <div class="row" style="margin-bottom:8px">
+            <label class="muted" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="routerDiscoverRefreshCatalog" checked /> refresh catalog</label>
+            <label class="muted" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="routerDiscoverIncludeRankings" checked /> include rankings</label>
+            <label class="muted" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="routerDiscoverIncludeCurated" /> include curated</label>
+            <label class="muted" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="routerDiscoverAllowUnknownSize" checked /> allow unknown size</label>
+          </div>
+          <div class="row" style="margin-bottom:8px">
+            <input id="routerDiscoverActor" placeholder="actor" value="webui" style="max-width:160px" />
+            <input id="routerDiscoverReason" placeholder="reason for discovery / activation" style="min-width:320px;flex:1" />
+          </div>
+          <div class="row" style="margin-bottom:8px">
+            <select id="routerDiscoverSortBy" style="max-width:180px">
+              <option value="score">sort: score</option>
+              <option value="popularity">sort: popularity</option>
+              <option value="context">sort: context</option>
+              <option value="newest">sort: newest</option>
+            </select>
+            <input id="routerDiscoverActivateTopN" type="number" min="0" step="1" value="0" placeholder="activate top N" style="max-width:160px" />
+            <input id="routerDiscoverMaxCandidates" type="number" min="1" step="1" value="20" placeholder="max candidates" style="max-width:160px" />
+            <input id="routerDiscoverMinContext" type="number" min="0" step="1" placeholder="min context" style="max-width:180px" />
+            <input id="routerDiscoverMinPopularityTokens" type="number" min="0" step="0.01" placeholder="min popularity tokens" style="max-width:220px" />
+          </div>
+          <div class="row" style="margin-bottom:8px">
+            <input id="routerDiscoverMaxTotalParams" type="number" min="0" step="0.1" placeholder="max total params B" style="max-width:180px" />
+            <input id="routerDiscoverMaxActiveParams" type="number" min="0" step="0.1" placeholder="max active params B" style="max-width:180px" />
+            <input id="routerDiscoverFamilyAllow" placeholder="family allow CSV" style="min-width:220px;flex:1" />
+            <input id="routerDiscoverFamilyDeny" placeholder="family deny CSV" style="min-width:220px;flex:1" />
+          </div>
+          <div class="row">
+            <select id="routerDiscoverRequireTools" style="max-width:180px">
+              <option value="">tools:any</option>
+              <option value="true">tools:required</option>
+            </select>
+            <select id="routerDiscoverRequireStructured" style="max-width:230px">
+              <option value="">structured:any</option>
+              <option value="true">structured:required</option>
+            </select>
+            <select id="routerDiscoverRequireReasoning" style="max-width:210px">
+              <option value="">reasoning:any</option>
+              <option value="true">reasoning:required</option>
+            </select>
+            <select id="routerDiscoverRequireVision" style="max-width:180px">
+              <option value="">vision:any</option>
+              <option value="true">vision:required</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <div class="muted" style="margin-bottom:8px">Manual discovery is runtime-only. It does not edit the curated provider catalog.</div>
+          <pre id="routerDiscoverResult">Use Discover Free Candidates to build or update the temporary OpenRouter fallback pool.</pre>
+        </div>
+      </div>
+    </div>
+    </section>
+
+    <section data-nav-section="providers-budget" style="display:none">
+      <div class="card" data-surface="read">
+        <h2>Providers and Budget</h2>
+        <div class="muted" style="margin-bottom:10px">Budget and provider state is surfaced in Router snapshot and banner.</div>
+        <div class="row">
+          <button id="btnJumpRouter">Go to Router View</button>
+          <button id="btnGovRefresh">Refresh Governance State</button>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <span id="govModelsVersion" class="pill">models version: ...</span>
+          <span id="govPoliciesVersion" class="pill">policies version: ...</span>
+        </div>
+      </div>
+      <div class="card" data-surface="mutate">
+        <h2>Provider Governance</h2>
+        <div class="row" style="margin-bottom:10px">
+          <select id="govResource" style="max-width:180px">
+            <option value="models">models</option>
+            <option value="policies">policies</option>
+          </select>
+          <input id="govActor" placeholder="actor" value="webui" style="max-width:160px" />
+          <input id="govReason" placeholder="reason (required for apply/rollback)" style="min-width:320px;flex:1" />
+        </div>
+        <div class="row" style="margin-bottom:10px">
+          <button id="btnGovValidate">Validate</button>
+          <button id="btnGovApply">Apply</button>
+          <button class="btn warn" id="btnGovRollback">Rollback Last Good</button>
+          <label class="muted" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="govRequireConfirm" checked /> require confirm</label>
+        </div>
+        <textarea id="govEditor" class="mono" style="width:100%;min-height:240px;background:rgba(2,6,23,0.45);color:#e5e7eb;border:1px solid rgba(148,163,184,0.3);border-radius:12px;padding:10px" placeholder="Governance document JSON"></textarea>
+        <div class="row" style="margin-top:10px">
+          <input id="govFlagModelKey" placeholder="provider:model_id (e.g., openrouter:meta-llama/llama-3.3-8b-instruct:free)" style="min-width:420px;flex:1" />
+          <label class="muted" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="govFlagDisabled" /> disabled_until_manual_review</label>
+          <label class="muted" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="govFlagExclude" /> exclude_from_free_rotation</label>
+          <button id="btnGovApplyFlags">Apply Flags</button>
+        </div>
+      </div>
+      <div class="card" data-surface="read">
+        <h2>Governance Audit Trail</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>TS</th>
+                <th>Resource</th>
+                <th>Action</th>
+                <th>Actor</th>
+                <th>Outcome</th>
+                <th>Reason</th>
+                <th>Versions</th>
+              </tr>
+            </thead>
+            <tbody id="govAuditBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-nav-section="jobs" style="display:none">
+      <div class="card" data-surface="read">
+        <h2>Jobs</h2>
+        <div class="muted" style="margin-bottom:10px">Evaluation queue/worker data is currently in Evaluation Ops.</div>
+        <button id="btnJumpEval">Go to Evaluation View</button>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="app.js?v=20260330_223500"></script>
 </body>
+
 </html>
