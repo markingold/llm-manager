@@ -110,6 +110,28 @@ def detect_loader(kind: str) -> str:
     }.get(kind, "transformers")
 
 
+def recommend_backends(kind: str) -> tuple[str, list[str]]:
+    """
+    Return (recommended_backend, fallback_backends) for a detected model kind.
+
+    Backends are intentionally coarse for Phase 1:
+    - tgw: text-generation-webui compatibility lane
+    - vllm: throughput-oriented HF/AWQ/GPTQ lane
+    - tabbyapi: ExLlama lane for EXL2/EXL3
+    """
+    mapping = {
+        "exl2": ("tabbyapi", ["tgw"]),
+        "exl3": ("tabbyapi", ["tgw"]),
+        "awq": ("vllm", ["tgw"]),
+        "gptq": ("vllm", ["tabbyapi", "tgw"]),
+        "gguf": ("tgw", []),
+        "transformers": ("vllm", ["tgw"]),
+        "lora": ("tgw", ["vllm"]),
+        "unknown": ("tgw", []),
+    }
+    return mapping.get(kind, ("tgw", []))
+
+
 def detect_dtype(model_path: pathlib.Path, kind: str) -> Optional[str]:
     """Try to determine dtype from config or filename."""
     config = _read_json(model_path / "config.json")
@@ -222,6 +244,8 @@ def inspect_one(model_name: str) -> dict:
             "path": str(model_path),
             "kind": "unknown",
             "loader": None,
+            "recommended_backend": "tgw",
+            "fallback_backends": [],
             "bpw": None,
             "dtype": None,
             "chat_template_mode": "auto",
@@ -232,6 +256,7 @@ def inspect_one(model_name: str) -> dict:
 
     kind = detect_kind(model_path)
     loader = detect_loader(kind)
+    recommended_backend, fallback_backends = recommend_backends(kind)
     bpw = detect_bpw(model_path)
     dtype = detect_dtype(model_path, kind)
     tpl_mode, tpl_raw = guess_chat_template(model_name, model_path)
@@ -256,6 +281,8 @@ def inspect_one(model_name: str) -> dict:
         "path": str(model_path),
         "kind": kind,
         "loader": loader,
+        "recommended_backend": recommended_backend,
+        "fallback_backends": fallback_backends,
         "bpw": bpw,
         "dtype": dtype,
         "chat_template_mode": tpl_mode,

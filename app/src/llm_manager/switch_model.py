@@ -3,12 +3,12 @@
 Unified Smart-Assistant model switcher
 ---------------------------------------
 
-• Intent models  →  directories that start with **lora_***  
-  - Symlink:  intent_active_model  (points at chosen lora_* dir)  
+• Intent models  →  directories that start with **lora_***
+  - Symlink:  intent_active_model  (points at chosen lora_* dir)
   - PM2  :    llm_lora_intent  (restart after switch)
 
-• Chat models    →  every other **model folder** that is *not* a symlink  
-  - Symlink:  chat_active_model   (points at chosen chat dir)  
+• Chat models    →  every other **model folder** that is *not* a symlink
+  - Symlink:  chat_active_model   (points at chosen chat dir)
   - PM2  :    llm_chat            (rename or edit below if you use a different name)
 
 Usage
@@ -53,7 +53,7 @@ def resolve_display_name(model_dir: str) -> str:
 
 def list_intent_models():
     return sorted(p.name for p in MODELS_DIR.iterdir()
-                  if p.is_dir() and p.name.startswith("lora_"))
+                  if p.is_dir())
 
 def list_chat_models():
     ignore = {"intent_active_model", "chat_active_model"}

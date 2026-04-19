@@ -1,0 +1,35 @@
+{
+  "defaults": {
+    "strategy": "local_first",
+    "free_only": false,
+    "paid_allowed": true,
+    "allow_fallbacks": true,
+    "preferred_provider": "local"
+  },
+  "openrouter": {
+    "free_rate_limit_rpm": 20,
+    "max_queue_depth": 100,
+    "max_queue_wait_ms": 15000,
+    "queue_behavior": "wait",
+    "enforce_upstream_free_status": true
+  },
+  "budget": {
+    "daily_usd_limit": 10.0,
+    "monthly_usd_limit": 200.0,
+    "per_request_usd_limit": 1.0,
+    "warn_threshold_pct": 0.8,
+    "hard_fail_on_budget_exceeded": true,
+    "providers": {
+      "local": false,
+      "openrouter": true,
+      "openai": true
+    }
+  },
+  "selection": {
+    "free_first": ["openrouter.free", "local", "openrouter.paid", "openai"],
+    "local_first": ["local", "openrouter.free", "openrouter.paid", "openai"],
+    "paid_first": ["openrouter.paid", "openai", "local", "openrouter.free"],
+    "best_available": ["local", "openrouter.paid", "openai", "openrouter.free"],
+    "strict_provider": []
+  }
+}

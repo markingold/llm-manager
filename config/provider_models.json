@@ -1,0 +1,254 @@
+{
+  "local": {
+    "slots": [
+      {
+        "backend": "tgw",
+        "base_env": "LLM_CHAT_API_BASE",
+        "capabilities": [
+          "chat"
+        ],
+        "enabled": true,
+        "id": "chat",
+        "label": "Local Chat Slot"
+      },
+      {
+        "backend": "tgw",
+        "base_env": "LLM_INTENT_API_BASE",
+        "capabilities": [
+          "chat",
+          "classification"
+        ],
+        "enabled": true,
+        "id": "intent",
+        "label": "Local Intent Slot"
+      },
+      {
+        "backend": "tgw",
+        "base_env": "LLM_SMALL_API_BASE",
+        "capabilities": [
+          "chat"
+        ],
+        "enabled": true,
+        "id": "small",
+        "label": "Local Small Slot"
+      }
+    ]
+  },
+  "openai": {
+    "allowed": [
+      {
+        "enabled": true,
+        "family": "gpt",
+        "id": "gpt-4o-mini",
+        "input_cost_usd_per_1k": 0.00015,
+        "label": "GPT-4o mini",
+        "max_context": 128000,
+        "notes": "Default OpenAI fallback",
+        "output_cost_usd_per_1k": 0.0006,
+        "priority": 10,
+        "supports_json_schema": true,
+        "supports_reasoning": true,
+        "supports_tools": true,
+        "supports_vision": true
+      }
+    ]
+  },
+  "openrouter": {
+    "free": [
+      {
+        "enabled": true,
+        "family": "llama",
+        "id": "meta-llama/llama-3.3-8b-instruct:free",
+        "input_cost_usd_per_1k": 0.0,
+        "label": "Llama 3.3 8B Instruct Free",
+        "max_context": 8192,
+        "notes": "Starter free candidate",
+        "output_cost_usd_per_1k": 0.0,
+        "priority": 10,
+        "supports_json_schema": true,
+        "supports_reasoning": false,
+        "supports_tools": true,
+        "supports_vision": false,
+        "tier": "free"
+      },
+      {
+        "enabled": true,
+        "family": "step",
+        "id": "stepfun/step-3.5-flash:free",
+        "input_cost_usd_per_1k": 0.0,
+        "label": "StepFun 3.5 Flash Free",
+        "max_context": 8192,
+        "notes": "Free model",
+        "output_cost_usd_per_1k": 0.0,
+        "priority": 10,
+        "supports_json_schema": true,
+        "supports_reasoning": true,
+        "supports_tools": true,
+        "supports_vision": false,
+        "tier": "free"
+      },
+      {
+        "enabled": true,
+        "family": "nvidia",
+        "id": "nvidia/nemotron-3-super-120b-a12b:free",
+        "input_cost_usd_per_1k": 0.0,
+        "label": "Nvidia Nemotron 3 Super 120B Free",
+        "max_context": 8192,
+        "notes": "Free model",
+        "output_cost_usd_per_1k": 0.0,
+        "priority": 10,
+        "supports_json_schema": true,
+        "supports_reasoning": true,
+        "supports_tools": true,
+        "supports_vision": false,
+        "tier": "free"
+      },
+      {
+        "enabled": true,
+        "family": "nvidia",
+        "id": "nvidia/nemotron-3-nano-30b-a3b:free",
+        "input_cost_usd_per_1k": 0.0,
+        "label": "Nvidia Nemotron 3 Nano 30B Free",
+        "max_context": 8192,
+        "notes": "Free model",
+        "output_cost_usd_per_1k": 0.0,
+        "priority": 10,
+        "supports_json_schema": true,
+        "supports_reasoning": true,
+        "supports_tools": true,
+        "supports_vision": false,
+        "tier": "free"
+      },
+      {
+        "enabled": true,
+        "family": "minimax",
+        "id": "minimax/minimax-m2.5:free",
+        "input_cost_usd_per_1k": 0.0,
+        "label": "MiniMax M2.5 Free",
+        "max_context": 8192,
+        "notes": "Free model",
+        "output_cost_usd_per_1k": 0.0,
+        "priority": 10,
+        "supports_json_schema": true,
+        "supports_reasoning": true,
+        "supports_tools": true,
+        "supports_vision": false,
+        "tier": "free"
+      },
+      {
+        "enabled": true,
+        "family": "qwen",
+        "id": "qwen/qwen3-coder:free",
+        "input_cost_usd_per_1k": 0.0,
+        "label": "Qwen 3 Coder Free",
+        "max_context": 8192,
+        "notes": "Free model",
+        "output_cost_usd_per_1k": 0.0,
+        "priority": 10,
+        "supports_json_schema": true,
+        "supports_reasoning": true,
+        "supports_tools": true,
+        "supports_vision": false,
+        "tier": "free"
+      },
+      {
+        "enabled": true,
+        "family": "qwen",
+        "id": "qwen/qwen3-next-80b-a3b-instruct:free",
+        "input_cost_usd_per_1k": 0.0,
+        "label": "Qwen 3 Next 80B Free",
+        "max_context": 8192,
+        "notes": "Free model",
+        "output_cost_usd_per_1k": 0.0,
+        "priority": 10,
+        "supports_json_schema": true,
+        "supports_reasoning": true,
+        "supports_tools": true,
+        "supports_vision": false,
+        "tier": "free"
+      },
+      {
+        "enabled": true,
+        "family": "openai",
+        "id": "openai/gpt-oss-120b:free",
+        "input_cost_usd_per_1k": 0.0,
+        "label": "OpenAI GPT OSS 120B Free",
+        "max_context": 8192,
+        "notes": "Free model",
+        "output_cost_usd_per_1k": 0.0,
+        "priority": 10,
+        "supports_json_schema": true,
+        "supports_reasoning": true,
+        "supports_tools": true,
+        "supports_vision": false,
+        "tier": "free"
+      },
+      {
+        "enabled": true,
+        "family": "meta-llama",
+        "id": "meta-llama/llama-3.3-70b-instruct:free",
+        "input_cost_usd_per_1k": 0.0,
+        "label": "Meta Llama 3.3 70B Free",
+        "max_context": 8192,
+        "notes": "Free model",
+        "output_cost_usd_per_1k": 0.0,
+        "priority": 10,
+        "supports_json_schema": true,
+        "supports_reasoning": true,
+        "supports_tools": true,
+        "supports_vision": false,
+        "tier": "free"
+      },
+      {
+        "enabled": true,
+        "family": "google",
+        "id": "google/gemma-3-27b-it:free",
+        "input_cost_usd_per_1k": 0.0,
+        "label": "Google Gemma 3 27B Free",
+        "max_context": 8192,
+        "notes": "Free model",
+        "output_cost_usd_per_1k": 0.0,
+        "priority": 10,
+        "supports_json_schema": true,
+        "supports_reasoning": true,
+        "supports_tools": true,
+        "supports_vision": false,
+        "tier": "free"
+      },
+      {
+        "enabled": true,
+        "family": "nousresearch",
+        "id": "nousresearch/hermes-3-llama-3.1-405b:free",
+        "input_cost_usd_per_1k": 0.0,
+        "label": "NousResearch Hermes 3 Llama 3.1 405B Free",
+        "max_context": 8192,
+        "notes": "Free model",
+        "output_cost_usd_per_1k": 0.0,
+        "priority": 10,
+        "supports_json_schema": true,
+        "supports_reasoning": true,
+        "supports_tools": true,
+        "supports_vision": false,
+        "tier": "free"
+      }
+    ],
+    "paid": [
+      {
+        "enabled": true,
+        "family": "gpt",
+        "id": "openai/gpt-4o-mini",
+        "input_cost_usd_per_1k": 0.00015,
+        "label": "GPT-4o mini via OpenRouter",
+        "max_context": 128000,
+        "notes": "Low-cost paid baseline",
+        "output_cost_usd_per_1k": 0.0006,
+        "priority": 10,
+        "supports_json_schema": true,
+        "supports_reasoning": true,
+        "supports_tools": true,
+        "supports_vision": true,
+        "tier": "paid"
+      }
+    ]
+  }
+}
