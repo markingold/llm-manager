@@ -1,0 +1,1 @@
+/srv/2bananas/projects/2bananas-standards/templates/.github/copilot-instructions.md

@@ -1,8 +1,7 @@
 {
-  "folders": [
-    { "path": "." }
-  ],
-  "settings": {
-    "git.autofetch": true
-  }
+	"folders": [
+		{
+			"path": "."
+		}
+	]
 }
