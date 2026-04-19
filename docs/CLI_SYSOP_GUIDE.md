@@ -11,156 +11,321 @@ source venv/bin/activate
 
 ## 1. Engine Control (systemd)
 
-```bash
-# Check all engines
-sudo systemctl status llm-a llm-b llm-c llm-manager-api
+This project is operated systemd-first. The API can still fall back to legacy PM2 names for `POST /bounce/{mode}`, but the current dashboard and engine-control endpoints assume configured systemd units.
 
-# Restart chat engine
-sudo systemctl restart llm-a
+On the deployed host, `llm-a`, `llm-b`, and `llm-c` all launch through `run/engine_launcher.py` rather than calling `text-generation-webui/server.py` directly.
 
-# Stop all LLM engines
-sudo systemctl stop llm-a llm-b llm-c
+Check engines:
+- `sudo systemctl status llm-a llm-b llm-c llm-manager-api`
 
-# Start just chat (solo)
-sudo systemctl stop llm-b llm-c && sudo systemctl start llm-a
+Restart chat:
+- `sudo systemctl restart llm-a`
 
-# View logs
-sudo journalctl -u llm-a -n 100 --no-pager
-sudo journalctl -u llm-manager-api -f   # follow API logs
-```
+Stop all:
+- `sudo systemctl stop llm-a llm-b llm-c`
+
+Solo chat:
+- `sudo systemctl stop llm-b llm-c && sudo systemctl start llm-a`
+
+Logs:
+- `sudo journalctl -u llm-a -n 100 --no-pager`
+- `sudo journalctl -u llm-manager-api -f`
+
+API equivalents:
+- `curl http://localhost:8101/engines/status | python3 -m json.tool`
+- `curl -X POST http://localhost:8101/engines/chat/restart`
+- `curl -X POST http://localhost:8101/engines/solo/chat`
+- `curl "http://localhost:8101/engines/chat/logs?lines=100" | python3 -m json.tool`
+
+---
 
 ## 2. Model Switching
 
-```bash
-# Via API (preferred — handles symlink + engine restart)
-curl -X POST http://localhost:8101/switch \
-  -H 'Content-Type: application/json' \
-  -d '{"mode":"chat","model_dir":"Qwen3-14B-exl2","bounce":true}'
+Preferred via API:
 
-# Switch intent model
-curl -X POST http://localhost:8101/switch \
-  -d '{"mode":"intent","model_dir":"lora_llama3.2-3b","bounce":true}' \
-  -H 'Content-Type: application/json'
+- POST `/switch`
+  - Body: `{ "mode": "chat|intent|small", "model_dir": "...", "bounce": true, "backend": "tgw|vllm|tabbyapi" }`
 
-# Via CLI (interactive)
-cd app/src/llm_manager
-python switch_model.py
+Examples:
 
-# Via CLI (direct)
-python switch_model.py --chat Qwen3-14B-exl2
-python switch_model.py --intent lora_llama3.2-3b
-```
+    curl -X POST http://localhost:8101/switch \
+      -H 'Content-Type: application/json' \
+      -d '{"mode":"chat","model_dir":"Qwen3-14B-exl2","bounce":true}'
+
+    curl -X POST http://localhost:8101/switch \
+      -H 'Content-Type: application/json' \
+      -d '{"mode":"intent","model_dir":"lora_llama3.2-3b","bounce":true}'
+
+CLI options:
+
+- `cd app/src/llm_manager`
+- `python switch_model.py --chat <dir>`
+- `python switch_model.py --intent <dir>`
+- `python switch_model.py`  # interactive
+
+Operational note:
+- `/switch` updates `chat_active_model`, `intent_active_model`, or `small_active_model` in the shared models directory and then optionally restarts the engine.
+- When `backend` is provided, llm-manager stores per-slot backend preference in `run/state/slot_backends.json`.
+
+---
 
 ## 3. Model Inspection
 
-```bash
-# Inspect all models
-curl http://localhost:8101/inspect | python3 -m json.tool
+- `GET /inspect`
+- `GET /inspect/<model>`
+- `GET /vram`
+- `nvidia-smi`
 
-# Inspect one model
-curl http://localhost:8101/inspect/Qwen3-14B-exl2 | python3 -m json.tool
+Examples:
 
-# Check VRAM
-curl http://localhost:8101/vram | python3 -m json.tool
+    curl http://localhost:8101/inspect | python3 -m json.tool
+    curl http://localhost:8101/inspect/Qwen3-14B-exl2 | python3 -m json.tool
+    curl http://localhost:8101/vram | python3 -m json.tool
 
-# Quick GPU check
-nvidia-smi
-```
+---
 
 ## 4. Model Download
 
-```bash
-cd app/src/llm_manager
+Located under:
+- `app/src/llm_manager/`
 
-# Download a Hugging Face model directly into TGW models dir
-python download_models.py --custom_model TheBloke/Mistral-7B-v0.1-GPTQ
+Common scripts:
+- `download_models.py`
+- `download_convert_chat_model.py`
 
-# Download from model_configs.json
-python download_models.py --model_key llama3.2-3b
+Examples:
 
-# Download + convert to EXL2 (interactive)
-python download_convert_chat_model.py
+    cd app/src/llm_manager
+    python download_models.py --model_key llama3.2-3b
+    python download_models.py --custom_model TheBloke/Mistral-7B-v0.1-GPTQ
+    python download_convert_chat_model.py --repo_id Qwen/Qwen3-14B --bits 6.5
 
-# Download + convert (scripted)
-python download_convert_chat_model.py --repo_id Qwen/Qwen3-14B --bits 6.5
-```
+---
 
 ## 5. LoRA Training Pipeline
 
-```bash
-cd app/src/llm_manager
+Primary entry:
+- `python main.py --pipeline`
 
-# Full pipeline: train → merge → convert → copy (interactive)
-python main.py
+Common usage:
 
-# Full pipeline (scripted, single model, dual GPU)
-python main.py --pipeline --model_key llama3.2-3b --dual
+    cd app/src/llm_manager
+    python main.py --pipeline --model_key llama3.2-3b --dual
+    python main.py --pipeline --all --dual
 
-# Full pipeline (all models)
-python main.py --pipeline --all --dual
+Individual steps:
+- `train_lora.py`
+- `train_lora_dual.py`
+- `merge_lora.py`
+- `convert_lora.py`
 
-# Individual steps:
-python train_lora.py --model_key llama3.2-3b           # train single GPU
-accelerate launch --num_processes 2 train_lora_dual.py --model_key llama3.2-3b  # dual GPU
-python merge_lora.py --model_key llama3.2-3b            # merge LoRA into base
-python convert_lora.py --model_key llama3.2-3b          # convert to EXL2
+Examples:
 
-# Force retrain (ignore hash cache)
-python train_lora.py --model_key llama3.2-3b --force
+    python train_lora.py --model_key llama3.2-3b
+    accelerate launch --num_processes 2 train_lora_dual.py --model_key llama3.2-3b
+    python merge_lora.py --model_key llama3.2-3b
+    python convert_lora.py --model_key llama3.2-3b
+    python validate_training_data.py
 
-# Rebuild combined dataset from *_prompts.jsonl
-python -c "from utils import build_combined_dataset; build_combined_dataset()"
-```
+Dual GPU uses `accelerate`.
+
+---
 
 ## 6. Training Jobs via API
 
-```bash
-# Start training job
-curl -X POST http://localhost:8101/jobs \
-  -H 'Content-Type: application/json' \
-  -d '{"kind":"train","model_key":"llama3.2-3b"}'
+- `POST /jobs`
+- `GET /jobs`
+- `GET /jobs/<id>`
+- `POST /jobs/<id>/cancel`
 
-# Start merge job
-curl -X POST http://localhost:8101/jobs \
-  -d '{"kind":"merge","model_key":"llama3.2-3b"}' \
-  -H 'Content-Type: application/json'
+Examples:
 
-# List jobs
-curl http://localhost:8101/jobs | python3 -m json.tool
+    curl -X POST http://localhost:8101/jobs \
+      -H 'Content-Type: application/json' \
+      -d '{"kind":"train","model_key":"llama3.2-3b"}'
 
-# Job detail + log tail
-curl http://localhost:8101/jobs/abc123def456 | python3 -m json.tool
+    curl http://localhost:8101/jobs | python3 -m json.tool
 
-# Cancel a job
-curl -X POST http://localhost:8101/jobs/abc123def456/cancel
-```
+Notes:
+- Jobs run as subprocesses from the project root.
+- Job state is not persisted across an API restart.
+- Logs are stored in `run/logs/`.
+
+---
 
 ## 7. Health & Diagnostics
 
+- `GET /health`
+- `GET /system`
+- `GET /engines/status`
+- `GET /models`
+- `GET /knobs`
+- `GET /providers/models`
+- `GET /providers/policies`
+- `GET /providers/state`
+- `GET /router/health`
+- `GET /router/last-decisions`
+- `GET /router/usage-summary`
+- `GET /router/queue-state`
+- `GET /router/fallback-stats`
+- `POST /router/evaluate/local`
+- `POST /router/evaluate/local/async`
+- `GET /router/evaluation-queue-state`
+- `POST /router/evaluation-queue/{run_id}/cancel`
+- `GET /router/evaluation-suites`
+- `GET /router/evaluation-suites/{suite_name}/{suite_version}`
+- `PUT /router/evaluation-suites/{suite_name}/{suite_version}`
+- `DELETE /router/evaluation-suites/{suite_name}/{suite_version}`
+- `POST /router/evaluation-suites/{suite_name}/{suite_version}/rerun`
+- `GET /router/evaluations`
+- `GET /router/evaluations/{run_id}`
+- `GET /router/evaluations/{run_id}/report`
+- `GET /router/evaluations/{run_id}/compare-compact`
+- `GET /router/evaluation-summary`
+- `GET /router/evaluation-worker-config`
+- `POST /router/completions`
+- `POST /router/embed`
+
+Useful commands:
+
+    curl http://localhost:8101/health | python3 -m json.tool
+    curl http://localhost:8101/system | python3 -m json.tool
+    curl http://localhost:8101/models | python3 -m json.tool
+    curl http://localhost:8101/knobs | python3 -m json.tool
+    curl http://localhost:8101/providers/models | python3 -m json.tool
+    curl http://localhost:8101/providers/policies | python3 -m json.tool
+    curl http://localhost:8101/providers/state | python3 -m json.tool
+    curl http://localhost:8101/router/health | python3 -m json.tool
+    curl "http://localhost:8101/router/last-decisions?limit=20" | python3 -m json.tool
+    curl "http://localhost:8101/router/usage-summary?limit=200" | python3 -m json.tool
+    curl http://localhost:8101/router/queue-state | python3 -m json.tool
+    curl "http://localhost:8101/router/fallback-stats?limit=500" | python3 -m json.tool
+    curl "http://localhost:8101/router/evaluation-queue-state?limit=50" | python3 -m json.tool
+    curl "http://localhost:8101/router/evaluation-suites?limit=50" | python3 -m json.tool
+    curl "http://localhost:8101/router/evaluations?status=completed&target_mode=chat&provider=local&limit=20" | python3 -m json.tool
+    curl "http://localhost:8101/router/evaluation-summary?limit=20" | python3 -m json.tool
+    curl "http://localhost:8101/router/evaluation-worker-config" | python3 -m json.tool
+    curl -X POST http://localhost:8101/router/completions -H 'Content-Type: application/json' -d '{"prompt":"Say OK","max_tokens":8}' | python3 -m json.tool
+    curl -X POST http://localhost:8101/router/embed -H 'Content-Type: application/json' -d '{"input":"hello world"}' | python3 -m json.tool
+
+Local evaluation quickstart:
+
+    curl -X POST http://localhost:8101/router/evaluate/local \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "suite_name":"chat-tuning-weather",
+        "suite_version":"1",
+        "target_mode":"chat",
+        "case_pass_threshold_pct":0.8,
+        "suite_pass_threshold_pct":0.9,
+        "candidate_models":["chat_active_model"],
+        "variants":[
+          {"variant_id":"temp_0_2","temperature":0.2,"max_tokens":120},
+          {"variant_id":"temp_0_7","temperature":0.7,"max_tokens":120}
+        ],
+        "cases":[
+          {
+            "case_id":"wx1",
+            "prompt":"Give a one-line weather summary",
+            "expected_contains":["weather"],
+            "min_plugin_score_pct":1.0,
+            "scoring_plugins":[
+              {"name":"contains_any","terms":["weather","forecast"],"weight":1}
+            ]
+          }
+        ]
+      }' | python3 -m json.tool
+
+    # Then inspect detailed run and compact report using the returned run_id
+    curl "http://localhost:8101/router/evaluations/<run_id>" | python3 -m json.tool
+    curl "http://localhost:8101/router/evaluations/<run_id>/report" | python3 -m json.tool
+    curl "http://localhost:8101/router/evaluations/<run_id>/compare-compact" | python3 -m json.tool
+
+Mixed-provider candidate example:
+
+    curl -X POST http://localhost:8101/router/evaluate/local \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "suite_name":"cross-provider-weather",
+        "suite_version":"1",
+        "target_mode":"chat",
+        "candidate_models":[
+          "chat_active_model",
+          "openrouter:meta-llama/llama-3.3-8b-instruct:free",
+          "openai:gpt-4o-mini"
+        ],
+        "variants":[{"variant_id":"baseline","temperature":0.2,"max_tokens":120}],
+        "cases":[{"case_id":"wx1","prompt":"Give a one-line weather summary","expected_contains":["weather"]}]
+      }' | python3 -m json.tool
+
+Async evaluation queue:
+
+    curl -X POST "http://localhost:8101/router/evaluate/local/async?priority=interactive" \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "suite_name":"chat-tuning-weather",
+        "suite_version":"1",
+        "target_mode":"chat",
+        "candidate_models":["chat_active_model"],
+        "variants":[{"variant_id":"temp_0_2","temperature":0.2,"max_tokens":120}],
+        "cases":[{"case_id":"wx1","prompt":"Give a one-line weather summary","expected_contains":["weather"]}]
+      }' | python3 -m json.tool
+
+    curl "http://localhost:8101/router/evaluation-queue-state?limit=50" | python3 -m json.tool
+    curl -X POST "http://localhost:8101/router/evaluation-queue/<run_id>/cancel" | python3 -m json.tool
+    curl "http://localhost:8101/router/evaluations?status=completed&provider=openrouter&lane=openrouter_free&tag=weather&suite_pass=true&limit=20" | python3 -m json.tool
+
+Suite reuse and reruns:
+
+    curl -X PUT "http://localhost:8101/router/evaluation-suites/chat-tuning-weather/1" \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "suite_name":"chat-tuning-weather",
+        "suite_version":"1",
+        "target_mode":"chat",
+        "candidate_models":["chat_active_model"],
+        "variants":[{"variant_id":"temp_0_2","temperature":0.2,"max_tokens":120}],
+        "cases":[{"case_id":"wx1","prompt":"Give a one-line weather summary","expected_contains":["weather"]}]
+      }' | python3 -m json.tool
+
+    curl "http://localhost:8101/router/evaluation-suites/chat-tuning-weather/1" | python3 -m json.tool
+    curl -X POST "http://localhost:8101/router/evaluation-suites/chat-tuning-weather/1/rerun" \
+      -H 'Content-Type: application/json' \
+      -d '{"async_run":true,"priority":"batch","case_pass_threshold_pct":0.85,"suite_pass_threshold_pct":0.95}' | python3 -m json.tool
+
+Operational note:
+- Use `/engines/status` for complete slot state. `/health` is only a quick readiness snapshot and does not replace engine status inspection.
+
+---
+
+## 8. Dashboard
+
+The web dashboard lives in `web/` and talks to the API through Apache at `/llm-manager-api`.
+
+Operator expectations:
+- Use it for day-to-day switching, restarts, log tails, and prompt tests
+- Slot cards disappear when `ENABLE_CHAT`, `ENABLE_INTENT`, or `ENABLE_SMALL` is set to `0` in `secrets/.env`
+- The dashboard supports test calls for `chat`, `intent`, and `small`
+
+---
+
+## 9. Strict Baseline Reports
+
+Use the strict baseline harness to generate reproducible quality and promotion artifacts:
+
 ```bash
-# API health check
-curl http://localhost:8101/health | python3 -m json.tool
-
-# System info (load, disk, RAM)
-curl http://localhost:8101/system | python3 -m json.tool
-
-# Engine status (all three)
-curl http://localhost:8101/engines/status | python3 -m json.tool
-
-# Engine logs
-curl "http://localhost:8101/engines/chat/logs?lines=50" | python3 -m json.tool
-
-# List models + active symlinks
-curl http://localhost:8101/models | python3 -m json.tool
-
-# Read/write knobs (.env settings)
-curl http://localhost:8101/knobs | python3 -m json.tool
-curl -X POST http://localhost:8101/knobs \
-  -d '{"ENABLE_SMALL":"0"}' \
-  -H 'Content-Type: application/json'
+python run/baseline_local_models.py
 ```
 
-## 8. Testing
+Generated under `docs/reports/`:
+- `baseline_local_models_<timestamp>.json`
+- `baseline_local_models_<timestamp>.md`
+- `promotion_recommendation_<timestamp>.json`
+- `promotion_recommendation_<timestamp>.md`
+
+---
+
+## 10. Testing
 
 ```bash
 # Test chat engine
@@ -168,6 +333,12 @@ curl "http://localhost:8101/test-chat?q=Hello" | python3 -m json.tool
 
 # Test intent engine
 curl "http://localhost:8101/test-intent?q=What%20time%20is%20it" | python3 -m json.tool
+
+# Test small engine
+curl "http://localhost:8101/test-util?q=Say%20OK" | python3 -m json.tool
+
+# Disable thinking mode when supported by the backend
+curl "http://localhost:8101/test-chat?q=Hello&no_thinking=1" | python3 -m json.tool
 
 # Benchmark all intent models (interactive)
 cd app/src/llm_manager
@@ -177,76 +348,9 @@ python test_intent_models.py
 python validate_training_data.py
 ```
 
-## 9. Common Scenarios
+---
 
-### Deploy a new chat model
-```bash
-# 1. Download
-cd app/src/llm_manager
-python download_convert_chat_model.py --repo_id Qwen/Qwen3-14B --bits 6.5
-
-# 2. Verify it appeared
-curl http://localhost:8101/models | python3 -m json.tool | grep Qwen
-
-# 3. Inspect
-curl http://localhost:8101/inspect/Qwen__Qwen3-14B_exl2_b6p5 | python3 -m json.tool
-
-# 4. Switch + bounce
-curl -X POST http://localhost:8101/switch \
-  -d '{"mode":"chat","model_dir":"Qwen__Qwen3-14B_exl2_b6p5","bounce":true}' \
-  -H 'Content-Type: application/json'
-
-# 5. Test
-curl "http://localhost:8101/test-chat?q=Hello"
-```
-
-### Retrain intent models after adding data
-```bash
-# 1. Add/edit data files in data/*_prompts.jsonl
-# 2. Validate
-cd app/src/llm_manager
-python validate_training_data.py
-
-# 3. Train all models
-python main.py --pipeline --all --dual
-
-# 4. Verify + switch
-curl http://localhost:8101/models | python3 -m json.tool
-python switch_model.py --intent lora_llama3.2-3b
-```
-
-### Hide the small/utility slot
-```bash
-# Via API
-curl -X POST http://localhost:8101/knobs \
-  -d '{"ENABLE_SMALL":"0"}' \
-  -H 'Content-Type: application/json'
-
-# Or edit secrets/.env directly
-# ENABLE_SMALL=0
-
-# Dashboard will hide the small engine card on next refresh
-```
-
-### Span a large model across both GPUs
-Edit `/etc/systemd/system/llm-a.service` (or whichever unit):
-```ini
-ExecStart=/srv/2bananas/engines/text-generation-webui/venv/bin/python \
-  /srv/2bananas/engines/text-generation-webui/server.py \
-  --model chat_active_model \
-  --loader exllamav2 \
-  --gpu-split 20,20 \
-  --max_seq_len 8192 \
-  ...
-```
-Then:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl restart llm-a
-```
-**Note:** When spanning GPUs, the intent and small engines must be stopped (or moved to CPU).
-
-## 10. File Locations
+## 11. File Locations
 
 | What | Path |
 |------|------|
@@ -256,10 +360,20 @@ sudo systemctl restart llm-a
 | Shared utilities | `app/src/llm_manager/utils.py` |
 | Configuration | `secrets/.env` |
 | Config template | `config/settings.example.env` |
+| Provider model catalog | `config/provider_models.json` |
+| Provider policy config | `config/provider_policies.json` |
 | Model configs | `model_configs.json` |
 | Training data | `data/*_prompts.jsonl` |
-| Dashboard | `web/index.html`, `web/app.js` |
-| Models directory | `/srv/2bananas/engines/models/` |
-| Active symlinks | `models/{chat,intent,small}_active_model` |
+| Job logs | `run/logs/` |
+| Provider runtime state | `run/state/provider_runtime_state.json` |
+| Router contracts | `api/router/contracts.py` |
+| Engine launcher | `run/engine_launcher.py` |
+| Dashboard | `web/` |
+| Effective runtime models directory | `/srv/2bananas/engines/text-generation-webui/user_data/models/` |
+| Shared/backing models directory | `/srv/2bananas/engines/models/` |
+| Active symlinks | `/srv/2bananas/engines/text-generation-webui/user_data/models/{chat,intent,small}_active_model` |
 | Systemd units | `/etc/systemd/system/llm-{a,b,c}.service` |
 | API systemd unit | `/etc/systemd/system/llm-manager-api.service` |
+
+Operational note:
+- `run/state/provider_runtime_state.json` now tracks router request logs, usage logs, provider-model cooldowns, and OpenRouter free-tier limiter state.

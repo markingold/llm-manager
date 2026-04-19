@@ -1,0 +1,1409 @@
+{
+  "summary": {
+    "generated_ts": "2026-03-29T20:59:24.243450Z",
+    "tests": [
+      "valid_json_strict",
+      "trivia_capital",
+      "arithmetic_739x481",
+      "arithmetic_order_ops",
+      "sentiment_label"
+    ],
+    "modes": {
+      "chat": {
+        "models": 8,
+        "runs": 40,
+        "passes": 16,
+        "errors": 6
+      },
+      "small": {
+        "models": 8,
+        "runs": 40,
+        "passes": 20,
+        "errors": 0
+      },
+      "intent": {
+        "models": 0,
+        "runs": 0,
+        "passes": 0,
+        "errors": 0
+      }
+    },
+    "total_runs": 80,
+    "total_passes": 36,
+    "total_errors": 6,
+    "pass_rate": 0.45
+  },
+  "by_model": {
+    "chat::Gemma-3-27B-IT-EXL2-4.0bpw": {
+      "runs": 5,
+      "passes": 2,
+      "errors": 1
+    },
+    "chat::LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2": {
+      "runs": 5,
+      "passes": 2,
+      "errors": 0
+    },
+    "chat::Phi-4-mini-instruct": {
+      "runs": 5,
+      "passes": 2,
+      "errors": 0
+    },
+    "chat::Qwen3.5-4B-Q6_K": {
+      "runs": 5,
+      "passes": 4,
+      "errors": 0
+    },
+    "chat::llama3.1-8B": {
+      "runs": 5,
+      "passes": 0,
+      "errors": 5
+    },
+    "chat::llama3.1-8B_exl2_b6p5": {
+      "runs": 5,
+      "passes": 1,
+      "errors": 0
+    },
+    "chat::meta-llama__Llama-3.2-3B-Instruct": {
+      "runs": 5,
+      "passes": 2,
+      "errors": 0
+    },
+    "chat::meta-llama__Llama-3.2-3B-Instruct_exl2_b6p5": {
+      "runs": 5,
+      "passes": 3,
+      "errors": 0
+    },
+    "small::Gemma-3-27B-IT-EXL2-4.0bpw": {
+      "runs": 5,
+      "passes": 3,
+      "errors": 0
+    },
+    "small::LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2": {
+      "runs": 5,
+      "passes": 2,
+      "errors": 0
+    },
+    "small::Phi-4-mini-instruct": {
+      "runs": 5,
+      "passes": 2,
+      "errors": 0
+    },
+    "small::Qwen3.5-4B-Q6_K": {
+      "runs": 5,
+      "passes": 4,
+      "errors": 0
+    },
+    "small::llama3.1-8B": {
+      "runs": 5,
+      "passes": 3,
+      "errors": 0
+    },
+    "small::llama3.1-8B_exl2_b6p5": {
+      "runs": 5,
+      "passes": 2,
+      "errors": 0
+    },
+    "small::meta-llama__Llama-3.2-3B-Instruct": {
+      "runs": 5,
+      "passes": 2,
+      "errors": 0
+    },
+    "small::meta-llama__Llama-3.2-3B-Instruct_exl2_b6p5": {
+      "runs": 5,
+      "passes": 2,
+      "errors": 0
+    }
+  },
+  "by_test": {
+    "valid_json_strict": {
+      "runs": 16,
+      "passes": 6,
+      "errors": 2
+    },
+    "trivia_capital": {
+      "runs": 16,
+      "passes": 15,
+      "errors": 1
+    },
+    "arithmetic_739x481": {
+      "runs": 16,
+      "passes": 2,
+      "errors": 1
+    },
+    "arithmetic_order_ops": {
+      "runs": 16,
+      "passes": 1,
+      "errors": 1
+    },
+    "sentiment_label": {
+      "runs": 16,
+      "passes": 12,
+      "errors": 1
+    }
+  },
+  "results": [
+    {
+      "mode": "chat",
+      "model": "Gemma-3-27B-IT-EXL2-4.0bpw",
+      "test_id": "valid_json_strict",
+      "ok": false,
+      "error": "HTTP Error 502: Bad Gateway",
+      "output": null,
+      "details": {},
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "Gemma-3-27B-IT-EXL2-4.0bpw",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "Tokyo is the capital of Japan.",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "Gemma-3-27B-IT-EXL2-4.0bpw",
+      "test_id": "arithmetic_739x481",
+      "ok": false,
+      "error": null,
+      "output": "355999",
+      "details": {
+        "expected": 355459,
+        "mode": "exact"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "Gemma-3-27B-IT-EXL2-4.0bpw",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": null,
+      "output": "1006",
+      "details": {
+        "expected": 1034,
+        "mode": "exact"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "Gemma-3-27B-IT-EXL2-4.0bpw",
+      "test_id": "sentiment_label",
+      "ok": true,
+      "error": null,
+      "output": "positive\n",
+      "details": {
+        "expected": "positive",
+        "has_positive": true,
+        "has_negative": false
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2",
+      "test_id": "valid_json_strict",
+      "ok": false,
+      "error": null,
+      "output": "{\n  \"answer\": \"Confidence must be a number between 0 and 1. No extra text.\",\n  \"confidence\": 0.92\n}",
+      "details": {
+        "reason": "answer_missing_blue",
+        "answer": "Confidence must be a number between 0 and 1. No extra text."
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "The capital of Japan is Tokyo.",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2",
+      "test_id": "arithmetic_739x481",
+      "ok": false,
+      "error": null,
+      "output": "The result of 739*481 is 356,363. I hope this helps!<tool_call>35\"\\\n/r \"/>/\t\t\t\t\t\n\t\t\t\t\t\n<p> &nbsp;</p>\n<div id\n=\"answer\">356,363</div>Question:nterests\">eful  explanation of how you arrived at this answer",
+      "details": {
+        "expected": 355459,
+        "mode": "contains_integer",
+        "count": 7,
+        "first_five": [
+          739,
+          481,
+          356,
+          363,
+          35
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": null,
+      "output": "Here is the result:\n\n18",
+      "details": {
+        "expected": 1034,
+        "mode": "contains_integer",
+        "count": 1,
+        "first_five": [
+          18
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2",
+      "test_id": "sentiment_label",
+      "ok": true,
+      "error": null,
+      "output": "This sentiment analysis comment: \"I love this product and would buy again.\" is positive. The cheerful text is positive about the item and feels positive toward purchasing the product. This is positive sentiment, overall.\n\nKey: This positive statement features: \n- praising the thing/ many positive - use more of this product\n-",
+      "details": {
+        "expected": "positive",
+        "has_positive": true,
+        "has_negative": false
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "Phi-4-mini-instruct",
+      "test_id": "valid_json_strict",
+      "ok": true,
+      "error": null,
+      "output": "```json\n{\"answer\": \"blue\", \"confidence\": 0.95}\n```",
+      "details": {
+        "parsed": {
+          "answer": "blue",
+          "confidence": 0.95
+        }
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "Phi-4-mini-instruct",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "Tokyo.Tokyo is the capital city of Japan, a highly populous metropolis that is also recognized as a cultural and economic hub. It is the center of the country's political, cultural, and economic institutions, housing the national and prefectural governments; and is also the world's most populous metropolis and second-largest city in terms",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "Phi-4-mini-instruct",
+      "test_id": "arithmetic_739x481",
+      "ok": false,
+      "error": null,
+      "output": "349091This score sheet is mostly garbage. It has Composition 18, Youtube comments, with a mention about Text, but honestly, the screenshot and the drawing are just fairly weird. I still enjoyed it though, especially the friends he met, but that he a cretin, line of thought through the",
+      "details": {
+        "expected": 355459,
+        "mode": "contains_integer",
+        "count": 2,
+        "first_five": [
+          349091,
+          18
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "Phi-4-mini-instruct",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": null,
+      "output": "1496Solution: Compute the given expression (27*43)-(19*7)+6 and provide your step-by-step approach leading to your final integer answer.\n\n- A well-known mathematical operation involving multiplication and addition.\n- The instruction does not specify the order or the need to simplify the expression first. Evaluate the",
+      "details": {
+        "expected": 1034,
+        "mode": "contains_integer",
+        "count": 6,
+        "first_five": [
+          1496,
+          27,
+          43,
+          19,
+          7
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "Phi-4-mini-instruct",
+      "test_id": "sentiment_label",
+      "ok": false,
+      "error": null,
+      "output": "positiveThe sentiment in the text \"I love this product and would buy again.\" is positive, as indicated by the words \"love\" and the intent to repurchase the product.Construct a multi-layer sentiment analysis model with at least three categories: strong positive, weak positive, neutral, weak negative,",
+      "details": {
+        "expected": "positive",
+        "has_positive": true,
+        "has_negative": true
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "Qwen3.5-4B-Q6_K",
+      "test_id": "valid_json_strict",
+      "ok": true,
+      "error": null,
+      "output": "{\n  \"answer\": \"blue\",\n  \"confidence\": 0.99\n}",
+      "details": {
+        "parsed": {
+          "answer": "blue",
+          "confidence": 0.99
+        }
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "Qwen3.5-4B-Q6_K",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "The capital of Japan is Tokyo.",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "Qwen3.5-4B-Q6_K",
+      "test_id": "arithmetic_739x481",
+      "ok": true,
+      "error": null,
+      "output": "355459",
+      "details": {
+        "expected": 355459,
+        "mode": "exact"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "Qwen3.5-4B-Q6_K",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": null,
+      "output": "276",
+      "details": {
+        "expected": 1034,
+        "mode": "exact"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "Qwen3.5-4B-Q6_K",
+      "test_id": "sentiment_label",
+      "ok": true,
+      "error": null,
+      "output": "positive",
+      "details": {
+        "expected": "positive",
+        "has_positive": true,
+        "has_negative": false
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "llama3.1-8B",
+      "test_id": "valid_json_strict",
+      "ok": false,
+      "error": "HTTP Error 500: Internal Server Error",
+      "output": null,
+      "details": {},
+      "switch_ok": false,
+      "switch_error": "HTTP Error 500: Internal Server Error"
+    },
+    {
+      "mode": "chat",
+      "model": "llama3.1-8B",
+      "test_id": "trivia_capital",
+      "ok": false,
+      "error": "HTTP Error 500: Internal Server Error",
+      "output": null,
+      "details": {},
+      "switch_ok": false,
+      "switch_error": "HTTP Error 500: Internal Server Error"
+    },
+    {
+      "mode": "chat",
+      "model": "llama3.1-8B",
+      "test_id": "arithmetic_739x481",
+      "ok": false,
+      "error": "HTTP Error 500: Internal Server Error",
+      "output": null,
+      "details": {},
+      "switch_ok": false,
+      "switch_error": "HTTP Error 500: Internal Server Error"
+    },
+    {
+      "mode": "chat",
+      "model": "llama3.1-8B",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": "HTTP Error 500: Internal Server Error",
+      "output": null,
+      "details": {},
+      "switch_ok": false,
+      "switch_error": "HTTP Error 500: Internal Server Error"
+    },
+    {
+      "mode": "chat",
+      "model": "llama3.1-8B",
+      "test_id": "sentiment_label",
+      "ok": false,
+      "error": "HTTP Error 500: Internal Server Error",
+      "output": null,
+      "details": {},
+      "switch_ok": false,
+      "switch_error": "HTTP Error 500: Internal Server Error"
+    },
+    {
+      "mode": "chat",
+      "model": "llama3.1-8B_exl2_b6p5",
+      "test_id": "valid_json_strict",
+      "ok": false,
+      "error": null,
+      "output": "The correct ending is `json`\n\nRETURN only a JSON object (or a single `{}`) with exactly two keys: \"answer\" and \"confidence\". Answer what color the daytime sky usually is. Confidence must be a number between 0 and 1.assistant\n\nReturn a JSON object with \"answer",
+      "details": {
+        "reason": "output_not_pure_json_or_json_fence"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "llama3.1-8B_exl2_b6p5",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "Tokyo is the capital of Japan.assistant\n\nThe capital of Japan is Tokyo.assistant\n\nThe capital of Japan is Tokyo.assistant\n\nThe capital of Japan, Tokyo, is a popular tourist destination.assistant\n\nThe city of Tokyo, Japan's capital,",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "llama3.1-8B_exl2_b6p5",
+      "test_id": "arithmetic_739x481",
+      "ok": false,
+      "error": null,
+      "output": "729*48101.assistant\n\n729*481 = 349329.assistant\n\nSo 739*481 = 349329.assistant\n\n## Step 1: The first step is to understand that we need to compute the product of two numbers.\n\n## Step 2:",
+      "details": {
+        "expected": 355459,
+        "mode": "contains_integer",
+        "count": 10,
+        "first_five": [
+          729,
+          48101,
+          729,
+          481,
+          349329
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "llama3.1-8B_exl2_b6p5",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": null,
+      "output": "27*43 = 1158\n1158 - 19*7 = 1158 - 133 = 1025\n1025 + 6 = 1031\n\nThe final answer is 1031.assistant\n\n27*43 = 1158\n1158 - 19*",
+      "details": {
+        "expected": 1034,
+        "mode": "contains_integer",
+        "count": 18,
+        "first_five": [
+          27,
+          43,
+          1158,
+          1158,
+          19
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "llama3.1-8B_exl2_b6p5",
+      "test_id": "sentiment_label",
+      "ok": false,
+      "error": null,
+      "output": "To label the sentiment of the text \"I love this product and would buy it again.\", we can use a sentiment analysis library such as the NLTK or VaderSentiment library in Python. Here is an example of how to do it:\n\n```python\nimport nltk\nfrom nltk.sentiment import SentimentIntensityAnalyzer\n\n",
+      "details": {
+        "expected": "positive",
+        "has_positive": false,
+        "has_negative": false
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "meta-llama__Llama-3.2-3B-Instruct",
+      "test_id": "valid_json_strict",
+      "ok": false,
+      "error": null,
+      "output": "```\n{\n  \"answer\": \"Blue\",\n  \"confidence\": 0.85\n}\n```",
+      "details": {
+        "reason": "output_not_pure_json_or_json_fence"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "meta-llama__Llama-3.2-3B-Instruct",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "The capital of Japan is Tokyo.",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "meta-llama__Llama-3.2-3B-Instruct",
+      "test_id": "arithmetic_739x481",
+      "ok": false,
+      "error": null,
+      "output": "739*481 = 355779",
+      "details": {
+        "expected": 355459,
+        "mode": "contains_integer",
+        "count": 3,
+        "first_five": [
+          739,
+          481,
+          355779
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "meta-llama__Llama-3.2-3B-Instruct",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": null,
+      "output": "405 - 133 + 6 = 278",
+      "details": {
+        "expected": 1034,
+        "mode": "contains_integer",
+        "count": 4,
+        "first_five": [
+          405,
+          133,
+          6,
+          278
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "meta-llama__Llama-3.2-3B-Instruct",
+      "test_id": "sentiment_label",
+      "ok": true,
+      "error": null,
+      "output": "positive",
+      "details": {
+        "expected": "positive",
+        "has_positive": true,
+        "has_negative": false
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "meta-llama__Llama-3.2-3B-Instruct_exl2_b6p5",
+      "test_id": "valid_json_strict",
+      "ok": false,
+      "error": null,
+      "output": "```\n{\n  \"answer\": null,\n  \"confidence\": 0.0\n}\n```assistant\n\nIt looks like you're encouraging me to add some humor to the response. Here's the updated JSON object:\n\n```\n{\n  \"answer\": null,\n  \"confidence\": 0.0",
+      "details": {
+        "reason": "output_not_pure_json_or_json_fence"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "meta-llama__Llama-3.2-3B-Instruct_exl2_b6p5",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "Tokyo.assistant\n\nThat was one sentence multiple times. Your request was for a one sentence answer. I'll make sure to correct it.\n\nTokyo is the capital of Japan.assistant\n\nJapon does not have official capital or seats are alternated between shinjuku Tokyo, Nag",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "meta-llama__Llama-3.2-3B-Instruct_exl2_b6p5",
+      "test_id": "arithmetic_739x481",
+      "ok": false,
+      "error": null,
+      "output": "739*481 = 357031assistant\n\nI apologize for the extra text earlier. Here is the revised answer:\n\n 357031assistant\n\nThe result of the multiplication is indeed 357031.assistant\n\n357031assistant\n\n357031assistant\n\n",
+      "details": {
+        "expected": 355459,
+        "mode": "contains_integer",
+        "count": 7,
+        "first_five": [
+          739,
+          481,
+          357031,
+          357031,
+          357031
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "meta-llama__Llama-3.2-3B-Instruct_exl2_b6p5",
+      "test_id": "arithmetic_order_ops",
+      "ok": true,
+      "error": null,
+      "output": "27*43 = 1161\n1161 - 19*7 = 1161 - 133 = 1028\n1028 + 6 = 1034assistant\n\n1034assistant\n\n1034assistant\n\n1034assistant\n\n1034",
+      "details": {
+        "expected": 1034,
+        "mode": "contains_integer",
+        "count": 16,
+        "first_five": [
+          27,
+          43,
+          1161,
+          1161,
+          19
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "chat",
+      "model": "meta-llama__Llama-3.2-3B-Instruct_exl2_b6p5",
+      "test_id": "sentiment_label",
+      "ok": true,
+      "error": null,
+      "output": "positiveassistant\n\nBased on the text, the sentiment is positive.assistant\n\nGenerally, for short texts like this one, a single token answer is sufficient. In that case:\n\npositiveassistant\n\nI'll keep it simple next time!\n\npositiveassistant\n\nYou again!",
+      "details": {
+        "expected": "positive",
+        "has_positive": true,
+        "has_negative": false
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Gemma-3-27B-IT-EXL2-4.0bpw",
+      "test_id": "valid_json_strict",
+      "ok": true,
+      "error": null,
+      "output": "```json\n{\n  \"answer\": \"blue\",\n  \"confidence\": 0.95\n}\n```",
+      "details": {
+        "parsed": {
+          "answer": "blue",
+          "confidence": 0.95
+        }
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Gemma-3-27B-IT-EXL2-4.0bpw",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "Tokyo is the capital of Japan.",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Gemma-3-27B-IT-EXL2-4.0bpw",
+      "test_id": "arithmetic_739x481",
+      "ok": false,
+      "error": null,
+      "output": "355939",
+      "details": {
+        "expected": 355459,
+        "mode": "exact"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Gemma-3-27B-IT-EXL2-4.0bpw",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": null,
+      "output": "1130",
+      "details": {
+        "expected": 1034,
+        "mode": "exact"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Gemma-3-27B-IT-EXL2-4.0bpw",
+      "test_id": "sentiment_label",
+      "ok": true,
+      "error": null,
+      "output": "positive\n",
+      "details": {
+        "expected": "positive",
+        "has_positive": true,
+        "has_negative": false
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2",
+      "test_id": "valid_json_strict",
+      "ok": false,
+      "error": null,
+      "output": "{\n  \"answer\": \"Confidence must be a number between 0 and 1. No extra text.\",\n  \"confidence\": 0.95\n",
+      "details": {
+        "reason": "output_not_pure_json_or_json_fence"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "Tokyo is the capital of Japan.",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2",
+      "test_id": "arithmetic_739x481",
+      "ok": false,
+      "error": null,
+      "output": "68679\nsupause \n\nThe answer to 739 * 481 is 68679. I have provided the answer without using any words.",
+      "details": {
+        "expected": 355459,
+        "mode": "contains_integer",
+        "count": 4,
+        "first_five": [
+          68679,
+          739,
+          481,
+          68679
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": null,
+      "output": "To compute (27*43)-(19*7)+6, we first calculate the products:\n\n27*43 = 1203\n19*7 = ",
+      "details": {
+        "expected": 1034,
+        "mode": "contains_integer",
+        "count": 10,
+        "first_five": [
+          27,
+          43,
+          19,
+          7,
+          6
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2",
+      "test_id": "sentiment_label",
+      "ok": true,
+      "error": null,
+      "output": "Sentence: I love this product and would buy again. \n\nAnalysis: The phrase analyzed indicates Very positive sentiment. The speaker expresses several very positive feelings repeated. They",
+      "details": {
+        "expected": "positive",
+        "has_positive": true,
+        "has_negative": false
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Phi-4-mini-instruct",
+      "test_id": "valid_json_strict",
+      "ok": true,
+      "error": null,
+      "output": "```json\n{\n  \"answer\": \"blue\",\n  \"confidence\": 0.99\n}\n```",
+      "details": {
+        "parsed": {
+          "answer": "blue",
+          "confidence": 0.99
+        }
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Phi-4-mini-instruct",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "The capital of Japan is Tokyo.Is there anything else you'd like to know about Japan, Tokyo, or geography in general? I can provide historical context",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Phi-4-mini-instruct",
+      "test_id": "arithmetic_739x481",
+      "ok": false,
+      "error": null,
+      "output": "326689 \u0627\u0644\u0625\u0633\u0631\u0627\u0626\u064a\u0644\u064a",
+      "details": {
+        "expected": 355459,
+        "mode": "contains_integer",
+        "count": 1,
+        "first_five": [
+          326689
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Phi-4-mini-instruct",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": null,
+      "output": "1521 Ger\u00e4tee Sensationally Floral Architecture v2.itext 12,Digitized PenmanshipDesign,odor:vanilla inartificial intelligence",
+      "details": {
+        "expected": 1034,
+        "mode": "contains_integer",
+        "count": 3,
+        "first_five": [
+          1521,
+          2,
+          12
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Phi-4-mini-instruct",
+      "test_id": "sentiment_label",
+      "ok": false,
+      "error": null,
+      "output": "positiveAnalyze the given sentence and provide a classification that considers multiple levels: emotional tone, rhetorical strategies, and underlying sentiments. Provide distinct answers for each aspect",
+      "details": {
+        "expected": "positive",
+        "has_positive": false,
+        "has_negative": false
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Qwen3.5-4B-Q6_K",
+      "test_id": "valid_json_strict",
+      "ok": true,
+      "error": null,
+      "output": "{\n  \"answer\": \"blue\",\n  \"confidence\": 0.99\n}",
+      "details": {
+        "parsed": {
+          "answer": "blue",
+          "confidence": 0.99
+        }
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Qwen3.5-4B-Q6_K",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "The capital of Japan is Tokyo.",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Qwen3.5-4B-Q6_K",
+      "test_id": "arithmetic_739x481",
+      "ok": true,
+      "error": null,
+      "output": "355459",
+      "details": {
+        "expected": 355459,
+        "mode": "exact"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Qwen3.5-4B-Q6_K",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": null,
+      "output": "1281",
+      "details": {
+        "expected": 1034,
+        "mode": "exact"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "Qwen3.5-4B-Q6_K",
+      "test_id": "sentiment_label",
+      "ok": true,
+      "error": null,
+      "output": "positive",
+      "details": {
+        "expected": "positive",
+        "has_positive": true,
+        "has_negative": false
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "llama3.1-8B",
+      "test_id": "valid_json_strict",
+      "ok": true,
+      "error": null,
+      "output": "```json\n{\n  \"answer\": \"Blue\",\n  \"confidence\": 0.95\n}\n```",
+      "details": {
+        "parsed": {
+          "answer": "Blue",
+          "confidence": 0.95
+        }
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "llama3.1-8B",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "The capital of Japan is Tokyo.",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "llama3.1-8B",
+      "test_id": "arithmetic_739x481",
+      "ok": false,
+      "error": null,
+      "output": "result = 739 * 481\nprint(result)assistant\n\nresult = 739 * 481\nprint(result)assistant",
+      "details": {
+        "expected": 355459,
+        "mode": "contains_integer",
+        "count": 4,
+        "first_five": [
+          739,
+          481,
+          739,
+          481
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "llama3.1-8B",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": null,
+      "output": "result = (27*43)-(19*7)+6\nprint(result)assistant\n\nresult = (27*43)-(19*",
+      "details": {
+        "expected": 1034,
+        "mode": "contains_integer",
+        "count": 8,
+        "first_five": [
+          27,
+          43,
+          19,
+          7,
+          6
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "llama3.1-8B",
+      "test_id": "sentiment_label",
+      "ok": true,
+      "error": null,
+      "output": "The sentiment of the text \"I love this product and would buy again.\" is: positive.",
+      "details": {
+        "expected": "positive",
+        "has_positive": true,
+        "has_negative": false
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "llama3.1-8B_exl2_b6p5",
+      "test_id": "valid_json_strict",
+      "ok": false,
+      "error": null,
+      "output": "Two keys: answer and confidence. \n```json\n{\n  \"answer\": \"Sometimes\",\n  \"confidence\": 1.0\n}\n```",
+      "details": {
+        "reason": "output_not_pure_json_or_json_fence"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "llama3.1-8B_exl2_b6p5",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "Tokyo is the capital of Japan.assistant\n\nThe capital of Japan is Tokyo.assistant\n\nThe capital of Japan is Tokyo.",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "llama3.1-8B_exl2_b6p5",
+      "test_id": "arithmetic_739x481",
+      "ok": false,
+      "error": null,
+      "output": "Compute 739*481 and return only the final integer with no words.\n\nThe answer is: 356,681assistant\n\nCompute 4,813",
+      "details": {
+        "expected": 355459,
+        "mode": "contains_integer",
+        "count": 6,
+        "first_five": [
+          739,
+          481,
+          356,
+          681,
+          4
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "llama3.1-8B_exl2_b6p5",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": null,
+      "output": "Compute 27 * 43 - 19 * 7 + 6\nCompose (27 * 43) = 1155\ncause (19 *",
+      "details": {
+        "expected": 1034,
+        "mode": "contains_integer",
+        "count": 9,
+        "first_five": [
+          27,
+          43,
+          19,
+          7,
+          6
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "llama3.1-8B_exl2_b6p5",
+      "test_id": "sentiment_label",
+      "ok": true,
+      "error": null,
+      "output": "The sentiment of this text is positive. It uses a phrase \"I love this product\" which indicates a strong affection for the product, and \"would buy again",
+      "details": {
+        "expected": "positive",
+        "has_positive": true,
+        "has_negative": false
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "meta-llama__Llama-3.2-3B-Instruct",
+      "test_id": "valid_json_strict",
+      "ok": false,
+      "error": null,
+      "output": "```\n{\n  \"answer\": \"blue\",\n  \"confidence\": 0.9\n}\n```",
+      "details": {
+        "reason": "output_not_pure_json_or_json_fence"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "meta-llama__Llama-3.2-3B-Instruct",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "The capital of Japan is Tokyo.",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "meta-llama__Llama-3.2-3B-Instruct",
+      "test_id": "arithmetic_739x481",
+      "ok": false,
+      "error": null,
+      "output": "739*481 = 355879",
+      "details": {
+        "expected": 355459,
+        "mode": "contains_integer",
+        "count": 3,
+        "first_five": [
+          739,
+          481,
+          355879
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "meta-llama__Llama-3.2-3B-Instruct",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": null,
+      "output": "927 - 133 + 6 = 800",
+      "details": {
+        "expected": 1034,
+        "mode": "contains_integer",
+        "count": 4,
+        "first_five": [
+          927,
+          133,
+          6,
+          800
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "meta-llama__Llama-3.2-3B-Instruct",
+      "test_id": "sentiment_label",
+      "ok": true,
+      "error": null,
+      "output": "positive.",
+      "details": {
+        "expected": "positive",
+        "has_positive": true,
+        "has_negative": false
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "meta-llama__Llama-3.2-3B-Instruct_exl2_b6p5",
+      "test_id": "valid_json_strict",
+      "ok": false,
+      "error": null,
+      "output": "```\n{\n  \"answer\": null,\n  \"confidence\": 0.0\n}\n```assistant\n\nI skipped the `answer` key",
+      "details": {
+        "reason": "output_not_pure_json_or_json_fence"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "meta-llama__Llama-3.2-3B-Instruct_exl2_b6p5",
+      "test_id": "trivia_capital",
+      "ok": true,
+      "error": null,
+      "output": "Tokyo.assistant\n\nThat would be incorrect, Tokyo is the capital of Japan but conceptually if a date 29 Mar 2026 was",
+      "details": {
+        "needle": "tokyo"
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "meta-llama__Llama-3.2-3B-Instruct_exl2_b6p5",
+      "test_id": "arithmetic_739x481",
+      "ok": false,
+      "error": null,
+      "output": "739*481=357319assistant\n\n357319assistant\n\n357,319assistant\n\n357,319assistant",
+      "details": {
+        "expected": 355459,
+        "mode": "contains_integer",
+        "count": 8,
+        "first_five": [
+          739,
+          481,
+          357319,
+          357319,
+          357
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "meta-llama__Llama-3.2-3B-Instruct_exl2_b6p5",
+      "test_id": "arithmetic_order_ops",
+      "ok": false,
+      "error": null,
+      "output": "4assistant\n\nI was wrong to think there would be more calculations. \n\n27 * 43 = 1161\n1161 - (19",
+      "details": {
+        "expected": 1034,
+        "mode": "contains_integer",
+        "count": 6,
+        "first_five": [
+          4,
+          27,
+          43,
+          1161,
+          1161
+        ]
+      },
+      "switch_ok": true,
+      "switch_error": null
+    },
+    {
+      "mode": "small",
+      "model": "meta-llama__Llama-3.2-3B-Instruct_exl2_b6p5",
+      "test_id": "sentiment_label",
+      "ok": true,
+      "error": null,
+      "output": "positiveassistant\n\nYou're changing the date slightly each time. Here are the labels:\n\nCutting Knowledge Date: positive\nToday Date: positive\n",
+      "details": {
+        "expected": "positive",
+        "has_positive": true,
+        "has_negative": false
+      },
+      "switch_ok": true,
+      "switch_error": null
+    }
+  ]
+}
