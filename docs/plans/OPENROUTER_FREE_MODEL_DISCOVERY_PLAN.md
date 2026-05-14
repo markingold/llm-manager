@@ -432,9 +432,9 @@ That gives you a system that is:
 
 ## Implementation status (2026-05-09)
 
-Estimated completion: about 90%.
+Estimated completion: about 96%.
 
-Status note: completion level remains materially unchanged from 2026-05-07; the latest push focused on TGW decoupling and managed EXL2 conversion rather than OpenRouter discovery internals.
+Status note: completion advanced in the 2026-05-14 item-4 push with richer ranking persistence (`top_weekly_rank`, `category_ranks`) and lifecycle/smoke evidence surfacing on candidate payloads.
 
 ### Completed
 
@@ -450,20 +450,21 @@ Status note: completion level remains materially unchanged from 2026-05-07; the 
 - Explicit promotion lifecycle state fields and transitions are implemented (`discovered`, `candidate`, `smoke_passed`, `active`, `quarantined`, `retired`).
 - Rolling failure-window metrics are implemented and persisted (`failure_count_24h`, `failure_count_7d`) and are now used in scoring and quarantine or retirement decisions.
 - Automatic retirement is implemented for expiry and upstream no-longer-free transitions.
+- Richer ranking persistence is implemented for discovery/catalog rows (`top_weekly_rank`, `category_ranks`) when rankings data is available.
+- Candidate payload surfacing is implemented for lifecycle and smoke evidence (`recent_promotion_transitions`, `recent_smoke_checks`, `lifecycle_evidence`).
 
 ### Partially completed
 
 - Discovery filters cover most important controls, but not every optional field proposed in this plan (for example `min_total_params_b`, `max_context`).
-- Popularity enrichment is still limited to currently parsed ranking/token signals; richer structured ranking categories are still partial.
+- Popularity enrichment still depends on best-effort rankings scraping quality and source stability.
 
 ### Not completed
 
-- Full popularity/ranking enrichment model (`top_weekly_rank`, `category_ranks`) as durable fields.
+- Capability-specific smoke probes (JSON schema, tool-calling) are still pending.
+- Configurable unattended auto-refresh and auto-discovery cadence is still pending.
 
 ## Immediate next implementation targets (updated)
 
 1. Extend smoke checks from basic text response to capability-specific probes (JSON schema, tool-calling) when requested by policy.
-2. Expand popularity enrichment persistence to include weekly/category rank signals when available.
-3. Add admin surfacing for lifecycle transition history and smoke-check evidence on each candidate.
-4. Add configurable auto-refresh and auto-discovery cadence for unattended recovery.
-5. Add explicit retention policy for lifecycle and failure-window history to cap runtime-state growth.
+2. Add configurable auto-refresh and auto-discovery cadence for unattended recovery.
+3. Add quality checks for rankings-source drift and fallback behavior when enrichment parsing degrades.

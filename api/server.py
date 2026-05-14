@@ -109,6 +109,7 @@ DEFAULT_PROVIDER_POLICIES = {
         "failure_events_max": 500,
         "failure_events_retention_days": 30,
         "promotion_transitions_max": 50,
+        "smoke_checks_max": 30,
         "budget_daily_history_days": 60,
         "budget_monthly_history_months": 24,
     },
@@ -692,6 +693,7 @@ def _validate_provider_policies_document(doc: dict):
             "failure_events_max": 1,
             "failure_events_retention_days": 8,
             "promotion_transitions_max": 1,
+            "smoke_checks_max": 1,
             "budget_daily_history_days": 1,
             "budget_monthly_history_months": 1,
         }
@@ -739,6 +741,7 @@ def _retention_policy_settings(policies: dict | None = None) -> dict:
         "failure_events_max": _retention_int(retention.get("failure_events_max", 500), 500, 1, 100000),
         "failure_events_retention_days": _retention_int(retention.get("failure_events_retention_days", 30), 30, 8, 3650),
         "promotion_transitions_max": _retention_int(retention.get("promotion_transitions_max", 50), 50, 1, 100000),
+        "smoke_checks_max": _retention_int(retention.get("smoke_checks_max", 30), 30, 1, 100000),
         "budget_daily_history_days": _retention_int(retention.get("budget_daily_history_days", 60), 60, 1, 3650),
         "budget_monthly_history_months": _retention_int(retention.get("budget_monthly_history_months", 24), 24, 1, 600),
     }
@@ -929,6 +932,34 @@ def _append_router_decision(decision: dict, policies: dict | None = None):
     write_provider_runtime_state(state)
 
 
+def _prune_promotion_transitions(rows: list[dict], max_rows: int | None = None) -> list[dict]:
+    transitions = rows if isinstance(rows, list) else []
+    retention = _retention_policy_settings()
+    keep_default = retention["promotion_transitions_max"]
+    keep_rows = keep_default
+    try:
+        if max_rows is not None:
+            keep_rows = max(1, int(max_rows))
+    except Exception:
+        keep_rows = keep_default
+    out = [row for row in transitions if isinstance(row, dict)]
+    return out[-keep_rows:]
+
+
+def _prune_smoke_checks(rows: list[dict], max_rows: int | None = None) -> list[dict]:
+    checks = rows if isinstance(rows, list) else []
+    retention = _retention_policy_settings()
+    keep_default = retention["smoke_checks_max"]
+    keep_rows = keep_default
+    try:
+        if max_rows is not None:
+            keep_rows = max(1, int(max_rows))
+    except Exception:
+        keep_rows = keep_default
+    out = [row for row in checks if isinstance(row, dict)]
+    return out[-keep_rows:]
+
+
 def _set_promotion_state_on_row(row: dict, new_state: str, reason: str = "", actor: str = "system", at_ts: str | None = None):
     if not isinstance(row, dict):
         return
@@ -938,7 +969,6 @@ def _set_promotion_state_on_row(row: dict, new_state: str, reason: str = "", act
     ts = str(at_ts or (datetime.utcnow().isoformat() + "Z"))
     prev = str(row.get("promotion_state", "") or "")
     if prev != state:
-        retention = _retention_policy_settings()
         transitions = row.get("promotion_transitions", [])
         if not isinstance(transitions, list):
             transitions = []
@@ -949,7 +979,7 @@ def _set_promotion_state_on_row(row: dict, new_state: str, reason: str = "", act
             "reason": reason or None,
             "actor": actor,
         })
-        row["promotion_transitions"] = transitions[-retention["promotion_transitions_max"]:]
+        row["promotion_transitions"] = _prune_promotion_transitions(transitions)
     row["promotion_state"] = state
     row["promotion_state_updated_ts"] = ts
     if reason:
@@ -1044,6 +1074,10 @@ def _provider_model_state_row(provider: str, model: str) -> dict:
     if not isinstance(row, dict):
         return {}
     _refresh_failure_window_fields(row)
+    row["promotion_transitions"] = _prune_promotion_transitions(row.get("promotion_transitions", []))
+    row["smoke_checks"] = _prune_smoke_checks(row.get("smoke_checks", []))
+    if not isinstance(row.get("last_smoke_check"), dict):
+        row["last_smoke_check"] = row.get("smoke_checks", [])[-1] if row.get("smoke_checks") else None
     return row
 
 
@@ -1061,6 +1095,29 @@ def _set_provider_model_promotion_state(provider: str, model: str, promotion_sta
     _set_promotion_state_on_row(row, promotion_state, reason=reason, actor=actor)
     if promotion_state in {"quarantined", "retired"}:
         row["exclude_from_free_rotation"] = True
+    model_state[key] = row
+    state["provider_model_state"] = model_state
+    write_provider_runtime_state(state)
+
+
+def _append_openrouter_smoke_evidence(model_id: str, evidence: dict):
+    if not str(model_id or "").strip() or not isinstance(evidence, dict):
+        return
+    state = read_provider_runtime_state()
+    model_state = state.get("provider_model_state", {}) if isinstance(state.get("provider_model_state"), dict) else {}
+    key = _provider_model_key("openrouter", str(model_id))
+    row = model_state.get(key, {}) if isinstance(model_state.get(key), dict) else {}
+    checks = row.get("smoke_checks", []) if isinstance(row.get("smoke_checks"), list) else []
+    checks.append(dict(evidence))
+    checks = _prune_smoke_checks(checks)
+    row["smoke_checks"] = checks
+    row["last_smoke_check"] = checks[-1] if checks else dict(evidence)
+    status = str(evidence.get("status", "") or "").lower()
+    ts = str(evidence.get("ts", "") or "")
+    if status == "passed":
+        row["last_smoke_pass_ts"] = ts or row.get("last_smoke_pass_ts")
+    elif status == "failed":
+        row["last_smoke_fail_ts"] = ts or row.get("last_smoke_fail_ts")
     model_state[key] = row
     state["provider_model_state"] = model_state
     write_provider_runtime_state(state)
@@ -1139,8 +1196,25 @@ def _hydrate_openrouter_candidate_runtime_fields(payload: dict):
         candidate["last_success_ts"] = row.get("last_success_ts")
         candidate["last_failure_ts"] = row.get("last_failure_ts")
         candidate["last_error_type"] = row.get("last_error_type")
+        candidate["last_error_message"] = row.get("last_error_message")
         candidate["promotion_state"] = promotion_state
         candidate["health_status"] = _openrouter_health_status(row)
+        transitions = _prune_promotion_transitions(row.get("promotion_transitions", []))
+        smoke_checks = _prune_smoke_checks(row.get("smoke_checks", []))
+        last_smoke = row.get("last_smoke_check") if isinstance(row.get("last_smoke_check"), dict) else (smoke_checks[-1] if smoke_checks else None)
+        candidate["promotion_transition_count"] = len(transitions)
+        candidate["recent_promotion_transitions"] = transitions[-5:]
+        candidate["smoke_check_count"] = len(smoke_checks)
+        candidate["recent_smoke_checks"] = smoke_checks[-5:]
+        candidate["last_smoke_check"] = last_smoke
+        candidate["lifecycle_evidence"] = {
+            "promotion_state": promotion_state,
+            "promotion_transition_count": len(transitions),
+            "smoke_check_count": len(smoke_checks),
+            "last_smoke_check": last_smoke,
+            "last_failure_ts": row.get("last_failure_ts"),
+            "last_error_type": row.get("last_error_type"),
+        }
         candidate["activation_eligible"] = (
             not bool(row.get("disabled_until_manual_review", False))
             and not bool(row.get("exclude_from_free_rotation", False))
@@ -2012,6 +2086,28 @@ def _openrouter_name_variants(name: str) -> set[str]:
     return {v for v in variants if v}
 
 
+def _normalize_openrouter_category_key(value: str) -> str:
+    return _normalize_openrouter_name(value).replace(" ", "_")
+
+
+def _openrouter_ranking_bucket_from_line(line: str) -> str | None:
+    normalized = _normalize_openrouter_name(line)
+    if not normalized:
+        return None
+    if normalized in {"most popular", "popular", "most used"}:
+        return "most_popular"
+    if normalized in {"top weekly", "weekly", "this week"}:
+        return "top_weekly"
+    if normalized.startswith("category "):
+        category = _normalize_openrouter_category_key(normalized[len("category "):])
+        return f"category:{category}" if category else None
+    if normalized.endswith(" models") and len(normalized.split()) <= 4:
+        category = _normalize_openrouter_category_key(normalized[:-7])
+        if category and category not in {"most_popular", "top_weekly"}:
+            return f"category:{category}"
+    return None
+
+
 def _format_param_size(value: float | None) -> str | None:
     if value is None:
         return None
@@ -2098,38 +2194,74 @@ def _fetch_openrouter_rankings() -> dict:
     try:
         html = requests.get(snapshot["source"], timeout=20).text
         lines = _html_visible_lines(html)
-        entries = []
-        started = False
+        rows_by_key: dict[tuple[str, str], dict] = {}
+        active_bucket = "most_popular"
         index = 0
         while index < len(lines):
             line = lines[index]
-            if started and line == "Show more":
-                break
+            bucket = _openrouter_ranking_bucket_from_line(line)
+            if bucket is not None:
+                active_bucket = bucket
+                index += 1
+                continue
+
             if (
                 line.isdigit()
                 and index + 6 < len(lines)
                 and lines[index + 1] == "."
                 and lines[index + 3].lower() == "by"
-                and lines[index + 6].lower() == "tokens"
             ):
+                rank = int(line)
+                model_name = lines[index + 2]
+                author_name = lines[index + 4]
                 tokens_value = _parse_compact_number(lines[index + 5])
-                if tokens_value is not None:
-                    started = True
-                    entries.append({
-                        "popularity_rank": int(line),
-                        "name": lines[index + 2],
-                        "author": lines[index + 4],
-                        "popularity_tokens": int(tokens_value),
+                key = (
+                    _normalize_openrouter_author(author_name),
+                    _normalize_openrouter_name(model_name),
+                )
+                if key[0] and key[1]:
+                    row = rows_by_key.get(key, {
+                        "name": model_name,
+                        "author": author_name,
+                        "popularity_rank": None,
+                        "top_weekly_rank": None,
+                        "category_ranks": {},
+                        "popularity_tokens": None,
                     })
-                    index += 7
-                    while index < len(lines) and not (
-                        lines[index].isdigit()
-                        and index + 1 < len(lines)
-                        and lines[index + 1] == "."
-                    ) and lines[index] != "Show more":
-                        index += 1
-                    continue
+                    if tokens_value is not None:
+                        prev_tokens = row.get("popularity_tokens")
+                        if prev_tokens is None or float(tokens_value) > float(prev_tokens):
+                            row["popularity_tokens"] = int(tokens_value)
+
+                    if active_bucket == "top_weekly":
+                        prev = row.get("top_weekly_rank")
+                        if prev is None or rank < int(prev):
+                            row["top_weekly_rank"] = rank
+                    elif str(active_bucket).startswith("category:"):
+                        category_key = str(active_bucket).split(":", 1)[1]
+                        category_ranks = row.get("category_ranks", {}) if isinstance(row.get("category_ranks"), dict) else {}
+                        prev = category_ranks.get(category_key)
+                        if prev is None or rank < int(prev):
+                            category_ranks[category_key] = rank
+                        row["category_ranks"] = category_ranks
+                    else:
+                        prev = row.get("popularity_rank")
+                        if prev is None or rank < int(prev):
+                            row["popularity_rank"] = rank
+
+                    rows_by_key[key] = row
+
+                index += 7
+                while index < len(lines):
+                    if _openrouter_ranking_bucket_from_line(lines[index]) is not None:
+                        break
+                    if lines[index].isdigit() and index + 1 < len(lines) and lines[index + 1] == ".":
+                        break
+                    index += 1
+                continue
             index += 1
+
+        entries = list(rows_by_key.values())
         snapshot["rankings"] = entries
         if not entries:
             snapshot["error"] = "no rankings parsed from page"
@@ -2217,6 +2349,8 @@ def _build_openrouter_catalog_model(row: dict, rankings_lookup: dict) -> dict | 
         "free_detection_source": free_detection_source,
         "popularity_rank": ranking_row.get("popularity_rank") if isinstance(ranking_row, dict) else None,
         "popularity_tokens": ranking_row.get("popularity_tokens") if isinstance(ranking_row, dict) else None,
+        "top_weekly_rank": ranking_row.get("top_weekly_rank") if isinstance(ranking_row, dict) else None,
+        "category_ranks": ranking_row.get("category_ranks", {}) if isinstance(ranking_row, dict) else {},
         **size_data,
     }
 
@@ -2231,6 +2365,8 @@ def _merge_openrouter_rankings_into_models(models: list[dict], rankings: list[di
         ranking_row = _openrouter_ranking_for_model(str(updated.get("id", "")), str(updated.get("name", "")), rankings_lookup)
         updated["popularity_rank"] = ranking_row.get("popularity_rank") if isinstance(ranking_row, dict) else None
         updated["popularity_tokens"] = ranking_row.get("popularity_tokens") if isinstance(ranking_row, dict) else None
+        updated["top_weekly_rank"] = ranking_row.get("top_weekly_rank") if isinstance(ranking_row, dict) else None
+        updated["category_ranks"] = ranking_row.get("category_ranks", {}) if isinstance(ranking_row, dict) else {}
         merged.append(updated)
     return merged
 
@@ -2315,23 +2451,49 @@ def _smoke_check_openrouter_candidates(env: dict, payload: dict, req: OpenRouter
                 }
                 _mark_provider_failure("openrouter", model_id, normalized)
                 _set_provider_model_promotion_state("openrouter", model_id, "quarantined", reason="smoke_empty_response", actor=req.actor)
+                evidence = {
+                    "ts": datetime.utcnow().isoformat() + "Z",
+                    "status": "failed",
+                    "latency_ms": latency_ms,
+                    "error_type": str(normalized.get("type", "provider_error")),
+                    "error_message": str(normalized.get("message", "") or ""),
+                    "prompt_preview": prompt[:120],
+                    "timeout_s": timeout_s,
+                    "actor": req.actor,
+                    "reason": req.reason or None,
+                }
+                _append_openrouter_smoke_evidence(model_id, evidence)
                 results.append({
                     "model": model_id,
                     "status": "failed",
                     "latency_ms": latency_ms,
                     "error": normalized,
+                    "evidence": evidence,
                 })
                 continue
 
             _mark_provider_success("openrouter", model_id)
             _set_provider_model_promotion_state("openrouter", model_id, "smoke_passed", reason="smoke_check_pass", actor=req.actor)
             passed_ids.append(model_id)
+            evidence = {
+                "ts": datetime.utcnow().isoformat() + "Z",
+                "status": "passed",
+                "latency_ms": latency_ms,
+                "response_preview": text[:120],
+                "usage": raw.get("usage", {}) if isinstance(raw, dict) else {},
+                "prompt_preview": prompt[:120],
+                "timeout_s": timeout_s,
+                "actor": req.actor,
+                "reason": req.reason or None,
+            }
+            _append_openrouter_smoke_evidence(model_id, evidence)
             results.append({
                 "model": model_id,
                 "status": "passed",
                 "latency_ms": latency_ms,
                 "response_preview": text[:120],
                 "usage": raw.get("usage", {}) if isinstance(raw, dict) else {},
+                "evidence": evidence,
             })
         except Exception as e:
             latency_ms = int((time.time() - start) * 1000)
@@ -2339,11 +2501,25 @@ def _smoke_check_openrouter_candidates(env: dict, payload: dict, req: OpenRouter
             _mark_provider_failure("openrouter", model_id, normalized)
             if str(normalized.get("type", "") or "") in {"not_free_anymore", "model_unavailable", "auth_error"}:
                 _set_provider_model_promotion_state("openrouter", model_id, "retired", reason=str(normalized.get("type", "")), actor=req.actor)
+            evidence = {
+                "ts": datetime.utcnow().isoformat() + "Z",
+                "status": "failed",
+                "latency_ms": latency_ms,
+                "error_type": str(normalized.get("type", "provider_error")),
+                "error_message": str(normalized.get("message", "") or ""),
+                "retryable": bool(normalized.get("retryable", False)),
+                "prompt_preview": prompt[:120],
+                "timeout_s": timeout_s,
+                "actor": req.actor,
+                "reason": req.reason or None,
+            }
+            _append_openrouter_smoke_evidence(model_id, evidence)
             results.append({
                 "model": model_id,
                 "status": "failed",
                 "latency_ms": latency_ms,
                 "error": normalized,
+                "evidence": evidence,
             })
 
     promote_limit = int(req.activate_top_n or 0)
@@ -2382,11 +2558,25 @@ def _score_openrouter_candidate(row: dict) -> float:
     score = 0.0
     popularity_rank = row.get("popularity_rank")
     popularity_tokens = row.get("popularity_tokens")
+    top_weekly_rank = row.get("top_weekly_rank")
+    category_ranks = row.get("category_ranks", {}) if isinstance(row.get("category_ranks"), dict) else {}
     context_length = float(row.get("context_length") or 0)
     if popularity_rank is not None:
         score += max(0.0, 120.0 - (float(popularity_rank) * 8.0))
     if popularity_tokens is not None:
         score += min(40.0, float(popularity_tokens) / 250_000_000_000.0)
+    if top_weekly_rank is not None:
+        score += max(0.0, 80.0 - (float(top_weekly_rank) * 5.0))
+    if category_ranks:
+        numeric_ranks = []
+        for value in category_ranks.values():
+            try:
+                numeric_ranks.append(float(value))
+            except Exception:
+                continue
+        if numeric_ranks:
+            score += max(0.0, 40.0 - (min(numeric_ranks) * 2.0))
+        score += min(12.0, float(len(category_ranks)) * 2.0)
     score += min(20.0, context_length / 65536.0)
     if row.get("supports_tools"):
         score += 12.0
@@ -2527,7 +2717,14 @@ def _build_openrouter_free_candidates(provider_models: dict, discovery_req: Open
 
     sort_by = str(discovery_req.sort_by or "score")
     if sort_by == "popularity":
-        candidates.sort(key=lambda row: ((row.get("popularity_rank") is None), row.get("popularity_rank") or 999999, -(float(row.get("context_length", 0) or 0))))
+        candidates.sort(
+            key=lambda row: (
+                (row.get("popularity_rank") is None),
+                row.get("popularity_rank") or 999999,
+                row.get("top_weekly_rank") or 999999,
+                -(float(row.get("context_length", 0) or 0)),
+            )
+        )
     elif sort_by == "context":
         candidates.sort(key=lambda row: (-(float(row.get("context_length", 0) or 0)), (row.get("popularity_rank") or 999999)))
     elif sort_by == "newest":
@@ -4951,6 +5148,7 @@ def providers_openrouter_free_candidates():
     state = read_provider_runtime_state()
     cache = state.get("openrouter_catalog_cache", {}) if isinstance(state.get("openrouter_catalog_cache"), dict) else {}
     payload = state.get("openrouter_free_candidates", {}) if isinstance(state.get("openrouter_free_candidates"), dict) else {}
+    _hydrate_openrouter_candidate_runtime_fields(payload)
     return {
         "ok": True,
         "time": datetime.utcnow().isoformat() + "Z",

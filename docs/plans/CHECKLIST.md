@@ -25,6 +25,7 @@ WebUI overhaul status update (2026-05-07):
 - [x] Add a shared OpenRouter free-tier limiter capped at 20 requests per minute. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md (local protective limiter slice implemented)
 - [x] Add queueing for free-tier requests with configurable overflow behavior. - effort: large | source: docs/plans/PROVIDER_ROUTER_PLAN.md (wait/fail_fast/fallback_to_local/upgrade_to_paid slice implemented)
 - [x] Add automatic smoke-check promotion and lifecycle state transitions for discovered OpenRouter free candidates. - effort: medium | source: docs/plans/OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md
+- [x] Persist richer OpenRouter discovery ranking fields and lifecycle/smoke evidence surfacing (`top_weekly_rank`, `category_ranks`, transition/smoke evidence fields). - effort: medium | source: docs/plans/NEXT_PUSH.md, docs/plans/OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md
 - [x] Promote EXL2 conversion into a first-class managed workflow for HF-format sources. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md (managed `/conversions/exl2/*` API flow is live)
 - [ ] Extend managed EXL2 conversion workflow to merged local model sources. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md
 - [ ] Ensure EXL2 conversion preserves tokenizer metadata and chat templates required for correct instruct prompting. - effort: medium | source: local runtime troubleshooting 2026-04-28

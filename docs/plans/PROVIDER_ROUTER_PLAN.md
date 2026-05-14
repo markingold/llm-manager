@@ -511,6 +511,7 @@ As of 2026-05-09:
 - per-project policy overrides are implemented in routing policy resolution (`project_overrides` in policy config + request `project_id`/metadata)
 - per-task-type policy overrides are implemented for `chat`, `completion`, and `embed` across strategy and lane-chain resolution (`task_overrides` + `project_overrides.<project>.task_overrides`)
 - retention and audit controls are implemented for longer-horizon router/governance history and lifecycle/failure history (`retention` policy config + `/providers/retention-state`)
+- OpenRouter discovery polish is implemented for richer ranking persistence (`top_weekly_rank`, `category_ranks`) and lifecycle/smoke evidence surfacing on candidate payloads
 - local evaluation/evaluation-queue framework is implemented and integrated into runtime state and dashboard
 - managed EXL2 conversion endpoints and metadata persistence are implemented (`/conversions/exl2/*`, `conversion_runs`, `conversion_artifacts`)
 - converted artifact metadata now surfaces in catalog/inspection responses (`/models`, `/providers/models`) and syncs into `local.converted_models`

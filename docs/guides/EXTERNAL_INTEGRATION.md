@@ -1,6 +1,6 @@
 <!--
 id: LLM-MANAGER-EXTERNAL-INTEGRATION
-version: 1.1
+version: 1.2
 last_updated: 2026-05-14
 title: External Integration Guide
 purpose:
@@ -209,6 +209,23 @@ curl -X POST "http://localhost:8101/router/evaluation-suites/external-chat-smoke
 ```
 
 ## 5) Notes for external projects
+
+```bash
+# inspect manual OpenRouter discovery candidates and evidence
+curl "http://localhost:8101/providers/openrouter/free-candidates" | python3 -m json.tool
+```
+
+Useful candidate fields now surfaced for discovery triage:
+- `top_weekly_rank`
+- `category_ranks`
+- `recent_promotion_transitions`
+- `recent_smoke_checks`
+- `lifecycle_evidence`
+
+Use these fields to automate safer temporary free-model activation workflows, for example:
+- prefer lower `top_weekly_rank` when `popularity_rank` is similar
+- avoid candidates with recent failed smoke checks
+- require at least one recent promotion transition into `smoke_passed` or `active`
 
 ## 6) Governance writes (safe-by-default)
 

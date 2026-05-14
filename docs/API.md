@@ -108,11 +108,8 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
   - Returns routing and policy config from config/provider_policies.json
   - Includes deterministic document version hash for optimistic concurrency
   - Supports optional task-scoped overrides under `task_overrides.chat|completion|embed`
-  - Supports optional retention controls under `retention` for router audit logs, spend history, and lifecycle failure history
 - GET /providers/state
   - Returns provider runtime state scaffold from run/state/provider_runtime_state.json
-- GET /providers/retention-state
-  - Returns effective retention settings plus current counts for request, usage, spend, governance, and provider lifecycle history rows
 - POST /providers/state/provider-model-flags
   - Updates provider-model flags for manual review and free-rotation control
   - Body: { model_key, disabled_until_manual_review?, exclude_from_free_rotation?, reason, actor }
@@ -140,9 +137,11 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
 - POST /providers/openrouter/discover-free
   - Manually builds a temporary OpenRouter free-model candidate pool from cached upstream metadata
   - Body supports catalog refresh, rankings enrichment, size/context/popularity filters, family allow/deny, capability requirements, activate_top_n, and automatic smoke-check promotion controls (`auto_smoke_check`, `smoke_top_n`, `auto_promote_top_n`)
+  - Candidate rows persist richer ranking fields when available (`top_weekly_rank`, `category_ranks`) and include smoke-check evidence in results
   - Writes results to runtime state only; does not modify config/provider_models.json
 - GET /providers/openrouter/free-candidates
   - Returns the current manually discovered candidate pool, active_ids, and related catalog/rankings timestamps
+  - Candidate rows include lifecycle and smoke evidence surfacing (`recent_promotion_transitions`, `recent_smoke_checks`, `lifecycle_evidence`)
 - GET /providers/openrouter/rate-limit-state
   - Returns current OpenRouter free-tier limiter window counters and queue state by priority
 

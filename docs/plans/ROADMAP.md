@@ -48,6 +48,7 @@ WebUI overhaul status:
 - [x] Normalize OpenRouter errors into actionable routing states. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
 - [x] Persist cooldowns, degraded states, and manual-review flags for provider models. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
 - [x] Auto-cycle across curated free models before failing a request. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
+- [x] Persist richer OpenRouter discovery ranking fields and lifecycle/smoke evidence surfacing for candidate inspection (`top_weekly_rank`, `category_ranks`, transition/smoke evidence). - _source: docs/plans/OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md, docs/plans/NEXT_PUSH.md_
 - [x] Support cross-provider strategies such as local_first, free_first, paid_first, best_available, and strict_provider. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
 
 ## Phase 4: Evaluation, Admin UX, And Observability (Future)

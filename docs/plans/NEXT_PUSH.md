@@ -1,6 +1,6 @@
 <!--
 id: PLAN-NEXT-PUSH
-version: 1.3
+version: 1.4
 last_updated: 2026-05-14
 title: Next Push Recommendations
 purpose:
@@ -27,9 +27,13 @@ Completed items from the locked queue:
   - policy schema now supports configurable `retention` controls in `config/provider_policies.json`
   - runtime retention controls now govern request/usage/spend/governance history windows and lifecycle failure/promotion history depth
   - API endpoint added: `GET /providers/retention-state`
+- item 4: OpenRouter discovery polish is now implemented
+  - richer ranking fields (`top_weekly_rank`, `category_ranks`) now persist in catalog/discovery candidate payloads when available
+  - lifecycle/smoke evidence is now surfaced on candidate rows (`recent_promotion_transitions`, `recent_smoke_checks`, `lifecycle_evidence`)
+  - smoke evidence retention is now configurable via `retention.smoke_checks_max`
 
 Next queued item:
-- item 4: OpenRouter discovery polish
+- item 5: provider admin and operator UI controls
 
 ## Implementation update (2026-05-09)
 
@@ -56,10 +60,10 @@ Previously completed in this sequence:
 ## Completion status snapshot
 
 Checklist baseline from `docs/plans/CHECKLIST.md`:
-- total tracked tasks: 52
-- complete: 33
+- total tracked tasks: 53
+- complete: 34
 - pending: 19
-- completion: 63.5%
+- completion: 64.2%
 
 Interpretation:
 - Core broker and operator capabilities are now established.
@@ -75,7 +79,7 @@ Interpretation:
 3. [x] Retention and audit controls
 - Add longer-horizon routing audit retention and lifecycle/failure-history retention controls.
 
-4. [ ] OpenRouter discovery polish
+4. [x] OpenRouter discovery polish
 - Persist richer ranking fields (`top_weekly_rank`, `category_ranks`) and add lifecycle/smoke evidence surfacing.
 
 5. [ ] Provider admin and operator UI controls
@@ -106,8 +110,8 @@ Interpretation:
 
 Push 1:
 - route-decision traces expanded with task-type policy context
-- OpenRouter discovery evidence surfacing (`top_weekly_rank`, `category_ranks`, smoke evidence)
-- docs update for retention and audit operations
+- provider admin and operator UI controls for curated model governance and route/backend visibility
+- docs update for provider admin and operator workflows
 
 Push 2:
 - OpenRouter capability-aware smoke checks (JSON schema + tools)
