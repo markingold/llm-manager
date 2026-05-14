@@ -45,7 +45,29 @@
 - You already have a full-model EXL2 conversion path in the repo for Hugging Face style models with safetensors weights.
 - The relevant script is `app/src/llm_manager/download_convert_chat_model.py`, which can download or reuse a raw HF model directory and run the ExLlama conversion script to produce an EXL2 output.
 - `app/src/llm_manager/convert_lora.py` is narrower than its name first suggests: it converts merged LoRA outputs from `output/merged_<model_key>` into EXL2, not arbitrary raw base-model folders.
-- So the current answer is: full-model to EXL2 exists already, but it is not yet presented as a first-class llm-manager conversion workflow, and EXL3 conversion is not yet implemented as a parallel path.
+- So the current answer is: full-model to EXL2 exists and is now promoted to a managed llm-manager workflow for HF repo sources, while EXL3 conversion is not yet implemented as a parallel managed path.
+
+## Implementation status (2026-05-09)
+
+Estimated completion: about 65%.
+
+### Completed
+
+- Managed EXL2 conversion API flow is now implemented for Hugging Face repo sources.
+- New managed endpoints are live: `/conversions/exl2`, `/conversions/exl2/jobs`, `/conversions/exl2/jobs/{job_id}`, `/conversions/exl2/artifacts`, `/conversions/exl2/artifacts/{artifact_id}`.
+- Conversion run and artifact metadata are persisted in runtime state (`conversion_runs`, `conversion_artifacts`).
+- Persisted metadata includes source repo id/hash, bits, groupsize, output path/model dir, timestamps, and detected loader/kind.
+- Converted artifact metadata is surfaced in `/models` and `/providers/models` and synced into provider catalog state under `local.converted_models`.
+
+### Partially completed
+
+- Managed conversion currently covers Hugging Face repo-id source flow.
+- Existing merged-LoRA conversion script remains available, but that source path is not yet promoted into the same managed API workflow.
+
+### Not completed
+
+- EXL3 managed conversion path (Phase 2) is still pending.
+- ExLlamaV3-native conversion metadata parity and TabbyAPI-first EXL3 lane wiring remain pending.
 
 ## Planned conversion workflow for EXL2 and EXL3
 

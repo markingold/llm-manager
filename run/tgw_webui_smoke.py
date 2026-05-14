@@ -3,8 +3,8 @@
 
 Covers:
 1) engine status exposes tgw_webui payload
-2) enable TGW WebUI with restart
-3) disable TGW WebUI without restart
+2) config update for TGW WebUI launch settings
+3) standalone TGW WebUI service start/stop actions
 """
 
 from __future__ import annotations
@@ -41,22 +41,28 @@ def check_status_payload(client: TestClient) -> Dict[str, Any]:
     resp = client.get("/engines/status")
     body = resp.json()
     assert resp.status_code == 200, f"status expected 200, got {resp.status_code}: {body}"
-    assert "tgw_webui" in body.get("chat", {}), f"status missing tgw_webui: {body}"
+    assert isinstance(body.get("tgw_webui"), dict), f"status missing top-level tgw_webui: {body}"
     return {"http": resp.status_code, "ok": True}
 
 
-def check_toggle(client: TestClient, enable: bool, restart: bool) -> Dict[str, Any]:
-    resp = client.post(
-        "/engines/chat/tgw-webui",
-        json={"enabled": enable, "restart": restart},
-    )
+def check_config(client: TestClient, port: int, bind_host: str) -> Dict[str, Any]:
+    resp = client.post("/engines/tgw-webui/config", json={"port": port, "bind_host": bind_host})
     body = resp.json()
-    assert resp.status_code == 200, f"toggle expected 200, got {resp.status_code}: {body}"
-    assert body.get("ok") is True, f"toggle expected ok=true: {body}"
+    assert resp.status_code == 200, f"config expected 200, got {resp.status_code}: {body}"
+    assert body.get("ok") is True, f"config expected ok=true: {body}"
     tgw = body.get("tgw_webui") or {}
-    assert tgw.get("enabled") is enable, f"toggle enabled mismatch: {tgw}"
-    assert body.get("restarted") is restart, f"toggle restart mismatch: {body}"
-    return {"http": resp.status_code, "ok": True, "enabled": tgw.get("enabled"), "restarted": body.get("restarted")}
+    assert int(tgw.get("port") or 0) == int(port), f"config port mismatch: {tgw}"
+    assert tgw.get("bind_host") == bind_host, f"config bind_host mismatch: {tgw}"
+    return {"http": resp.status_code, "ok": True, "port": tgw.get("port"), "bind_host": tgw.get("bind_host")}
+
+
+def check_action(client: TestClient, action: str) -> Dict[str, Any]:
+    resp = client.post(f"/engines/tgw-webui/{action}")
+    body = resp.json()
+    assert resp.status_code == 200, f"action expected 200, got {resp.status_code}: {body}"
+    assert body.get("ok") is True, f"action expected ok=true: {body}"
+    assert body.get("action") == action, f"action mismatch: {body}"
+    return {"http": resp.status_code, "ok": True, "action": action}
 
 
 def main() -> int:
@@ -64,10 +70,11 @@ def main() -> int:
         "LLM_CHAT_API_BASE": "http://127.0.0.1:8500",
         "LLM_INTENT_API_BASE": "http://127.0.0.1:8501",
         "LLM_SMALL_API_BASE": "http://127.0.0.1:8502",
-        "TGW_CHAT_WEBUI_ENABLED": "0",
-        "TGW_CHAT_WEBUI_PORT": "7860",
-        "TGW_CHAT_WEBUI_BIND_HOST": "127.0.0.1",
+        "TGW_WEBUI_ENABLED": "1",
+        "TGW_WEBUI_PORT": "7860",
+        "TGW_WEBUI_BIND_HOST": "127.0.0.1",
     }
+    service_state = {"active": False}
 
     def fake_read_env() -> Dict[str, str]:
         return copy.deepcopy(env_state)
@@ -77,17 +84,30 @@ def main() -> int:
         env_state.update(copy.deepcopy(new_env))
 
     def fake_is_listening(port: int) -> bool:
-        return port == 7860 and env_state.get("TGW_CHAT_WEBUI_ENABLED") == "1"
+        return (
+            port == int(env_state.get("TGW_WEBUI_PORT", "7860"))
+            and env_state.get("TGW_WEBUI_ENABLED") == "1"
+            and service_state["active"]
+        )
+
+    def fake_systemctl_show(_unit: str) -> Dict[str, str]:
+        return {"ActiveState": "active" if service_state["active"] else "inactive"}
+
+    def fake_systemctl_start(_unit: str) -> None:
+        service_state["active"] = True
+
+    def fake_systemctl_stop(_unit: str) -> None:
+        service_state["active"] = False
 
     def fake_systemctl_restart(_unit: str) -> None:
-        return None
+        service_state["active"] = True
 
-    def fake_slot_backends() -> Dict[str, str]:
-        return {"chat": "tgw", "intent": "tgw", "small": "tgw"}
+    def fake_journal_tail(_unit: str, lines: int = 160):
+        return [f"fake-log line {i+1}" for i in range(min(lines, 3))]
 
     client = TestClient(server.app)
-    previous_unit = os.environ.get("SYSTEMD_LLM_A")
-    os.environ["SYSTEMD_LLM_A"] = "llm-a.service"
+    previous_tgw_unit = os.environ.get("SYSTEMD_TGW_WEBUI")
+    os.environ["SYSTEMD_TGW_WEBUI"] = "llm-tgw-webui.service"
 
     summary: Dict[str, Any] = {}
     try:
@@ -95,17 +115,22 @@ def main() -> int:
             stack.enter_context(patched(server, "read_env", fake_read_env))
             stack.enter_context(patched(server, "write_env", fake_write_env))
             stack.enter_context(patched(server, "_is_listening", fake_is_listening))
+            stack.enter_context(patched(server, "_systemctl_show", fake_systemctl_show))
+            stack.enter_context(patched(server, "_systemctl_start", fake_systemctl_start))
+            stack.enter_context(patched(server, "_systemctl_stop", fake_systemctl_stop))
             stack.enter_context(patched(server, "_systemctl_restart", fake_systemctl_restart))
-            stack.enter_context(patched(server, "read_slot_backends", fake_slot_backends))
+            stack.enter_context(patched(server, "_journal_tail", fake_journal_tail))
 
             summary["status"] = check_status_payload(client)
-            summary["enable"] = check_toggle(client, enable=True, restart=True)
-            summary["disable"] = check_toggle(client, enable=False, restart=False)
+            summary["config"] = check_config(client, port=7860, bind_host="127.0.0.1")
+            summary["start"] = check_action(client, action="start")
+            summary["restart"] = check_action(client, action="restart")
+            summary["stop"] = check_action(client, action="stop")
     finally:
-        if previous_unit is None:
-            os.environ.pop("SYSTEMD_LLM_A", None)
+        if previous_tgw_unit is None:
+            os.environ.pop("SYSTEMD_TGW_WEBUI", None)
         else:
-            os.environ["SYSTEMD_LLM_A"] = previous_unit
+            os.environ["SYSTEMD_TGW_WEBUI"] = previous_tgw_unit
 
     print(json.dumps({"ok": True, "summary": summary}, indent=2))
     return 0

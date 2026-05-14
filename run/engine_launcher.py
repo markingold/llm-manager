@@ -19,6 +19,7 @@ def main():
     parser.add_argument("--model", required=True, help="Model directory name (or symlink)")
     parser.add_argument("--max-seq-len", required=True, help="Max sequence length")
     parser.add_argument("--listen-host", default="127.0.0.1", help="Listen host")
+    parser.add_argument("--webui", action="store_true", help="Enable TGW WebUI for this launch")
     args = parser.parse_args()
 
     launch_tgw = pathlib.Path(__file__).resolve().parent / "launch_tgw.py"
@@ -33,6 +34,10 @@ def main():
         "--listen-host",
         args.listen_host,
     ]
+    if args.webui:
+        cmd.append("--webui")
+    else:
+        cmd.append("--no-webui")
     os.execv(sys.executable, cmd)
 
 

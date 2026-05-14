@@ -13,55 +13,301 @@ import {
 import { refreshEvalPanel } from "./evaluation.js";
 import { refreshRouterPanel } from "./router.js";
 
-const UI_BUILD = "phase-a-ops-v2";
+const UI_BUILD = "phase-a-ops-v4";
+const MAX_CONVERSION_ROWS = 30;
 
 let MODEL_CACHE = null;
 let ENGINE_STATUS_CACHE = null;
 
 
-function renderChatTgwControls(chatStatus) {
-  const tgw = chatStatus?.tgw_webui;
-  const stateEl = $("chatTgwState");
-  const metaEl = $("chatTgwMeta");
-  const toggleBtn = $("chatTgwToggle");
-  const openBtn = $("chatTgwOpen");
-  if (!stateEl || !metaEl || !toggleBtn || !openBtn) return;
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function formatTs(ts) {
+  if (!ts) return "-";
+  try {
+    const dt = new Date(ts);
+    if (Number.isNaN(dt.getTime())) return String(ts);
+    return dt.toLocaleString();
+  } catch (_) {
+    return String(ts);
+  }
+}
+
+function formatBytes(size) {
+  const n = Number(size);
+  if (!Number.isFinite(n) || n <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = n;
+  let idx = 0;
+  while (value >= 1024 && idx < units.length - 1) {
+    value /= 1024;
+    idx += 1;
+  }
+  return `${value.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`;
+}
+
+function conversionTone(status) {
+  const s = String(status || "").toLowerCase();
+  if (s === "completed" || s === "ok" || s === "ready") return "ok";
+  if (s === "error" || s === "failed" || s === "missing_output") return "bad";
+  return "warn";
+}
+
+function setPill(el, text, tone = "warn", title = "") {
+  if (!el) return;
+  el.textContent = text;
+  el.className = `pill ${tone}`;
+  el.title = title;
+}
+
+function setConversionDetail(payload) {
+  const pre = $("convDetailOut");
+  if (!pre) return;
+  pre.textContent = typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
+}
+
+function setConversionRowsError(message) {
+  const jobsBody = $("convJobsBody");
+  const artifactsBody = $("convArtifactsBody");
+  const msg = escapeHtml(message || "Unknown conversion panel error");
+  if (jobsBody) {
+    jobsBody.innerHTML = `<tr><td colspan="6" class="muted">${msg}</td></tr>`;
+  }
+  if (artifactsBody) {
+    artifactsBody.innerHTML = `<tr><td colspan="6" class="muted">${msg}</td></tr>`;
+  }
+}
+
+async function conversionJobDetail(jobId) {
+  if (!jobId) return;
+  try {
+    setConversionDetail({ loading: true, run: jobId });
+    const detail = await api(`/conversions/exl2/jobs/${encodeURIComponent(jobId)}?tail=180`);
+    setConversionDetail(detail);
+    setOut(detail);
+  } catch (e) {
+    setConversionDetail({ error: e.message, run: jobId });
+    setOut({ error: e.message, run: jobId });
+  }
+}
+
+async function conversionArtifactDetail(artifactId) {
+  if (!artifactId) return;
+  try {
+    setConversionDetail({ loading: true, artifact: artifactId });
+    const detail = await api(`/conversions/exl2/artifacts/${encodeURIComponent(artifactId)}`);
+    setConversionDetail(detail);
+    setOut(detail);
+  } catch (e) {
+    setConversionDetail({ error: e.message, artifact: artifactId });
+    setOut({ error: e.message, artifact: artifactId });
+  }
+}
+
+function renderConversionRows(runs, artifacts) {
+  const jobsBody = $("convJobsBody");
+  const artifactsBody = $("convArtifactsBody");
+  if (jobsBody) {
+    if (!runs.length) {
+      jobsBody.innerHTML = "<tr><td colspan=\"6\" class=\"muted\">No managed conversion runs found.</td></tr>";
+    } else {
+      jobsBody.innerHTML = runs.slice(0, MAX_CONVERSION_ROWS).map((row) => {
+        const jobId = String(row.job_id || row.id || "");
+        const status = String(row.status || "unknown");
+        const quant = `b${row.bits ?? "?"} / g${row.groupsize ?? "?"}`;
+        const updated = row.updated_ts || row.completed_ts || row.started_ts || row.created_ts;
+        const btn = jobId
+          ? `<button data-conv-job="${escapeHtml(jobId)}">Details</button>`
+          : "<button disabled>Details</button>";
+        return `
+          <tr>
+            <td class="mono">${escapeHtml(jobId || "-")}</td>
+            <td>${escapeHtml(row.source_repo_id || "-")}</td>
+            <td>${escapeHtml(quant)}</td>
+            <td><span class="pill ${conversionTone(status)}">${escapeHtml(status)}</span></td>
+            <td>${escapeHtml(formatTs(updated))}</td>
+            <td>${btn}</td>
+          </tr>
+        `;
+      }).join("");
+      jobsBody.querySelectorAll("button[data-conv-job]").forEach((btn) => {
+        btn.addEventListener("click", () => conversionJobDetail(btn.getAttribute("data-conv-job") || ""));
+      });
+    }
+  }
+
+  if (artifactsBody) {
+    if (!artifacts.length) {
+      artifactsBody.innerHTML = "<tr><td colspan=\"6\" class=\"muted\">No managed conversion artifacts found.</td></tr>";
+    } else {
+      artifactsBody.innerHTML = artifacts.slice(0, MAX_CONVERSION_ROWS).map((row) => {
+        const artifactId = String(row.artifact_id || "");
+        const status = String(row.status || "unknown");
+        const btn = artifactId
+          ? `<button data-conv-artifact="${escapeHtml(artifactId)}">Details</button>`
+          : "<button disabled>Details</button>";
+        return `
+          <tr>
+            <td class="mono">${escapeHtml(artifactId || "-")}</td>
+            <td>${escapeHtml(row.source_repo_id || "-")}</td>
+            <td class="mono">${escapeHtml(row.model_ref || row.output_model_dir || "-")}</td>
+            <td><span class="pill ${conversionTone(status)}">${escapeHtml(status)}</span></td>
+            <td>${escapeHtml(formatTs(row.created_ts))}</td>
+            <td>${btn}</td>
+          </tr>
+        `;
+      }).join("");
+      artifactsBody.querySelectorAll("button[data-conv-artifact]").forEach((btn) => {
+        btn.addEventListener("click", () => conversionArtifactDetail(btn.getAttribute("data-conv-artifact") || ""));
+      });
+    }
+  }
+}
+
+function renderConversionStats(runs, artifacts) {
+  const running = runs.filter((row) => String(row.status || "").toLowerCase() === "running").length;
+  const completed = runs.filter((row) => String(row.status || "").toLowerCase() === "completed").length;
+  const errors = runs.filter((row) => String(row.status || "").toLowerCase() === "error").length;
+  const latest = runs[0];
+
+  setPill(
+    $("convSummaryPill"),
+    `conversions: ${runs.length} jobs / ${artifacts.length} artifacts`,
+    errors > 0 ? "bad" : (running > 0 ? "warn" : "ok"),
+    latest ? `latest: ${latest.id || latest.job_id || "unknown"}` : "No conversion runs yet"
+  );
+  setPill($("convRunningPill"), `running: ${running}`, running > 0 ? "warn" : "ok");
+  setPill($("convCompletedPill"), `completed: ${completed}`, completed > 0 ? "ok" : "warn");
+  setPill($("convErrorPill"), `error: ${errors}`, errors > 0 ? "bad" : "ok");
+
+  const latestArtifact = artifacts[0];
+  const artifactText = latestArtifact
+    ? `artifacts: ${artifacts.length} (${formatBytes(latestArtifact.output_size_bytes)})`
+    : "artifacts: 0";
+  setPill(
+    $("convArtifactsPill"),
+    artifactText,
+    artifacts.length > 0 ? "ok" : "warn",
+    latestArtifact ? `latest: ${latestArtifact.artifact_id || "unknown"}` : "No artifacts yet"
+  );
+}
+
+function buildConversionStartPayload() {
+  const repoId = $("convRepoId")?.value?.trim() || "";
+  if (!repoId) throw new Error("Repo ID is required.");
+
+  const bits = Number($("convBits")?.value || "");
+  if (!Number.isFinite(bits) || bits <= 0) throw new Error("Bits must be a positive number.");
+
+  const groupsize = Number.parseInt($("convGroupsize")?.value || "", 10);
+  if (!Number.isFinite(groupsize) || groupsize <= 0) throw new Error("Groupsize must be a positive integer.");
+
+  const payload = {
+    repo_id: repoId,
+    bits,
+    groupsize,
+    force: Boolean($("convForce")?.checked),
+  };
+
+  const baseModelsDir = $("convBaseModelsDir")?.value?.trim();
+  const webuiModelsDir = $("convWebuiModelsDir")?.value?.trim();
+  const exllamaRoot = $("convExllamaRoot")?.value?.trim();
+  if (baseModelsDir) payload.base_models_dir = baseModelsDir;
+  if (webuiModelsDir) payload.webui_models_dir = webuiModelsDir;
+  if (exllamaRoot) payload.exllama_root = exllamaRoot;
+
+  return payload;
+}
+
+async function refreshConversionPanel() {
+  const hasPanel = Boolean($("convSummaryPill") || $("convJobsBody") || $("convArtifactsBody"));
+  if (!hasPanel) return;
+
+  try {
+    const [jobsRes, artifactsRes] = await Promise.all([
+      api("/conversions/exl2/jobs?limit=200"),
+      api("/conversions/exl2/artifacts?limit=200"),
+    ]);
+    const runs = Array.isArray(jobsRes?.runs) ? jobsRes.runs : [];
+    const artifacts = Array.isArray(artifactsRes?.artifacts) ? artifactsRes.artifacts : [];
+    renderConversionStats(runs, artifacts);
+    renderConversionRows(runs, artifacts);
+  } catch (e) {
+    setPill($("convSummaryPill"), "conversions: load error", "bad", e.message || "Unknown error");
+    setPill($("convRunningPill"), "running: ?", "bad");
+    setPill($("convCompletedPill"), "completed: ?", "bad");
+    setPill($("convErrorPill"), "error: ?", "bad");
+    setPill($("convArtifactsPill"), "artifacts: ?", "bad");
+    setConversionRowsError(e.message || "Failed to load conversion metadata");
+  }
+}
+
+async function startManagedExl2Conversion() {
+  const startBtn = $("convStartBtn");
+  if (startBtn) startBtn.disabled = true;
+  try {
+    const payload = buildConversionStartPayload();
+    setOut({ running: true, action: "conversions_exl2_start", payload });
+    const started = await api("/conversions/exl2", { method: "POST", body: payload });
+    setOut(started);
+    setConversionDetail(started);
+  } catch (e) {
+    setOut({ error: e.message, action: "conversions_exl2_start" });
+    setConversionDetail({ error: e.message });
+  } finally {
+    if (startBtn) startBtn.disabled = false;
+    await refreshConversionPanel();
+  }
+}
+
+
+function renderTgwWebUiControls(tgw) {
+  const stateEl = $("tgwWebuiState");
+  const metaEl = $("tgwWebuiMeta");
+  const openBtn = $("tgwWebuiOpen");
+  const startBtn = $("tgwWebuiStart");
+  const stopBtn = $("tgwWebuiStop");
+  const restartBtn = $("tgwWebuiRestart");
+  const logsBtn = $("tgwWebuiLogs");
+  if (!stateEl || !metaEl || !openBtn || !startBtn || !stopBtn || !restartBtn || !logsBtn) return;
 
   if (!tgw) {
     stateEl.textContent = "TGW UI UNKNOWN";
     stateEl.className = "pill bad";
     metaEl.textContent = "TGW WebUI status unavailable.";
-    toggleBtn.disabled = true;
+    startBtn.disabled = true;
+    stopBtn.disabled = true;
+    restartBtn.disabled = true;
+    logsBtn.disabled = true;
     openBtn.disabled = true;
     return;
   }
 
-  if (!tgw.available) {
-    stateEl.textContent = "TGW UI UNAVAILABLE";
-    stateEl.className = "pill bad";
-    metaEl.textContent = tgw.detail || "TGW WebUI is only available when chat uses the tgw backend.";
-    toggleBtn.disabled = true;
-    toggleBtn.textContent = "TGW UI unavailable";
-    openBtn.disabled = true;
-    return;
-  }
-
-  const chatActive = chatStatus?.systemd?.ActiveState === "active";
-  const tone = tgw.enabled ? (tgw.listening ? "ok" : "warn") : "warn";
-  let label = "TGW UI OFF";
-  if (tgw.enabled && tgw.listening) label = "TGW UI ON";
-  else if (tgw.enabled && chatActive) label = "TGW UI STARTING";
-  else if (tgw.enabled) label = "TGW UI ARMED";
+  const active = tgw.active || tgw.active_state === "active";
+  const tone = active ? (tgw.listening ? "ok" : "warn") : "warn";
+  let label = "TGW UI STOPPED";
+  if (active && tgw.listening) label = "TGW UI ON";
+  else if (active) label = "TGW UI STARTING";
 
   stateEl.textContent = label;
   stateEl.className = `pill ${tone}`;
 
   const launchUrl = tgw.launch_url || "(no launch URL)";
-  metaEl.textContent = `bind=${tgw.bind_host}:${tgw.port} | launch=${launchUrl}`;
+  const unit = tgw.unit || "(unit unknown)";
+  metaEl.textContent = `${unit} | bind=${tgw.bind_host}:${tgw.port} | launch=${launchUrl}`;
 
-  toggleBtn.disabled = false;
-  toggleBtn.textContent = tgw.enabled ? "Disable TGW UI" : "Enable TGW UI";
-  openBtn.disabled = !tgw.effective_enabled || !tgw.launch_url;
+  startBtn.disabled = false;
+  stopBtn.disabled = false;
+  restartBtn.disabled = false;
+  logsBtn.disabled = false;
+  openBtn.disabled = !tgw.launch_url;
 }
 
 async function refreshModels() {
@@ -80,10 +326,6 @@ async function refreshModels() {
   toggleSlot("engineChat", slots.chat);
   toggleSlot("engineIntent", slots.intent);
   toggleSlot("engineSmall", slots.small);
-
-  setSelectOptions($("selChat"), m.chat || [], activeChat);
-  setSelectOptions($("selIntent"), m.intent || [], activeIntent);
-  setSelectOptions($("selSmall"), m.small || [], activeSmall);
 
   setSelectOptions($("chatModel"), m.chat || [], activeChat);
   setSelectOptions($("intentModel"), m.intent || [], activeIntent);
@@ -110,7 +352,7 @@ export async function refreshAll() {
     $("chatMeta").textContent = fmtEngineMeta(s.chat);
     $("intentMeta").textContent = fmtEngineMeta(s.intent);
     $("smallMeta").textContent = fmtEngineMeta(s.small);
-    renderChatTgwControls(s.chat);
+    renderTgwWebUiControls(s.tgw_webui);
 
     const chatLbl = engineLabel(s.chat.listening, s.chat.systemd?.ActiveState);
     const intentLbl = engineLabel(s.intent.listening, s.intent.systemd?.ActiveState);
@@ -141,7 +383,7 @@ export async function refreshAll() {
       }
     } catch (_) { }
 
-    await Promise.all([refreshEvalPanel(), refreshRouterPanel()]);
+    await Promise.all([refreshEvalPanel(), refreshRouterPanel(), refreshConversionPanel()]);
   } catch (e) {
     setStatus(`API error: ${e.message}`, "bad");
     const hint = $("cacheHint");
@@ -154,28 +396,34 @@ export async function refreshAll() {
 }
 
 
-async function toggleChatTgwWebUi() {
-  const tgw = ENGINE_STATUS_CACHE?.chat?.tgw_webui;
-  if (!tgw) {
-    setOut({ error: "TGW WebUI status is unavailable for chat." });
-    return;
-  }
+async function tgwWebUiAction(action) {
   try {
-    const enabled = !tgw.enabled;
-    setOut({ running: true, mode: "chat", action: enabled ? "enable_tgw_webui" : "disable_tgw_webui" });
-    setOut(await api("/engines/chat/tgw-webui", { method: "POST", body: { enabled, restart: true } }));
+    setOut({ running: true, mode: "tgw-webui", action });
+    setOut(await api(`/engines/tgw-webui/${action}`, { method: "POST" }));
   } catch (e) {
-    setOut({ error: e.message, mode: "chat", action: "toggle_tgw_webui" });
+    setOut({ error: e.message, mode: "tgw-webui", action });
   } finally {
     await refreshAll();
   }
 }
 
 
-function openChatTgwWebUi() {
-  const tgw = ENGINE_STATUS_CACHE?.chat?.tgw_webui;
-  if (!tgw?.effective_enabled || !tgw.launch_url) {
-    setOut({ error: "TGW WebUI is not enabled for chat, or no launch URL is available." });
+async function tgwWebUiLogs() {
+  try {
+    setOut({ running: true, mode: "tgw-webui", action: "logs" });
+    setOut(await api("/engines/tgw-webui/logs?lines=160"));
+  } catch (e) {
+    setOut({ error: e.message, mode: "tgw-webui", action: "logs" });
+  } finally {
+    await refreshAll();
+  }
+}
+
+
+function openTgwWebUi() {
+  const tgw = ENGINE_STATUS_CACHE?.tgw_webui;
+  if (!tgw?.launch_url) {
+    setOut({ error: "TGW WebUI launch URL is unavailable." });
     return;
   }
   window.open(tgw.launch_url, "_blank", "noopener,noreferrer");
@@ -232,7 +480,7 @@ async function engineLogs(mode) {
 
 async function doSwitch(mode, selection) {
   if (!selection) throw new Error(`No selection for ${mode}`);
-  const bounce = $("chkBounce")?.checked ?? true;
+  const bounce = true;
   try {
     setOut({ running: true, action: "switch", mode, selection, bounce });
     setOut(await api("/switch", { method: "POST", body: { mode, model_dir: selection, bounce } }));
@@ -245,6 +493,14 @@ async function doSwitch(mode, selection) {
 
 export function wireOperationsDomain() {
   $("btnRefresh")?.addEventListener("click", refreshAll);
+  $("convStartBtn")?.addEventListener("click", startManagedExl2Conversion);
+  $("convRefreshBtn")?.addEventListener("click", refreshConversionPanel);
+  $("convRepoId")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      startManagedExl2Conversion();
+    }
+  });
 
   $("btnTestChat")?.addEventListener("click", () => runTest("chat"));
   $("btnTestIntent")?.addEventListener("click", () => runTest("intent"));
@@ -256,8 +512,11 @@ export function wireOperationsDomain() {
   $("chatSolo")?.addEventListener("click", () => engineSolo("chat"));
   $("chatLogs")?.addEventListener("click", () => engineLogs("chat"));
   $("chatTest")?.addEventListener("click", () => runTest("chat"));
-  $("chatTgwToggle")?.addEventListener("click", toggleChatTgwWebUi);
-  $("chatTgwOpen")?.addEventListener("click", openChatTgwWebUi);
+  $("tgwWebuiStart")?.addEventListener("click", () => tgwWebUiAction("start"));
+  $("tgwWebuiStop")?.addEventListener("click", () => tgwWebUiAction("stop"));
+  $("tgwWebuiRestart")?.addEventListener("click", () => tgwWebUiAction("restart"));
+  $("tgwWebuiLogs")?.addEventListener("click", tgwWebUiLogs);
+  $("tgwWebuiOpen")?.addEventListener("click", openTgwWebUi);
 
   $("intentStart")?.addEventListener("click", () => engineAction("intent", "start"));
   $("intentStop")?.addEventListener("click", () => engineAction("intent", "stop"));
@@ -276,10 +535,6 @@ export function wireOperationsDomain() {
   $("chatSwitch")?.addEventListener("click", async () => doSwitch("chat", $("chatModel").value));
   $("intentSwitch")?.addEventListener("click", async () => doSwitch("intent", $("intentModel").value));
   $("smallSwitch")?.addEventListener("click", async () => doSwitch("small", $("smallModel").value));
-
-  $("btnSwitchChat")?.addEventListener("click", async () => doSwitch("chat", $("selChat").value));
-  $("btnSwitchIntent")?.addEventListener("click", async () => doSwitch("intent", $("selIntent").value));
-  $("btnSwitchSmall")?.addEventListener("click", async () => doSwitch("small", $("selSmall").value));
 
   let timer = null;
   $("autoRefresh")?.addEventListener("change", (e) => {

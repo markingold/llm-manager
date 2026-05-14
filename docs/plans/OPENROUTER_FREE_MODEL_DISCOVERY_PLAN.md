@@ -430,23 +430,40 @@ That gives you a system that is:
 - capable of preferring popular free models
 - aligned with the existing provider router already present in this repo
 
-## Immediate next implementation target
+## Implementation status (2026-05-09)
 
-The first useful implementation step is to upgrade the current OpenRouter catalog cache from:
+Estimated completion: about 90%.
 
-- `id`
-- `name`
-- `context_length`
-- `pricing`
-- `is_free`
+Status note: completion level remains materially unchanged from 2026-05-07; the latest push focused on TGW decoupling and managed EXL2 conversion rather than OpenRouter discovery internals.
 
-to an enriched record that also stores:
+### Completed
 
-- supported parameters
-- modality data
-- expiration data
-- inferred size
-- popularity enrichment
-- local health state
+- OpenRouter Models API catalog refresh and cache persistence are implemented.
+- Free detection rules are implemented (`pricing == 0`, `:free`, `(free)`).
+- Catalog records are enriched with capability/modality/context/pricing/expiration data.
+- Size inference is implemented from id/name/description (including `A#B` active-parameter tags).
+- Popularity enrichment is implemented using rankings scraping and merged into catalog rows.
+- Discovery filtering and ranking are implemented (capabilities, size, context, family, popularity).
+- Manual activation of top discovered candidates is implemented via `active_ids`.
+- Runtime model health state and quarantine/manual-review flags are implemented and used in routing.
+- Automatic smoke-check and promotion path is implemented for top discovered candidates (`auto_smoke_check`, `smoke_top_n`, `auto_promote_top_n`).
+- Explicit promotion lifecycle state fields and transitions are implemented (`discovered`, `candidate`, `smoke_passed`, `active`, `quarantined`, `retired`).
+- Rolling failure-window metrics are implemented and persisted (`failure_count_24h`, `failure_count_7d`) and are now used in scoring and quarantine or retirement decisions.
+- Automatic retirement is implemented for expiry and upstream no-longer-free transitions.
 
-Once that exists, filtering and replacement policy become straightforward.
+### Partially completed
+
+- Discovery filters cover most important controls, but not every optional field proposed in this plan (for example `min_total_params_b`, `max_context`).
+- Popularity enrichment is still limited to currently parsed ranking/token signals; richer structured ranking categories are still partial.
+
+### Not completed
+
+- Full popularity/ranking enrichment model (`top_weekly_rank`, `category_ranks`) as durable fields.
+
+## Immediate next implementation targets (updated)
+
+1. Extend smoke checks from basic text response to capability-specific probes (JSON schema, tool-calling) when requested by policy.
+2. Expand popularity enrichment persistence to include weekly/category rank signals when available.
+3. Add admin surfacing for lifecycle transition history and smoke-check evidence on each candidate.
+4. Add configurable auto-refresh and auto-discovery cadence for unattended recovery.
+5. Add explicit retention policy for lifecycle and failure-window history to cap runtime-state growth.

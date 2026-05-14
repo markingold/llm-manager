@@ -7,7 +7,7 @@ Centralises: env loading, config, hash, model chooser, dataset builder.
 import os, json, glob, random, hashlib
 from pathlib import Path
 from datetime import datetime
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 
 # ---------------------------------------------------------------------------
 # Locate project root (two levels up from this file → llm-manager/)
@@ -16,10 +16,32 @@ _THIS = Path(__file__).resolve()
 PROJECT_ROOT = _THIS.parents[3]          # llm-manager/
 
 # ---------------------------------------------------------------------------
-# Load .env (secrets/.env is canonical; dotenv also picks up a bare .env)
+# Load env with shared global keys preferred and local project secrets as fallback.
 # ---------------------------------------------------------------------------
 _env_path = PROJECT_ROOT / "secrets" / ".env"
-load_dotenv(_env_path)
+_global_env_path = Path(
+    os.getenv("LLM_MANAGER_GLOBAL_ENV_PATH", "/srv/2bananas/secrets/global.env")
+)
+
+
+def _merge_env_values() -> dict[str, str]:
+    merged: dict[str, str] = {}
+
+    if _env_path.exists():
+        for key, value in dotenv_values(_env_path).items():
+            if value is not None:
+                merged[key] = value
+
+    if _global_env_path.exists():
+        for key, value in dotenv_values(_global_env_path).items():
+            if value not in (None, ""):
+                merged[key] = value
+
+    return merged
+
+
+for _key, _value in _merge_env_values().items():
+    os.environ.setdefault(_key, _value)
 
 # ---------------------------------------------------------------------------
 # Path constants derived from environment

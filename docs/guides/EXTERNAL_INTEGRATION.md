@@ -1,7 +1,7 @@
 <!--
 id: LLM-MANAGER-EXTERNAL-INTEGRATION
-version: 1.0
-last_updated: 2026-03-29
+version: 1.1
+last_updated: 2026-05-14
 title: External Integration Guide
 purpose:
   Show other projects how to call routed inference and submit evaluation suites to llm-manager.
@@ -24,10 +24,79 @@ curl -X POST http://localhost:8101/router/chat \
   -d '{
     "task_type": "chat",
     "messages": [{"role":"user","content":"Give one-line weather summary"}],
+    "no_thinking": true,
     "provider_preferences": {"strategy":"local_first"},
     "metadata": {"project":"example-client","use_case":"weather"}
   }' | python3 -m json.tool
 ```
+
+`no_thinking: true` maps to `enable_thinking=false` for local provider dispatch.
+
+### Tiered Routing
+
+Use `provider_preferences.service_tier` when the client only cares about spending band and quality tier, not an exact model id.
+
+- `local`: local slot only
+- `low`: curated OpenRouter free models
+- `medium`: curated low-cost OpenRouter paid models
+- `high`: curated higher-cost OpenRouter and OpenAI GPT models
+
+```bash
+curl -X POST http://localhost:8101/router/chat \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "task_type": "chat",
+    "messages": [{"role":"user","content":"Summarize the latest evaluation findings in 3 bullets"}],
+    "provider_preferences": {"service_tier":"medium"},
+    "metadata": {"project":"example-client","use_case":"prompt-eval"}
+  }' | python3 -m json.tool
+```
+
+Current curated defaults:
+
+- `medium` currently resolves to a low-cost OpenRouter paid set including `deepseek/deepseek-v4-pro`, `qwen/qwen3-235b-a22b-2507`, and `deepseek/deepseek-chat-v3-0324`
+- `high` currently resolves to higher-cost GPT options headed by `gpt-4.1-mini` and `gpt-4.1`
+
+### Project-specific default tiers (optional)
+
+If you want one project to default to a specific tier, set a policy override keyed by `project_id`.
+
+```json
+{
+  "project_overrides": {
+    "my-app": {
+      "defaults": {
+        "service_tier": "medium"
+      }
+    }
+  }
+}
+```
+
+Requests that include `project_id: "my-app"` will inherit this tier unless the request supplies an explicit `provider_preferences.service_tier`.
+
+You can also scope strategy or lane-chain changes per task type:
+
+```json
+{
+  "task_overrides": {
+    "embed": {
+      "defaults": { "strategy": "local_first" }
+    }
+  },
+  "project_overrides": {
+    "my-app": {
+      "task_overrides": {
+        "completion": {
+          "defaults": { "strategy": "free_first" }
+        }
+      }
+    }
+  }
+}
+```
+
+Use `POST /providers/policies/test` with `task_type` and `project_id` to verify effective defaults, selection, strategy, and candidate chain before applying routing changes.
 
 ### Completions
 

@@ -495,30 +495,39 @@ Projects that call llm-manager should not need direct provider API keys if llm-m
 
 ## Implementation progress snapshot
 
-As of 2026-03-29:
-- curated provider model catalog config added at `config/provider_models.json`
-- routing and default policy config added at `config/provider_policies.json`
-- provider API base and routing defaults added to `config/settings.example.env`
-- provider config read endpoints added: `GET /providers/models`, `GET /providers/policies`
-- provider runtime-state scaffold added at `run/state/provider_runtime_state.json` with read endpoint `GET /providers/state`
-- normalized chat broker request and response contracts added at `api/router/contracts.py`
-- provider adapter modules added at `api/providers/base.py`, `api/providers/local.py`, `api/providers/openrouter.py`, `api/providers/openai.py`
-- unified broker endpoint added: `POST /router/chat` with adapter-backed dispatch and policy-chain fallback
-- additional broker endpoints added: `POST /router/completions` and `POST /router/embed`
-- initial router observability endpoints added: `GET /router/health`, `GET /router/last-decisions`, `GET /router/usage-summary`
-- OpenRouter free-tier local limiter implemented via provider_rate_limits state and policy `free_rate_limit_rpm`
-- provider-model cooldown state tracking implemented in provider_model_state for retryable and rate-limit failures
-- free-tier overflow queue behavior implemented for `wait`, `fail_fast`, `fallback_to_local`, and `upgrade_to_paid`
-- router observability endpoints expanded with `GET /router/queue-state` and `GET /router/fallback-stats`
-- local evaluation pipeline endpoints added: `POST /router/evaluate/local`, `GET /router/evaluations/{run_id}`, `GET /router/evaluations/{run_id}/report`
-- evaluation observability endpoint added: `GET /router/evaluation-summary`
-- provider runtime state now persists `evaluation_suites`, `evaluation_runs`, and `evaluation_reports`
-- async local evaluation queue endpoint added: `POST /router/evaluate/local/async` with priority classes `interactive`, `batch`, `evaluation`
-- evaluation queue observability and control endpoints added: `GET /router/evaluation-queue-state`, `POST /router/evaluation-queue/{run_id}/cancel`
-- evaluation suite management and rerun endpoints added: `GET/PUT/DELETE /router/evaluation-suites/{suite_name}/{suite_version}`, `POST /router/evaluation-suites/{suite_name}/{suite_version}/rerun`
-- compact compare artifact endpoint added: `GET /router/evaluations/{run_id}/compare-compact`
-- evaluation worker configuration endpoint added: `GET /router/evaluation-worker-config`
-- dashboard Evaluation Ops panel added in `web/` for queue and report visibility
+As of 2026-05-09:
+- overall completion estimate: about 95%
+- status note: this update reflects completion of TGW WebUI slot decoupling and managed EXL2 conversion metadata integration.
+- core provider-router architecture is implemented and running in production code paths
+- router broker endpoints are implemented: `POST /router/chat`, `POST /router/completions`, `POST /router/embed`
+- provider adapters are implemented for local, OpenRouter, and OpenAI
+- strategy chain routing is implemented (`local_first`, `free_first`, `paid_first`, `best_available`, `strict_provider`)
+- persistent runtime state is implemented for model health/cooldowns, rate limits, queue, request logs, usage logs, and spend logs
+- OpenRouter free-tier controls are implemented: upstream free enforcement, cooldown/failure handling, local limiter, queue overflow policies, and priority-aware queue scheduling
+- observability endpoints are implemented: health, last decisions, usage summary, queue state, fallback stats, budget state
+- governance endpoints for models/policies and rollback are implemented
+- OpenRouter catalog refresh and manual free-candidate discovery endpoints are implemented
+- missing high-value planned endpoints are now implemented: `POST /router/route-test`, `POST /providers/policies/test`, `GET /providers/openrouter/rate-limit-state`
+- per-project policy overrides are implemented in routing policy resolution (`project_overrides` in policy config + request `project_id`/metadata)
+- per-task-type policy overrides are implemented for `chat`, `completion`, and `embed` across strategy and lane-chain resolution (`task_overrides` + `project_overrides.<project>.task_overrides`)
+- local evaluation/evaluation-queue framework is implemented and integrated into runtime state and dashboard
+- managed EXL2 conversion endpoints and metadata persistence are implemented (`/conversions/exl2/*`, `conversion_runs`, `conversion_artifacts`)
+- converted artifact metadata now surfaces in catalog/inspection responses (`/models`, `/providers/models`) and syncs into `local.converted_models`
+- TGW slot launch path is explicitly decoupled from WebUI toggles (slot services force `--no-webui`)
+
+## Phase status summary (2026-05-14)
+
+- Phase 0 (config/data model): complete.
+- Phase 1 (request normalization + adapters + `/router/chat`): complete.
+- Phase 2 (curated routing + manual selection + limiter/queue): complete for current scope.
+- Phase 3 (automatic OpenRouter free cycling): complete for current scope, including smoke-tested auto-promotion and lifecycle/quarantine-retirement flows.
+- Phase 4 (cross-provider fallback): complete for strategy-chain routing and inspection endpoints.
+- Phase 5 (cost/quota/governance): partially complete; usage/spend/budget guardrails, per-project and per-task-type overrides, managed EXL2 conversion metadata, and lane-sufficiency reporting are live.
+
+## Remaining high-impact gaps
+
+- Add cost-aware dynamic model ranking within a strategy (beyond fixed lane order).
+- Add longer-horizon routing audit and retention controls beyond the current recent-decision window.
 
 ## Phase 0: shape the config and data model
 
@@ -561,8 +570,9 @@ As of 2026-03-29:
 1. Record token usage by provider and model.
 2. Track approximate spend for paid providers.
 3. Add per-project policy overrides if different projects should prefer different providers.
-4. Add optional budget guardrails for paid routing.
-5. Add model-lane sufficiency reporting so you can tell when a cheaper tier is already good enough for a task.
+4. Add per-task-type policy overrides for `chat`, `completion`, and `embed` in addition to per-project defaults. (implemented)
+5. Add optional budget guardrails for paid routing.
+6. Add model-lane sufficiency reporting so you can tell when a cheaper tier is already good enough for a task. (implemented via `/router/lane-sufficiency-report` and dashboard panel)
 
 ## Summary recommendation
 

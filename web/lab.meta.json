@@ -1,0 +1,7 @@
+{
+  "title": "LLM Manager",
+  "description": "Local model control plane and operator dashboard.",
+  "category": "core",
+  "tags": ["llm", "dashboard", "fastapi"],
+  "healthUrl": "/llm-manager-api/health"
+}

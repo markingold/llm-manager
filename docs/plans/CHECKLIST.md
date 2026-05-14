@@ -1,12 +1,21 @@
 # LLM Manager - Master Checklist
 
-> Consolidated: 2026-03-29
+> Consolidated: 2026-04-29
+
+WebUI overhaul status update (2026-05-07):
+- The dedicated WebUI overhaul tracker is complete and retired.
+- Historical references:
+	- [docs/plans/WEBUI_OVERHAUL_CHECKLIST.md](docs/plans/WEBUI_OVERHAUL_CHECKLIST.md)
+	- [docs/plans/WEBUI_OVERHAUL_PLAN.md](docs/plans/WEBUI_OVERHAUL_PLAN.md)
+	- [docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md](docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md)
+- New UI work should be tracked in this master checklist and the roadmap below.
 
 ## Must Do (blocking or high-value)
 - [x] Extend `api/model_inspector.py` to emit `recommended_backend` and `fallback_backends`. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [x] Add backend selection to slot or switch configuration. - effort: small | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [x] Add normalized launcher wrappers for TGW, vLLM, and TabbyAPI under `run/`. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [ ] Standardize and document the canonical engine and model directory layout under `/srv/2bananas/engines`, keeping llm-manager as the control plane rather than the asset store. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
+- [ ] Align deployed systemd engine units with the documented launcher path and add startup guardrails for stale ExLlamaV2 JIT locks and unclean TGW restarts. - effort: medium | source: local runtime troubleshooting 2026-04-28
 - [x] Add provider model catalog config for local, OpenRouter free, OpenRouter paid, and OpenAI. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md
 - [x] Add provider secrets and default routing config to the application configuration model. - effort: small | source: docs/plans/PROVIDER_ROUTER_PLAN.md
 - [x] Define a normalized router request and response contract for chat, completion, embed, and evaluation workflows. - effort: large | source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/EVALUATION_PLAN.md (chat/completions/embed slices implemented)
@@ -15,18 +24,23 @@
 - [x] Persist provider runtime state for health, cooldowns, rate limits, queue state, and evaluation artifacts. - effort: large | source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/EVALUATION_PLAN.md (evaluation_suites/runs/reports state persisted)
 - [x] Add a shared OpenRouter free-tier limiter capped at 20 requests per minute. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md (local protective limiter slice implemented)
 - [x] Add queueing for free-tier requests with configurable overflow behavior. - effort: large | source: docs/plans/PROVIDER_ROUTER_PLAN.md (wait/fail_fast/fallback_to_local/upgrade_to_paid slice implemented)
-- [ ] Promote EXL2 conversion into a first-class managed workflow for HF-format and merged models. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md
-- [ ] Persist conversion metadata so converted models can be cataloged and routed. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md
+- [x] Add automatic smoke-check promotion and lifecycle state transitions for discovered OpenRouter free candidates. - effort: medium | source: docs/plans/OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md
+- [x] Promote EXL2 conversion into a first-class managed workflow for HF-format sources. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md (managed `/conversions/exl2/*` API flow is live)
+- [ ] Extend managed EXL2 conversion workflow to merged local model sources. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md
+- [ ] Ensure EXL2 conversion preserves tokenizer metadata and chat templates required for correct instruct prompting. - effort: medium | source: local runtime troubleshooting 2026-04-28
+- [x] Persist conversion metadata so converted models can be cataloged and routed. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md (runtime state + `/models` and `/providers/models` surfacing)
 - [ ] Add a TabbyAPI launcher and treat EXL2 and EXL3 as first-class ExLlama-backed lanes. - effort: large | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md, docs/plans/EXLLAMA_CONVERSION_PLAN.md
-- [ ] Add OpenRouter metadata refresh, error normalization, cooldown state, and automatic free-model cycling. - effort: large | source: docs/plans/PROVIDER_ROUTER_PLAN.md
-- [ ] Add controlled cross-provider fallback strategies such as `local_first`, `free_first`, `paid_first`, `best_available`, and `strict_provider`. - effort: large | source: docs/plans/PROVIDER_ROUTER_PLAN.md
+- [x] Add OpenRouter metadata refresh, error normalization, cooldown state, and automatic free-model cycling. - effort: large | source: docs/plans/PROVIDER_ROUTER_PLAN.md (including smoke-check promotion path, lifecycle states, and rolling failure windows)
+- [x] Add controlled cross-provider fallback strategies such as `local_first`, `free_first`, `paid_first`, `best_available`, and `strict_provider`. - effort: large | source: docs/plans/PROVIDER_ROUTER_PLAN.md
 - [x] Add evaluation suite schemas, storage, runner, and reporting endpoints. - effort: large | source: docs/plans/EVALUATION_PLAN.md (initial local evaluation endpoint and report endpoints implemented)
 - [x] Write external-project documentation for routed inference and evaluation-suite submission. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/EVALUATION_PLAN.md, docs/TODO/README.md (`docs/guides/EXTERNAL_INTEGRATION.md` added)
 
 ## Should Do (improves quality)
 - [ ] Add vLLM slot launching and make AWQ and GPTQ prefer vLLM where supported. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [ ] Add slot metadata for embeddings, classification, structured output, tool calling, and multimodal capabilities. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
-- [ ] Add curated model admin endpoints for catalogs, policies, state, and refresh operations. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md
+- [x] Add curated model admin endpoints for catalogs, policies, state, and refresh operations. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md
+- [x] Add high-value router/provider diagnostic endpoints for policy resolution, route testing, and OpenRouter limiter state (`/providers/policies/test`, `/router/route-test`, `/providers/openrouter/rate-limit-state`). - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md
+- [ ] Document recovery for GPU-driver wedges and uninterruptible TGW engine processes, including reboot criteria and sequential single-lane validation steps. - effort: small | source: local runtime troubleshooting 2026-04-28
 - [x] Add router observability endpoints for health, last decisions, fallback stats, usage summaries, queue state, and evaluation summaries. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/EVALUATION_PLAN.md (evaluation summary endpoint implemented)
 - [ ] Surface backend, model format, and recommendation data in the dashboard. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [ ] Hide or disable unsupported operations per backend in the UI. - effort: small | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
@@ -40,14 +54,15 @@
 - [x] Run local evaluation suites against mixed local and remote candidates with provider/lane-aware compare artifacts. - effort: medium | source: docs/plans/EVALUATION_PLAN.md (mixed candidate execution implemented)
 - [x] Add provider and lane filters plus optional estimated-cost rollups for evaluation triage. - effort: medium | source: docs/plans/EVALUATION_PLAN.md, docs/plans/PROVIDER_ROUTER_PLAN.md (provider/lane/suite_pass filters and estimated cost summary fields implemented)
 - [x] Add a lightweight dashboard panel for evaluation queue and report visibility. - effort: small | source: docs/plans/EVALUATION_PLAN.md (initial Evaluation Ops panel implemented)
+- [x] Add priority-aware scheduling for free-tier router queue items with interactive/batch/evaluation classes. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md
 - [ ] Add EXL3 conversion once the ExLlamaV3 toolchain is installed and validated on the host. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md
 
 ## Nice To Have
 - [ ] Add optional backend-native model load and unload support for the TabbyAPI lane. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [ ] Add direct llama.cpp integration instead of relying on TGW for GGUF. - effort: large | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [ ] Add a lightweight raw-Transformers fallback backend if experiments justify it. - effort: large | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
-- [ ] Add per-project routing overrides and budget guardrails for paid providers. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md
-- [ ] Record spend and lane-sufficiency reporting to prove when cheaper models are good enough. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/EVALUATION_PLAN.md
+- [x] Add per-project routing overrides and budget guardrails for paid providers. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md
+- [x] Record spend and lane-sufficiency reporting to prove when cheaper models are good enough. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/EVALUATION_PLAN.md (`/router/lane-sufficiency-report` + dashboard lane sufficiency panel)
 - [ ] Add a broader orchestrator layer only if the project intentionally expands beyond LLM serving. - effort: large | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 
 ## Code Debt (from TODO/FIXME comments)

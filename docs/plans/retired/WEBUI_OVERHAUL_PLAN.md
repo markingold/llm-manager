@@ -1,6 +1,15 @@
 # LLM Manager - WebUI Overhaul Plan
 
 > Added: 2026-03-29
+> Retired: 2026-05-07 (implementation complete)
+
+## Plan status
+
+- Status: completed and retired to historical reference.
+- Canonical closeout record: [docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md](docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md)
+- Canonical implementation log: [docs/plans/WEBUI_OVERHAUL_CHECKLIST.md](docs/plans/WEBUI_OVERHAUL_CHECKLIST.md)
+
+Note: this file remains as the original planning artifact. New UI work should be tracked in [docs/plans/CHECKLIST.md](docs/plans/CHECKLIST.md) and [docs/plans/ROADMAP.md](docs/plans/ROADMAP.md).
 
 ## Goal
 
@@ -139,24 +148,24 @@ The current web UI is strong for slot operations and basic evaluation queue visi
 
 ## API parity checklist for overhaul
 
-- [ ] /providers/openrouter/refresh
-- [ ] /providers/models (read)
-- [ ] /providers/policies (read)
-- [ ] /providers/models (write contract)
-- [ ] /providers/policies (write contract)
-- [ ] /router/budget-state
-- [ ] /router/last-decisions
-- [ ] /router/fallback-stats
-- [ ] /router/usage-summary
-- [ ] /router/queue-state
-- [ ] /router/evaluation-queue-state
-- [ ] /router/evaluation-summary
-- [ ] /router/evaluation-worker-config
-- [ ] /router/evaluations with full filter support
-- [ ] /router/evaluations/{run_id}
-- [ ] /router/evaluations/{run_id}/report
-- [ ] /router/evaluations/{run_id}/compare-compact
-- [ ] /router/evaluation-suites CRUD and rerun
+- [x] /providers/openrouter/refresh
+- [x] /providers/models (read)
+- [x] /providers/policies (read)
+- [x] /providers/models (write contract)
+- [x] /providers/policies (write contract)
+- [x] /router/budget-state
+- [x] /router/last-decisions
+- [x] /router/fallback-stats
+- [x] /router/usage-summary
+- [x] /router/queue-state
+- [x] /router/evaluation-queue-state
+- [x] /router/evaluation-summary
+- [x] /router/evaluation-worker-config
+- [x] /router/evaluations with full filter support
+- [x] /router/evaluations/{run_id}
+- [x] /router/evaluations/{run_id}/report
+- [x] /router/evaluations/{run_id}/compare-compact
+- [x] /router/evaluation-suites CRUD and rerun
 
 ## Definition of done for overhaul
 

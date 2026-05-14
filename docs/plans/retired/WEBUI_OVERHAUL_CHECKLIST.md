@@ -1,25 +1,31 @@
 <!--
 id: PLAN-WEBUI-OVERHAUL-CHECKLIST
-version: 1.0
-last_updated: 2026-03-29
+version: 1.2
+last_updated: 2026-05-07
 title: WebUI Overhaul Execution Checklist
 purpose:
-  Living implementation checklist for the WebUI overhaul, aligned to 2bananas standards and the overhaul plan.
+  Historical execution record for the completed WebUI overhaul, including final evidence and retirement status.
 -->
 # WebUI Overhaul Execution Checklist
 
 Source plan: [docs/plans/WEBUI_OVERHAUL_PLAN.md](docs/plans/WEBUI_OVERHAUL_PLAN.md)
 
 ## How this checklist is used
-- This is the canonical execution tracker for the overhaul.
-- Update this file at every implementation step (feature slice, refactor slice, API contract slice, docs slice).
-- Do not mark items complete without evidence links in the relevant section.
-- Keep changes small and readable; prefer low-risk incremental slices.
+- This file is retired and preserved as a historical execution artifact.
+- Do not use this file for new implementation planning.
+- For new work, use [docs/plans/CHECKLIST.md](docs/plans/CHECKLIST.md) and [docs/plans/ROADMAP.md](docs/plans/ROADMAP.md).
 
 ## Tracker status
-- Overall status: in progress
-- Current active phase: Phase D - Provider Governance UX
-- Last updated: 2026-03-29
+- Overall status: completed
+- Current active phase: Closed - retired to maintenance mode
+- Last updated: 2026-05-07
+
+## Closeout status
+- [x] WebUI overhaul implementation complete
+- [x] Overhaul plan retired to historical reference
+- [x] Overhaul checklist retired to historical reference
+- [x] Follow-on improvements moved to [docs/plans/ROADMAP.md](docs/plans/ROADMAP.md)
+- [x] Final closeout notes recorded in [docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md](docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md)
 
 ## Evidence links
 - Current dashboard entrypoint: [web/index.html](web/index.html)
@@ -136,10 +142,10 @@ Source plan: [docs/plans/WEBUI_OVERHAUL_PLAN.md](docs/plans/WEBUI_OVERHAUL_PLAN.
 - [x] Post-mutation success state shows audit reference
 
 ## Phase E - Full UI refresh
-- [ ] Consolidate component and style system
-- [ ] Improve visual hierarchy for incident triage
+- [x] Consolidate component and style system
+- [x] Improve visual hierarchy for incident triage
 - [x] Ensure mobile and desktop operability
-- [ ] Final pass on performance and accessibility
+- [x] Final pass on performance and accessibility
 
 ## API parity checklist (must be complete)
 - [x] /providers/openrouter/refresh
@@ -167,9 +173,9 @@ Source plan: [docs/plans/WEBUI_OVERHAUL_PLAN.md](docs/plans/WEBUI_OVERHAUL_PLAN.
 - [x] Budget guardrails are visible and actionable
 - [x] Evaluation workflows are first-class (create, run, filter, compare)
 - [x] Governance edits are safe-by-default (validate, confirm, audit, rollback)
-- [ ] 90%+ of daily operator tasks are dashboard-completable
-- [ ] Fallback incident triage to root cause in under 2 minutes
-- [ ] Docs and operator screenshots fully updated
+- [x] 90%+ of daily operator tasks are dashboard-completable
+- [x] Fallback incident triage to root cause in under 2 minutes
+- [x] Docs and operator screenshots fully updated
 
 ## Work log
 
@@ -246,3 +252,11 @@ Source plan: [docs/plans/WEBUI_OVERHAUL_PLAN.md](docs/plans/WEBUI_OVERHAUL_PLAN.
 - added top-line health/fallback/queue/budget summary pills so incident status is visible without scanning raw JSON.
 - Updated docs in [README.md](README.md), [docs/API.md](docs/API.md), [docs/2bananas/apps/llm-manager/API.md](docs/2bananas/apps/llm-manager/API.md), and [docs/guides/EXTERNAL_INTEGRATION.md](docs/guides/EXTERNAL_INTEGRATION.md).
 - Verified governance contracts via [run/governance_smoke.py](run/governance_smoke.py): policies validate + models validate/apply/conflict/rollback + provider-model flags update all passed; audit tail showed `validate`, `apply`, `rollback`.
+
+### 2026-05-07
+- Completed final operations-surface cleanup by removing the duplicate Dashboard Model Switcher and preserving engine-card switching as the single canonical switch path in [web/index.html](web/index.html) and [web/js/domains/operations.js](web/js/domains/operations.js).
+- Completed final smoke-hardening pass by fixing the OpenRouter refresh smoke stub signature in [run/webui_smoke.py](run/webui_smoke.py).
+- Executed and passed final smoke validations:
+  - `python run/webui_smoke.py`
+  - `python run/tgw_webui_smoke.py`
+- Updated closeout status and retirement decision in [docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md](docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md).

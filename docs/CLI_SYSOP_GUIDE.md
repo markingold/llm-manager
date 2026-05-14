@@ -1,4 +1,6 @@
-# CLI Sysop Guide — LLM Manager
+# CLI Operations Guide — LLM Manager
+
+Historical note: this file keeps its old filename for compatibility, but it is not a SysOp integration guide.
 
 Quick-reference for command-line operations. All commands assume you're in the project root with venv activated.
 
@@ -36,6 +38,13 @@ API equivalents:
 - `curl -X POST http://localhost:8101/engines/chat/restart`
 - `curl -X POST http://localhost:8101/engines/solo/chat`
 - `curl "http://localhost:8101/engines/chat/logs?lines=100" | python3 -m json.tool`
+
+Standalone TGW WebUI service (one-off model testing):
+- `curl http://localhost:8101/engines/tgw-webui/status | python3 -m json.tool`
+- `curl -X POST http://localhost:8101/engines/tgw-webui/start`
+- `curl -X POST http://localhost:8101/engines/tgw-webui/stop`
+- `curl -X POST http://localhost:8101/engines/tgw-webui/restart`
+- `curl "http://localhost:8101/engines/tgw-webui/logs?lines=100" | python3 -m json.tool`
 
 ---
 

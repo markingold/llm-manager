@@ -2,7 +2,8 @@
 """
 launch_tgw.py - Normalize and launch text-generation-webui for a slot.
 
-This keeps TGW launch behavior in one wrapper while backend abstraction is added.
+Default behavior is slot-safe and API-only (no WebUI). Standalone WebUI mode
+can be enabled explicitly with --webui.
 """
 
 import argparse
@@ -19,17 +20,36 @@ MODELS_DIR = os.getenv(
 )
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ENV_PATH = ROOT / "secrets" / ".env"
+GLOBAL_ENV_PATH = pathlib.Path(
+    os.getenv("LLM_MANAGER_GLOBAL_ENV_PATH", "/srv/2bananas/secrets/global.env")
+)
+
+
+def read_env_file(path: pathlib.Path) -> dict[str, str]:
+    values: dict[str, str] = {}
+    if not path.exists():
+        return values
+    for line in path.read_text().splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        values[key.strip()] = value.strip()
+    return values
 
 
 def read_runtime_env() -> dict:
     env = dict(os.environ)
-    if ENV_PATH.exists():
-        for line in ENV_PATH.read_text().splitlines():
-            stripped = line.strip()
-            if not stripped or stripped.startswith("#") or "=" not in stripped:
-                continue
-            key, value = stripped.split("=", 1)
-            env[key.strip()] = value.strip()
+
+    # Shared global env keys are preferred when not already set by process env.
+    for key, value in read_env_file(GLOBAL_ENV_PATH).items():
+        if value and key not in env:
+            env[key] = value
+
+    # Project-local secrets provide fallback values when global/env do not define one.
+    for key, value in read_env_file(ENV_PATH).items():
+        if key not in env:
+            env[key] = value
     return env
 
 
@@ -54,16 +74,30 @@ def main():
     parser.add_argument("--max-seq-len", required=True, help="Context length")
     parser.add_argument("--listen-host", default="127.0.0.1", help="Listen host")
     parser.add_argument("--model-dir", default=MODELS_DIR, help="Models directory")
+    webui_mode = parser.add_mutually_exclusive_group()
+    webui_mode.add_argument("--webui", action="store_true", help="Enable TGW WebUI for this process")
+    webui_mode.add_argument("--no-webui", action="store_true", help="Force API-only mode for this process")
     args = parser.parse_args()
 
     runtime_env = read_runtime_env()
-    model_name = pathlib.Path(args.model).name
-    chat_webui_enabled = model_name == "chat_active_model" and env_flag(
-        runtime_env.get("TGW_CHAT_WEBUI_ENABLED"),
-        False,
+    if args.webui:
+        tgw_webui_enabled = True
+    elif args.no_webui:
+        tgw_webui_enabled = False
+    else:
+        tgw_webui_enabled = env_flag(
+            runtime_env.get("TGW_WEBUI_ENABLED", runtime_env.get("TGW_CHAT_WEBUI_ENABLED")),
+            False,
+        )
+
+    tgw_webui_port = env_int(
+        runtime_env.get("TGW_WEBUI_PORT", runtime_env.get("TGW_CHAT_WEBUI_PORT")),
+        7860,
     )
-    chat_webui_port = env_int(runtime_env.get("TGW_CHAT_WEBUI_PORT"), 7860)
-    chat_webui_bind_host = str(runtime_env.get("TGW_CHAT_WEBUI_BIND_HOST") or args.listen_host).strip() or args.listen_host
+    tgw_webui_bind_host = str(
+        runtime_env.get("TGW_WEBUI_BIND_HOST", runtime_env.get("TGW_CHAT_WEBUI_BIND_HOST"))
+        or args.listen_host
+    ).strip() or args.listen_host
 
     model_path = pathlib.Path(args.model_dir) / args.model
     resolved = model_path.resolve()
@@ -72,7 +106,7 @@ def main():
     loader = detect_loader(kind)
 
     print(
-        f"[launch-tgw] model={args.model} resolved={resolved.name} kind={kind} loader={loader} webui={'on' if chat_webui_enabled else 'off'}",
+        f"[launch-tgw] model={args.model} resolved={resolved.name} kind={kind} loader={loader} webui={'on' if tgw_webui_enabled else 'off'}",
         flush=True,
     )
 
@@ -84,7 +118,7 @@ def main():
         str(args.api_port),
         "--listen",
         "--listen-host",
-        chat_webui_bind_host,
+        tgw_webui_bind_host,
         "--extensions",
         "openai",
         "--old-colors",
@@ -96,8 +130,8 @@ def main():
         args.model,
     ]
 
-    if chat_webui_enabled:
-        cmd += ["--listen-port", str(chat_webui_port)]
+    if tgw_webui_enabled:
+        cmd += ["--listen-port", str(tgw_webui_port)]
     else:
         cmd += ["--nowebui"]
 

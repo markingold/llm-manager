@@ -1,96 +1,77 @@
-# TGW WebUI Toggle Plan
+# TGW WebUI Standalone Plan
 
-Last updated: 2026-04-18
-Status: In progress
+Last updated: 2026-05-09
+Status: Implemented
 
 ## Goal
 
-Add a chat-slot control path in the llm-manager dashboard that can:
+Run TGW WebUI as a standalone utility service for one-off model conversations,
+independent from chat/intent/small slot lifecycle.
 
-1. Enable or disable the text-generation-webui Gradio interface for the chat lane.
-2. Restart the chat engine so the setting takes effect.
-3. Open the chat lane TGW WebUI in a new browser tab.
+## What changed
 
-## Scope
+1. TGW WebUI is no longer controlled by chat backend selection.
+2. Slot launch path is explicitly decoupled from TGW WebUI:
+   - `run/engine_launcher.py` now forwards `--no-webui` by default.
+   - Slot services stay API-only unless intentionally launched with `--webui`.
+3. TGW WebUI has standalone service endpoints:
+	- `GET /engines/tgw-webui/status`
+	- `POST /engines/tgw-webui/{start|stop|restart}`
+	- `GET /engines/tgw-webui/logs`
+	- `POST /engines/tgw-webui/config`
+4. `/engines/status` now includes top-level `tgw_webui` state.
+5. Dashboard now has a dedicated TGW WebUI card with Start/Stop/Restart/Logs/Open actions.
 
-- Chat slot only.
-- TGW backend lane only.
-- Persist settings in `secrets/.env`.
-- Apply the TGW WebUI mode change on engine restart.
-- Expose the launch URL in the dashboard.
+## Runtime model
 
-## Constraints
+- Standalone service unit name is configurable via `SYSTEMD_TGW_WEBUI`.
+- Default unit fallback: `llm-tgw-webui.service`.
+- TGW WebUI launch URL defaults to `http://<host>:7860/` unless overridden.
 
-- TGW decides whether to launch Gradio at process start, so this cannot be toggled without a restart.
-- The current launcher always passes `--nowebui`.
-- The current engine controls only expose generic `start|stop|restart` actions.
-- Other local backends in this repo do not expose a comparable built-in web UI.
+## Recommended systemd unit (example)
 
-## Implementation Plan
+Create `llm-tgw-webui.service` with a fixed testing model alias such as `webui_active_model`:
 
-### 1. Live plan and tracking
+```ini
+[Unit]
+Description=Standalone TGW WebUI (one-off testing)
+After=network.target
 
-Status: Complete
+[Service]
+Type=simple
+WorkingDirectory=/srv/2bananas/engines/text-generation-webui
+Environment=TGW_WEBUI_ENABLED=1
+ExecStart=/usr/bin/python3 /srv/2bananas/projects/llm-manager/run/launch_tgw.py --api-port 7861 --model webui_active_model --max-seq-len 8192 --listen-host 127.0.0.1 --webui
+Restart=always
+RestartSec=2
 
-- Create this document.
-- Update the status of each phase as implementation proceeds.
+[Install]
+WantedBy=multi-user.target
+```
 
-### 2. Backend API and persisted settings
+Notes:
+- Keep the TGW OpenAI API port separate from normal chat/intent/small lanes.
+- TGW WebUI itself uses `TGW_WEBUI_PORT` (default `7860`).
+- Point `SYSTEMD_TGW_WEBUI` to this service name if you use a different unit id.
+- If you launch through `run/engine_launcher.py`, pass `--webui` for standalone WebUI mode. Without it, launcher forces `--no-webui`.
 
-Status: Complete
+## Environment keys
 
-- Add persisted TGW chat WebUI settings to the API knobs model and example env.
-- Add chat-specific TGW WebUI request/response helpers.
-- Add an API endpoint to enable or disable the TGW chat WebUI and restart the chat engine.
-- Extend engine status payloads with TGW chat WebUI state, readiness, and launch URL.
+- `TGW_WEBUI_ENABLED`
+- `TGW_WEBUI_PORT`
+- `TGW_WEBUI_BIND_HOST`
+- `TGW_WEBUI_PUBLIC_URL`
 
-### 3. TGW launcher changes
+Legacy `TGW_CHAT_WEBUI_*` keys are still accepted as fallback aliases.
 
-Status: Complete
+These keys apply when TGW is started in WebUI mode (`--webui` or legacy env fallback when not explicitly overridden). Slot launches through `run/engine_launcher.py` default to API-only (`--no-webui`).
 
-- Teach the TGW launcher to read the persisted TGW chat WebUI settings from `secrets/.env`.
-- Keep current API-only behavior when disabled.
-- Omit `--nowebui` and add `--listen-port` when enabled.
+## Validation
 
-### 4. Dashboard controls
-
-Status: Complete
-
-- Add chat card controls to enable or disable the TGW WebUI.
-- Add a button to open the TGW WebUI in a new tab.
-- Show TGW WebUI status and target URL in the chat engine card.
-- Disable or hide controls when chat is not on the TGW backend.
-
-### 5. Supporting docs
-
-Status: Complete
-
-- Document the new env keys.
-- Document the new endpoint and dashboard behavior.
-- Call out that a restart is required for the setting to take effect.
-- Document optional use of a public URL override when direct port access is not desired.
-
-### 6. Validation
-
-Status: Complete
-
-- Add or extend in-process smoke coverage for the TGW toggle path.
-- Validate the launcher command construction in both disabled and enabled modes.
-- Validate that the dashboard-facing status payload includes TGW WebUI data.
-
-Smoke:
+Smoke script:
 - `python run/tgw_webui_smoke.py`
 
-## Completion Checklist
-
-- [x] Plan document created.
-- [x] Backend settings and endpoint added.
-- [x] TGW launcher reads persisted WebUI config.
-- [x] Dashboard toggle and launch controls added.
-- [x] Docs updated.
-- [x] Validation completed.
-
-## Notes
-
-- The first implementation path will use a direct launch URL with an optional public URL override.
-- Apache proxying for a friendlier same-origin TGW path can be added later without changing the core toggle behavior.
+Coverage:
+1. `/engines/status` returns top-level `tgw_webui` payload.
+2. `/engines/tgw-webui/config` updates bind/port settings.
+3. `/engines/tgw-webui/{start|stop|restart}` service actions work.

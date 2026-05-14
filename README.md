@@ -5,7 +5,7 @@ Manages **text-generation-webui** instances via systemd, with model switching, f
 
 Additional local docs:
 - `docs/API.md`
-- `docs/CLI_SYSOP_GUIDE.md`
+- `docs/CLI_SYSOP_GUIDE.md` (historical filename; this is the llm-manager CLI operations guide, not a sysop integration guide)
 - `docs/guides/EXTERNAL_INTEGRATION.md`
 
 Baseline quality reports:
@@ -25,7 +25,7 @@ Baseline quality reports:
   │  FastAPI  server.py (:8101)                                  │
   │  • /models, /switch, /bounce, /inspect, /vram               │
   │  • /engines/status, /engines/{mode}/{start|stop|restart}     │
-  │  • /jobs (train, merge, convert)                             │
+  │  • /jobs + /conversions/exl2 (managed conversion)            │
   │  • /health, /system, /knobs, /test-*                        │
   └───────┬──────────────────────────────────────────────────────┘
           │ systemctl / symlinks
@@ -49,7 +49,9 @@ pip install -r requirements.txt
 
 # 2. Create config
 cp config/settings.example.env secrets/.env
-# Edit secrets/.env with your paths/tokens
+# llm-manager prefers shared keys in /srv/2bananas/secrets/global.env
+# and falls back to secrets/.env for missing values.
+# Edit secrets/.env with project-local fallbacks/overrides.
 
 # 3. Start the API
 python api/server.py
@@ -116,7 +118,16 @@ secrets/
   .env                 # Actual configuration (git-ignored)
 ```
 
-## Environment Variables (secrets/.env)
+## Environment Variables (global + local)
+
+Effective config precedence for llm-manager-managed settings:
+- process defaults captured at startup for core runtime keys
+- project local fallback values in `secrets/.env`
+- shared preferred values in `/srv/2bananas/secrets/global.env`
+
+Notes:
+- Shared global env path can be overridden with `LLM_MANAGER_GLOBAL_ENV_PATH`.
+- `POST /knobs` writes project-local `secrets/.env` only.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -130,10 +141,10 @@ secrets/
 | `WEBUI_MODELS_DIR` | Shared models directory | `/srv/2bananas/engines/models` |
 | `EXLLAMA_ROOT` | ExLlamaV2 install dir | `/srv/2bananas/engines/exllamav2` |
 | `ENABLE_CHAT` / `ENABLE_INTENT` / `ENABLE_SMALL` | Show slot in dashboard (0/1) | `1` |
-| `TGW_CHAT_WEBUI_ENABLED` | Enable TGW WebUI for chat (0/1) | `0` |
-| `TGW_CHAT_WEBUI_PORT` | TGW WebUI listen port for chat | `7860` |
-| `TGW_CHAT_WEBUI_BIND_HOST` | TGW WebUI bind host | `127.0.0.1` |
-| `TGW_CHAT_WEBUI_PUBLIC_URL` | Optional TGW WebUI public URL override | (none) |
+| `TGW_WEBUI_ENABLED` | Default TGW WebUI mode for launch_tgw.py when no explicit `--webui`/`--no-webui` is passed | `0` |
+| `TGW_WEBUI_PORT` | TGW WebUI listen port | `7860` |
+| `TGW_WEBUI_BIND_HOST` | TGW WebUI bind host | `127.0.0.1` |
+| `TGW_WEBUI_PUBLIC_URL` | Optional TGW WebUI public URL override | (none) |
 | `HF_TOKEN` | Hugging Face auth token | (none) |
 
 Process/service environment commonly used in deployment:
@@ -145,6 +156,7 @@ Process/service environment commonly used in deployment:
 | `SYSTEMD_LLM_A` | Systemd unit name for chat slot | (none) |
 | `SYSTEMD_LLM_B` | Systemd unit name for intent slot | (none) |
 | `SYSTEMD_LLM_C` | Systemd unit name for small slot | (none) |
+| `SYSTEMD_TGW_WEBUI` | Systemd unit name for standalone TGW WebUI service | `llm-tgw-webui.service` |
 | `SERVER_MODELS_DIR` / `MODELS_DIR` | Effective runtime model directory override | (none) |
 
 ## API Reference
@@ -167,12 +179,19 @@ Process/service environment commonly used in deployment:
 | POST | `/providers/models/rollback` | Roll back provider model document to last good snapshot |
 | PUT | `/providers/policies` | Validate/apply provider policy governance document |
 | POST | `/providers/policies/rollback` | Roll back provider policy document to last good snapshot |
+| POST | `/providers/policies/test` | Evaluate effective strategy/chain/defaults for a task- and project-scoped probe request |
 | POST | `/providers/openrouter/refresh` | Refresh upstream OpenRouter metadata cache, optionally with rankings |
 | POST | `/providers/openrouter/discover-free` | Manually build and optionally activate temporary OpenRouter free fallback candidates |
 | GET | `/providers/openrouter/free-candidates` | Inspect the current manual OpenRouter free candidate pool |
-| POST | `/router/chat` | Normalized broker chat entrypoint (initial dry-run slice) |
-| POST | `/router/completions` | Normalized broker completions entrypoint |
+| POST | `/conversions/exl2` | Start managed EXL2 conversion from Hugging Face repo id |
+| GET | `/conversions/exl2/jobs` | List persisted managed EXL2 conversion runs |
+| GET | `/conversions/exl2/jobs/{job_id}` | Get one managed conversion run with log tail |
+| GET | `/conversions/exl2/artifacts` | List persisted EXL2 conversion artifacts |
+| GET | `/conversions/exl2/artifacts/{artifact_id}` | Get one persisted EXL2 conversion artifact |
+| POST | `/router/chat` | Normalized broker chat entrypoint (supports `no_thinking` for local dispatch) |
+| POST | `/router/completions` | Normalized broker completions entrypoint (supports `no_thinking` for local dispatch) |
 | POST | `/router/embed` | Normalized broker embeddings entrypoint |
+| POST | `/router/route-test` | Dry-run route resolution with task-aware strategy and candidate-chain inspection |
 | GET | `/router/health` | Router config and decision-log health |
 | GET | `/router/last-decisions` | Recent router decision logs |
 | GET | `/router/usage-summary` | Aggregated token/request usage logs |
@@ -193,6 +212,7 @@ Process/service environment commonly used in deployment:
 | GET | `/router/evaluations/{run_id}/report` | Fetch summary + recommendations for a run |
 | GET | `/router/evaluations/{run_id}/compare-compact` | Fetch compact compare artifact for LLM adjudication |
 | GET | `/router/evaluation-summary` | List recent evaluation reports |
+| GET | `/router/lane-sufficiency-report` | Compare lane pass/cost signals and identify cheaper sufficient lanes by task group |
 | GET | `/router/evaluation-worker-config` | Show evaluation worker and cap settings |
 
 ### Model Inspection
@@ -209,6 +229,10 @@ Process/service environment commonly used in deployment:
 |--------|------|-------------|
 | GET | `/engines/status` | All engines: systemd state, port, active model |
 | POST | `/engines/{mode}/{action}` | start/stop/restart a specific engine |
+| GET | `/engines/tgw-webui/status` | Standalone TGW WebUI service status + launch URL |
+| POST | `/engines/tgw-webui/{action}` | Start/stop/restart standalone TGW WebUI service |
+| GET | `/engines/tgw-webui/logs` | Journal tail for standalone TGW WebUI service |
+| POST | `/engines/tgw-webui/config` | Update TGW WebUI bind/port/public URL in `.env` |
 | POST | `/engines/solo/{mode}` | Stop others, start one |
 | GET | `/engines/{mode}/logs` | Journal tail |
 
@@ -221,6 +245,15 @@ Process/service environment commonly used in deployment:
 | POST | `/jobs` | Start job: `{ kind, model_key, force, ... }` |
 | POST | `/jobs/{id}/cancel` | Cancel running job |
 
+`/jobs` also supports `kind=convert_hf_exl2` with fields:
+- `repo_id`
+- `bits`
+- `groupsize`
+- `force`
+- `base_models_dir`
+- `webui_models_dir`
+- `exllama_root`
+
 ### Test Prompts
 
 | Method | Path | Description |
@@ -231,9 +264,12 @@ Process/service environment commonly used in deployment:
 
 Notes:
 - All test endpoints also accept `no_thinking=1`
-- Jobs are tracked in memory only and do not survive an API restart
+- Generic job process state is tracked in memory only and does not survive an API restart
 - Job logs are written to `run/logs/`
+- Managed EXL2 conversion metadata persists in `run/state/provider_runtime_state.json`
 - `/models.meta` includes `recommended_backend` and `fallback_backends`
+- `/models` now includes `converted_artifacts` for managed EXL2 outputs
+- `/providers/models` now includes `local_conversion_artifacts` alongside curated catalog data
 - Slot backend preference is stored in `run/state/slot_backends.json` and returned by `/models`, `/health`, and `/engines/status`
 - Provider config files live in `config/provider_models.json` and `config/provider_policies.json`
 - Provider runtime state scaffold is persisted at `run/state/provider_runtime_state.json`
@@ -241,6 +277,8 @@ Notes:
 - Provider adapters live in `api/providers/` for local, OpenRouter, and OpenAI
 - `/router/chat` now performs real adapter-backed provider dispatch with policy-chain fallback
 - `/router/completions` and `/router/embed` use the same policy-chain dispatch path
+- Routing policy now supports task-specific overrides via `task_overrides.chat|completion|embed` and per-project task overrides under `project_overrides.<project>.task_overrides.*`
+- Routed chat and completions requests support `no_thinking=true`; for local provider dispatch this maps to `enable_thinking=false`
 - OpenRouter free-tier requests are protectively throttled by a local rpm limiter and provider-model cooldown tracking
 - `POST /providers/openrouter/refresh` updates a cached upstream OpenRouter catalog and free-model set for hardened free-tier cycling, and can enrich the cache with rankings using `include_rankings=true`
 - `POST /providers/openrouter/discover-free` is a manual-only workflow that filters cached OpenRouter free models by size, popularity, context, family, and capabilities, then stores a temporary candidate pool in runtime state
@@ -253,7 +291,9 @@ Notes:
 - Local evaluation runs now support case-level and suite-level pass thresholds for stricter tuning gates
 - Local evaluation queue supports priority lanes (`interactive`, `batch`, `evaluation`) for async runs
 - Dashboard now includes an Evaluation Ops panel showing queue health, latest reports, and suite rerun controls
+- Dashboard Evaluation now includes a Lane Sufficiency panel for comparing reference lanes vs cheaper sufficient lanes
 - Dashboard now includes a Router Ops panel for fallback health, budget state, free-tier queue pressure, provider model flags, and manual OpenRouter free-candidate discovery/activation
+- Dashboard Jobs now includes a Managed EXL2 panel for starting conversions and monitoring persisted runs/artifacts without direct API calls
 - Local evaluation candidate_models now support mixed provider targets (for example `chat_active_model`, `openrouter:model_id`, `openai:model_id`)
 - `/router/evaluations` supports filtering by status, target mode, project, candidate model, provider, lane, suite pass, tag, and since timestamp
 - Evaluation summaries now include by-provider aggregates and estimated-cost totals when provider catalog pricing metadata is available

@@ -15,6 +15,12 @@ Current deployed unit wiring on this host:
 - SERVER_MODELS_DIR=/srv/2bananas/engines/text-generation-webui/user_data/models
 - MODELS_DIR=/srv/2bananas/engines/text-generation-webui/user_data/models
 
+## Configuration Sources
+
+- For llm-manager-managed settings, the API reads `secrets/.env` first and then prefers non-empty values from `/srv/2bananas/secrets/global.env`.
+- The shared global env path can be overridden with `LLM_MANAGER_GLOBAL_ENV_PATH`.
+- This keeps project-local `secrets/.env` values as fallback when a shared key is absent.
+
 ## Core Endpoints
 
 ### Health
@@ -35,6 +41,7 @@ Current deployed unit wiring on this host:
   - Includes slot_backends
   - Includes slots_enabled
   - Includes per-model metadata from the inspector
+  - Includes `converted_artifacts` for managed EXL2 conversion outputs
   - Inspector metadata includes recommended_backend and fallback_backends
 
 ### Model Switching
@@ -48,7 +55,8 @@ Current deployed unit wiring on this host:
 ### Knobs
 - GET /knobs
 - POST /knobs
-  - Reads and writes secrets/.env
+  - Reads merged runtime values (local + global-preferred merge)
+  - Writes project-local `secrets/.env` only
   - GET response redacts sensitive keys containing KEY, TOKEN, SECRET, or PASSWORD
 
 ### Bounce
@@ -68,30 +76,38 @@ Current deployed unit wiring on this host:
 
 - GET /engines/status
   - Returns unit info, slot backend, port, listening state, and active model path for each slot
-  - Includes `tgw_webui` status for the chat slot when available
+  - Includes top-level `tgw_webui` status for the standalone TGW WebUI service
 - POST /engines/{mode}/{action}
   - action is start, stop, or restart
-- POST /engines/chat/tgw-webui
-  - Enable or disable the TGW WebUI for the chat slot (TGW backend only)
-  - Body: { enabled, restart?, port?, bind_host?, public_url? }
-  - Restart is required for changes to take effect; defaults to true
+- GET /engines/tgw-webui/status
+  - Returns standalone TGW WebUI systemd + launch URL state
+- POST /engines/tgw-webui/{action}
+  - action is start, stop, or restart for the standalone TGW WebUI service
+- GET /engines/tgw-webui/logs?lines=160
+  - Returns a journal tail for the standalone TGW WebUI service unit
+- POST /engines/tgw-webui/config
+  - Updates TGW WebUI bind/port/public URL settings in .env
+  - Body: { port?, bind_host?, public_url? }
 - POST /engines/solo/{mode}
   - Stops the other configured units, then starts the requested one
 - GET /engines/{mode}/logs?lines=160
   - Returns a journal tail for the configured systemd unit
 
 Engine endpoints require SYSTEMD_LLM_A, SYSTEMD_LLM_B, and SYSTEMD_LLM_C to be configured for their respective slots.
+Standalone TGW WebUI endpoints use SYSTEMD_TGW_WEBUI and default to llm-tgw-webui.service.
 
-On the deployed host, the corresponding units invoke run/engine_launcher.py, which forwards to run/launch_tgw.py.
+On the deployed host, the corresponding units invoke run/engine_launcher.py, which forwards to run/launch_tgw.py and forces API-only mode (`--no-webui`) for slot services.
 
 ## Provider Config and State
 
 - GET /providers/models
   - Returns curated provider model catalog from config/provider_models.json
   - Includes deterministic document version hash for optimistic concurrency
+  - Includes `local_conversion_artifacts` from runtime conversion metadata
 - GET /providers/policies
   - Returns routing and policy config from config/provider_policies.json
   - Includes deterministic document version hash for optimistic concurrency
+  - Supports optional task-scoped overrides under `task_overrides.chat|completion|embed`
 - GET /providers/state
   - Returns provider runtime state scaffold from run/state/provider_runtime_state.json
 - POST /providers/state/provider-model-flags
@@ -112,30 +128,46 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
   - Restores latest successful pre-change snapshot for provider policies
   - Body: { expected_version?, reason, actor }
   - Response includes audit_ref for post-mutation traceability
+- POST /providers/policies/test
+  - Evaluates effective routing policy resolution for a probe request
+  - Supports task-aware and project-aware policy testing via `task_type`, `project_id`, and `provider_preferences`
 - POST /providers/openrouter/refresh
   - Fetches upstream OpenRouter model metadata and updates runtime cache including detected free model ids
   - Query: include_rankings=true optionally scrapes OpenRouter rankings into the same cache for popularity-aware discovery
 - POST /providers/openrouter/discover-free
   - Manually builds a temporary OpenRouter free-model candidate pool from cached upstream metadata
-  - Body supports catalog refresh, rankings enrichment, size/context/popularity filters, family allow/deny, capability requirements, and activate_top_n
+  - Body supports catalog refresh, rankings enrichment, size/context/popularity filters, family allow/deny, capability requirements, activate_top_n, and automatic smoke-check promotion controls (`auto_smoke_check`, `smoke_top_n`, `auto_promote_top_n`)
   - Writes results to runtime state only; does not modify config/provider_models.json
 - GET /providers/openrouter/free-candidates
   - Returns the current manually discovered candidate pool, active_ids, and related catalog/rankings timestamps
+- GET /providers/openrouter/rate-limit-state
+  - Returns current OpenRouter free-tier limiter window counters and queue state by priority
 
 ## Router Endpoints
 
 - POST /router/chat
   - Accepts normalized broker request shape for chat routing
+  - Supports `project_id` for project-specific policy overrides
+  - Applies `task_overrides.chat` and `project_overrides.<project>.task_overrides.chat` when configured
+  - Optional request field `no_thinking` disables thinking for local provider dispatch (`enable_thinking=false`)
   - Request and response models are defined in api/router/contracts.py
   - Dispatches via provider adapters in api/providers for local, OpenRouter, and OpenAI
   - Uses policy candidate chains with fallback when allowed
   - Logs routing decisions and usage into provider runtime state
 - POST /router/completions
   - Accepts normalized broker request shape for text completions
+  - Supports `project_id` for project-specific policy overrides
+  - Applies `task_overrides.completion` and `project_overrides.<project>.task_overrides.completion` when configured
+  - Optional request field `no_thinking` disables thinking for local provider dispatch (`enable_thinking=false`)
   - Uses the same policy-chain dispatch and fallback model
 - POST /router/embed
   - Accepts normalized broker request shape for embeddings
+  - Supports `project_id` for project-specific policy overrides
+  - Applies `task_overrides.embed` and `project_overrides.<project>.task_overrides.embed` when configured
   - Uses the same policy-chain dispatch and fallback model
+- POST /router/route-test
+  - Dry-run route resolution utility that returns strategy, candidate chain, selected models per lane, and cooldown/lifecycle hints
+  - Optional `execute_first=true` runs a lightweight execution against the first eligible candidate for validation
 - GET /router/health
   - Router config load status plus recent decision-log signal
   - Includes cached OpenRouter catalog, rankings freshness, and manual free-candidate counts
@@ -181,6 +213,9 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
   - Returns grouped outputs optimized for side-by-side model/variant comparison and external LLM adjudication
 - GET /router/evaluation-summary?limit=20
   - Returns recent reports to track tuning iterations over time
+- GET /router/lane-sufficiency-report?limit_groups=20&limit_runs=500&target_mode=&project=&since_ts=&min_rows_per_lane=8&min_pass_rate=0.9&max_pass_gap=0.05
+  - Compares lane pass rates and estimated costs by task group to identify when cheaper lanes are sufficient
+  - Uses completed evaluation runs and returns reference-lane vs cheapest-sufficient-lane recommendations
 - GET /router/evaluation-worker-config
   - Returns active worker count, per-priority running caps, and queue tuning values
 
@@ -188,11 +223,13 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
 
 - OpenRouter free-tier lanes are rate-limited locally using provider policy free_rate_limit_rpm (default 20 rpm)
 - On free-tier overflow, behavior follows policy queue_behavior: wait, fail_fast, fallback_to_local, or upgrade_to_paid
+- Free-tier queue scheduling is priority-aware (`interactive`, `batch`, `evaluation`) and can evict lower-priority queued entries when at capacity
 - Rate-limited or retryable provider failures can place provider-model pairs into temporary cooldown windows
 - Cooldown and limiter state are persisted under provider_model_state and provider_rate_limits in run/state/provider_runtime_state.json
 - OpenRouter upstream model metadata can be refreshed and cached to harden free-tier routing decisions
 - OpenRouter rankings enrichment is optional and is only fetched when operators call refresh or discovery with include_rankings enabled
 - Automatic free-tier cycling now skips models marked in provider_model_state as disabled_until_manual_review or exclude_from_free_rotation
+- Provider-model lifecycle now tracks promotion states (`discovered`, `candidate`, `smoke_passed`, `active`, `quarantined`, `retired`) and rolling failure-window metrics (`failure_count_24h`, `failure_count_7d`)
 - Manual discovery results are stored under openrouter_free_candidates in run/state/provider_runtime_state.json
 - The openrouter.free lane only consults manually activated active_ids after curated free entries are exhausted
 
@@ -232,6 +269,7 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
 - Filtered run listing supports focused review by status, mode, project, model, provider, lane, suite pass, tag, and timestamp window
 - Per-result records and compare-compact outputs now include provider and lane fields for mixed-candidate adjudication
 - Summary payloads include by_provider aggregates and estimated_cost_total_usd when pricing metadata exists in the provider catalog
+- Lane sufficiency reports compare reference lanes to cheaper sufficient candidates using configurable pass-rate and row-count thresholds
 
 ## Jobs
 
@@ -241,18 +279,41 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
 - POST /jobs/{id}/cancel
 
 Job payloads support:
-- kind: train, merge, or convert
+- kind: train, merge, convert, or convert_hf_exl2
 - model_key
+- repo_id
+- bits
+- groupsize
 - force
 - train_all
 - merge_all
 - convert_all
 - data_path
+- base_models_dir
+- webui_models_dir
+- exllama_root
 
 Notes:
 - Jobs are launched as local subprocesses rooted at the project directory
-- Job state is kept in memory only
+- Generic job process state is kept in memory only
 - Logs are written to run/logs/
+- For `convert_hf_exl2`, run/artifact metadata is also persisted in run/state/provider_runtime_state.json
+
+## Managed EXL2 Conversion
+
+- POST /conversions/exl2
+  - Starts managed EXL2 conversion from Hugging Face repo id
+  - Body: { repo_id, bits, groupsize, force?, base_models_dir?, webui_models_dir?, exllama_root? }
+- GET /conversions/exl2/jobs
+  - Lists persisted EXL2 conversion runs
+- GET /conversions/exl2/jobs/{job_id}
+  - Returns one persisted conversion run with log tail
+- GET /conversions/exl2/artifacts
+  - Lists persisted EXL2 conversion artifacts and metadata
+- GET /conversions/exl2/artifacts/{artifact_id}
+  - Returns one converted artifact record
+
+Persisted EXL2 metadata fields include source repo id/hash, bits, groupsize, output directory/model dir, timestamps, detected format/loader, and catalog sync result.
 
 ## Test Endpoints
 

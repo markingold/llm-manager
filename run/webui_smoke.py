@@ -125,12 +125,13 @@ def check_eval_rerun(client: TestClient) -> Dict[str, Any]:
 
 
 def check_openrouter_refresh(client: TestClient) -> Dict[str, Any]:
-    def fake_refresh(_env: Dict[str, str]):
+    def fake_refresh(_env: Dict[str, str], include_rankings: bool = False):
         return {
             "fetched_ts": "2026-03-29T00:00:00Z",
             "count": 2,
             "free_ids": ["openrouter/model-a:free"],
             "models": [{"id": "openrouter/model-a:free"}, {"id": "openrouter/model-b"}],
+            "rankings": [] if include_rankings else [],
             "error": None,
         }
 

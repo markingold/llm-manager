@@ -1,6 +1,7 @@
 {
   "defaults": {
     "strategy": "local_first",
+    "service_tier": "default",
     "free_only": false,
     "paid_allowed": true,
     "allow_fallbacks": true,
@@ -11,7 +12,9 @@
     "max_queue_depth": 100,
     "max_queue_wait_ms": 15000,
     "queue_behavior": "wait",
-    "enforce_upstream_free_status": true
+    "enforce_upstream_free_status": true,
+    "quarantine_failure_count_24h": 6,
+    "retire_failure_count_7d": 20
   },
   "budget": {
     "daily_usd_limit": 10.0,
@@ -31,5 +34,25 @@
     "paid_first": ["openrouter.paid", "openai", "local", "openrouter.free"],
     "best_available": ["local", "openrouter.paid", "openai", "openrouter.free"],
     "strict_provider": []
-  }
+  },
+  "task_overrides": {},
+  "service_tiers": {
+    "local": {
+      "chain": ["local"],
+      "preferred_model_tags": []
+    },
+    "low": {
+      "chain": ["openrouter.free"],
+      "preferred_model_tags": ["free"]
+    },
+    "medium": {
+      "chain": ["openrouter.paid"],
+      "preferred_model_tags": ["medium"]
+    },
+    "high": {
+      "chain": ["openrouter.paid", "openai"],
+      "preferred_model_tags": ["high"]
+    }
+  },
+  "project_overrides": {}
 }

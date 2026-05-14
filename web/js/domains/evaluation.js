@@ -115,6 +115,43 @@ function runPassPill(run) {
   return '<span class="pill">n/a</span>';
 }
 
+function fmtPct(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "-";
+  return `${(n * 100).toFixed(1)}%`;
+}
+
+function fmtUsd(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "-";
+  if (n === 0) return "$0";
+  if (n < 0.000001) return `$${n.toExponential(2)}`;
+  if (n < 0.01) return `$${n.toFixed(6)}`;
+  return `$${n.toFixed(4)}`;
+}
+
+function laneLabel(row) {
+  if (!row || typeof row !== "object") return "-";
+  return `${row.provider || "-"}/${row.lane || "-"}`;
+}
+
+function savingsText(group) {
+  if (!group || typeof group !== "object") return "-";
+  if (group.decision === "reference_is_cheapest_sufficient") return "already cheapest";
+  const s = group.savings;
+  if (s && typeof s === "object") {
+    const pct = Number(s.avg_cost_reduction_pct);
+    const usd = Number(s.avg_cost_reduction_usd);
+    if (Number.isFinite(pct) || Number.isFinite(usd)) {
+      const pctText = Number.isFinite(pct) ? `${(pct * 100).toFixed(1)}%` : "-";
+      const usdText = Number.isFinite(usd) ? fmtUsd(usd) : "-";
+      return `${pctText} (${usdText})`;
+    }
+  }
+  if (group.decision === "cheaper_lane_sufficient") return "cheaper lane sufficient";
+  return "none";
+}
+
 function updateEvalContext() {
   const q = LAST_QUEUE || {};
   const w = LAST_WORKERS || {};
@@ -468,6 +505,114 @@ function buildRunsQuery(filters) {
   return qp.toString();
 }
 
+function buildLaneSufficiencyQuery() {
+  const qp = new URLSearchParams();
+  const targetMode = $("evalLaneTargetMode")?.value?.trim() || "";
+  const project = $("evalLaneProject")?.value?.trim() || "";
+  const sinceTs = $("evalLaneSince")?.value?.trim() || "";
+  const limitGroups = $("evalLaneLimitGroups")?.value || "20";
+  const minRows = $("evalLaneMinRows")?.value || "8";
+  const minPass = $("evalLaneMinPassRate")?.value || "0.9";
+  const maxGap = $("evalLaneMaxPassGap")?.value || "0.05";
+
+  qp.set("limit_groups", limitGroups);
+  qp.set("limit_runs", "500");
+  qp.set("min_rows_per_lane", minRows);
+  qp.set("min_pass_rate", minPass);
+  qp.set("max_pass_gap", maxGap);
+  if (targetMode) qp.set("target_mode", targetMode);
+  if (project) qp.set("project", project);
+  if (sinceTs) qp.set("since_ts", sinceTs);
+  return qp.toString();
+}
+
+function renderLaneSufficiencyRows(groups) {
+  const body = $("evalLaneBody");
+  if (!body) return;
+  body.innerHTML = "";
+
+  const rows = Array.isArray(groups) ? groups : [];
+  if (!rows.length) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = '<td colspan="7" class="muted">No lane sufficiency groups matched current filters.</td>';
+    body.appendChild(tr);
+    return;
+  }
+
+  for (const g of rows) {
+    const ref = g?.reference_lane || {};
+    const cheap = g?.cheapest_sufficient_lane || null;
+    const tr = document.createElement("tr");
+    const taskModes = Array.isArray(g?.target_modes) && g.target_modes.length ? g.target_modes.join(",") : "-";
+    const passRateText = cheap
+      ? `ref ${fmtPct(ref.pass_rate)} | cheap ${fmtPct(cheap.pass_rate)}`
+      : `ref ${fmtPct(ref.pass_rate)}`;
+    const costText = cheap
+      ? `ref ${fmtUsd(ref.avg_estimated_cost_usd)} | cheap ${fmtUsd(cheap.avg_estimated_cost_usd)}`
+      : `ref ${fmtUsd(ref.avg_estimated_cost_usd)}`;
+    tr.innerHTML = `
+      <td>${g.task_group || "-"}<div class="muted">modes:${taskModes}</div></td>
+      <td>${laneLabel(ref)}</td>
+      <td>${cheap ? laneLabel(cheap) : "-"}</td>
+      <td>${passRateText}</td>
+      <td>${costText}</td>
+      <td>${savingsText(g)}</td>
+      <td>${g.run_count || 0}</td>
+    `;
+    body.appendChild(tr);
+  }
+}
+
+function setLaneSufficiencyPills(report) {
+  const groups = Number(report?.group_count || 0);
+  const cheaper = Number(report?.groups_with_cheaper_sufficient_lane || 0);
+  const unsatisfied = Number(report?.groups_without_sufficient_lane || 0);
+
+  const groupsPill = $("evalLaneGroupPill");
+  if (groupsPill) {
+    groupsPill.textContent = `groups: ${groups}`;
+    groupsPill.className = `pill ${groups > 0 ? "ok" : "warn"}`;
+  }
+
+  const cheaperPill = $("evalLaneCheaperPill");
+  if (cheaperPill) {
+    cheaperPill.textContent = `cheaper sufficient: ${cheaper} | no sufficient: ${unsatisfied}`;
+    cheaperPill.className = `pill ${unsatisfied > 0 ? "warn" : "ok"}`;
+  }
+}
+
+function renderLaneSufficiencyError(message) {
+  const body = $("evalLaneBody");
+  if (body) {
+    body.innerHTML = `<tr><td colspan="7" class="muted">${message}</td></tr>`;
+  }
+  const groupsPill = $("evalLaneGroupPill");
+  if (groupsPill) {
+    groupsPill.textContent = "groups: error";
+    groupsPill.className = "pill bad";
+  }
+  const cheaperPill = $("evalLaneCheaperPill");
+  if (cheaperPill) {
+    cheaperPill.textContent = "cheaper sufficient: error";
+    cheaperPill.className = "pill bad";
+  }
+}
+
+async function refreshLaneSufficiencyPanel() {
+  const snapshot = $("evalLaneSnapshot");
+  if (!snapshot) return;
+  try {
+    const query = buildLaneSufficiencyQuery();
+    const report = await api(`/router/lane-sufficiency-report?${query}`);
+    renderLaneSufficiencyRows(report?.groups || []);
+    setLaneSufficiencyPills(report || {});
+    snapshot.textContent = JSON.stringify(report || {}, null, 2);
+  } catch (e) {
+    renderLaneSufficiencyError(e.message || "lane sufficiency refresh failed");
+    snapshot.textContent = JSON.stringify({ error: e.message || "lane sufficiency refresh failed" }, null, 2);
+  }
+}
+
 async function refreshRunsTable() {
   const filters = getFilterInputValues();
   persistFiltersToUrl(filters);
@@ -725,11 +870,12 @@ export async function refreshEvalPanel() {
     );
 
     renderEvalRunActions(recentRuns);
-    await Promise.all([refreshRunsTable(), refreshSuites()]);
+    await Promise.all([refreshRunsTable(), refreshSuites(), refreshLaneSufficiencyPanel()]);
   } catch (e) {
     panel.textContent = JSON.stringify({ error: e.message }, null, 2);
     renderEvalRunActions([]);
     renderRunsTable([]);
+    renderLaneSufficiencyError(e.message || "evaluation panel refresh failed");
   }
 }
 
@@ -738,10 +884,25 @@ export function wireEvaluationDomain() {
   applyFilterValuesToInputs(loaded);
 
   $("btnEvalRefresh")?.addEventListener("click", refreshEvalPanel);
+  $("btnEvalLaneRefresh")?.addEventListener("click", () => refreshLaneSufficiencyPanel().catch((e) => setOut({ error: e.message, action: "lane_sufficiency_refresh" })));
   $("btnEvalRerun")?.addEventListener("click", evalRerunSuite);
   $("btnEvalApplyFilters")?.addEventListener("click", applyFilters);
   $("btnEvalResetFilters")?.addEventListener("click", resetFilters);
   $("btnEvalApplyPreset")?.addEventListener("click", applyPreset);
+
+  [
+    "evalLaneTargetMode",
+    "evalLaneProject",
+    "evalLaneSince",
+    "evalLaneLimitGroups",
+    "evalLaneMinRows",
+    "evalLaneMinPassRate",
+    "evalLaneMaxPassGap",
+  ].forEach((id) => {
+    $(id)?.addEventListener("change", () => {
+      refreshLaneSufficiencyPanel().catch((e) => setOut({ error: e.message, action: "lane_sufficiency_refresh" }));
+    });
+  });
 
   $("btnSuiteRefresh")?.addEventListener("click", () => refreshSuites().catch((e) => setOut({ error: e.message, action: "suite_refresh" })));
   $("btnSuiteTemplate")?.addEventListener("click", loadSuiteTemplate);

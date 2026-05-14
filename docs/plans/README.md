@@ -18,7 +18,12 @@ These are the maintainable source plans that replace the old single-file engine 
 - `OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md` - OpenRouter free-model discovery, filtering, popularity enrichment, and emergency replacement workflow
 - `PROVIDER_ROUTER_PLAN.md` - provider abstraction, routing policy, OpenRouter and OpenAI integration, rate limiting, queueing, and governance
 - `EVALUATION_PLAN.md` - multi-model evaluation pipeline, suite format, reporting, and external-project usage
-- `WEBUI_OVERHAUL_PLAN.md` - dashboard information architecture, parity gaps, and phased UX overhaul
+
+## Historical (retired)
+
+- `WEBUI_OVERHAUL_PLAN.md` - retired historical planning artifact for the completed WebUI overhaul
+- `WEBUI_OVERHAUL_CHECKLIST.md` - retired execution log for the completed WebUI overhaul
+- `WEBUI_OVERHAUL_CLOSEOUT.md` - final closeout decision and validation evidence
 
 ## Maintenance rule
 

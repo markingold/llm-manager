@@ -11,6 +11,7 @@ class RouterProviderPreferences(BaseModel):
         "best_available",
         "strict_provider",
     ] = "default"
+    service_tier: Literal["default", "local", "low", "medium", "high"] = "default"
     free_only: bool | None = None
     paid_allowed: bool | None = None
     allow_fallbacks: bool | None = None
@@ -31,8 +32,10 @@ class RouterChatMessage(BaseModel):
 class RouterChatRequest(BaseModel):
     model_config = {"protected_namespaces": ()}
     task_type: Literal["chat"] = "chat"
+    project_id: str | None = None
     messages: list[RouterChatMessage] = Field(default_factory=list)
     system: str | None = None
+    no_thinking: bool = False
     temperature: float | None = None
     top_p: float | None = None
     max_tokens: int | None = None
@@ -71,8 +74,10 @@ class RouterChatResponse(BaseModel):
 class RouterCompletionRequest(BaseModel):
     model_config = {"protected_namespaces": ()}
     task_type: Literal["completion"] = "completion"
+    project_id: str | None = None
     prompt: str
     system: str | None = None
+    no_thinking: bool = False
     temperature: float | None = None
     top_p: float | None = None
     max_tokens: int | None = None
@@ -103,6 +108,7 @@ class RouterCompletionResponse(BaseModel):
 class RouterEmbedRequest(BaseModel):
     model_config = {"protected_namespaces": ()}
     task_type: Literal["embed"] = "embed"
+    project_id: str | None = None
     input: str | list[str]
     provider_preferences: RouterProviderPreferences = Field(default_factory=RouterProviderPreferences)
     model_preferences: RouterModelPreferences = Field(default_factory=RouterModelPreferences)
