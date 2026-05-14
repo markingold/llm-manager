@@ -174,6 +174,17 @@ MAX_EVALUATION_RUNS = 200
 MAX_EVALUATION_QUEUE = 500
 MAX_CONVERSION_RUNS = 300
 
+CONVERSION_TOKENIZER_FILES = [
+    "config.json",
+    "generation_config.json",
+    "tokenizer.json",
+    "tokenizer_config.json",
+    "tokenizer.model",
+    "vocab.json",
+    "merges.txt",
+    "special_tokens_map.json",
+]
+
 EVAL_PRIORITY_ORDER = {"interactive": 0, "batch": 1, "evaluation": 2}
 FREE_QUEUE_PRIORITY_ORDER = {"interactive": 0, "batch": 1, "evaluation": 2}
 PROMOTION_STATES = {"discovered", "candidate", "smoke_passed", "active", "quarantined", "retired"}
@@ -1590,6 +1601,65 @@ def _resolve_strategy(req, env: dict, policies: dict) -> str:
     if env_strategy:
         return env_strategy
     return str((policies.get("defaults", {}) if isinstance(policies.get("defaults"), dict) else {}).get("strategy", "local_first"))
+
+
+def _resolve_strategy_source(req, env: dict, policies: dict) -> str:
+    req_strategy = str(req.provider_preferences.strategy or "").strip()
+    if req_strategy and req_strategy != "default":
+        return "request.provider_preferences.strategy"
+
+    project_override = _project_override_for_request(req, policies)
+    project_task_override = _task_override_for_request(req, project_override)
+    project_task_defaults = project_task_override.get("defaults", {}) if isinstance(project_task_override.get("defaults"), dict) else {}
+    if str(project_task_defaults.get("strategy", "") or "").strip():
+        return "project_overrides.task_overrides.defaults.strategy"
+
+    project_defaults = project_override.get("defaults", {}) if isinstance(project_override.get("defaults"), dict) else {}
+    if str(project_defaults.get("strategy", "") or "").strip():
+        return "project_overrides.defaults.strategy"
+
+    root_task_override = _task_override_for_request(req, policies)
+    root_task_defaults = root_task_override.get("defaults", {}) if isinstance(root_task_override.get("defaults"), dict) else {}
+    if str(root_task_defaults.get("strategy", "") or "").strip():
+        return "task_overrides.defaults.strategy"
+
+    defaults = policies.get("defaults", {}) if isinstance(policies.get("defaults"), dict) else {}
+    if str(defaults.get("strategy", "") or "").strip():
+        return "defaults.strategy"
+
+    env_strategy = str(env.get("DEFAULT_ROUTING_STRATEGY", "") or "").strip()
+    if env_strategy:
+        return "env.DEFAULT_ROUTING_STRATEGY"
+    return "builtin.local_first"
+
+
+def _build_route_policy_context(
+    req,
+    env: dict,
+    policies: dict,
+    strategy: str,
+    candidate_chain: list[str],
+    effective_defaults: dict | None = None,
+    effective_selection: dict | None = None,
+) -> dict:
+    project_override = _project_override_for_request(req, policies)
+    root_task_override = _task_override_for_request(req, policies)
+    project_task_override = _task_override_for_request(req, project_override)
+
+    defaults = effective_defaults if isinstance(effective_defaults, dict) else _effective_policy_defaults(req, policies)
+    selection = effective_selection if isinstance(effective_selection, dict) else _effective_policy_selection(req, policies)
+
+    return {
+        "task_type": _normalize_task_type(getattr(req, "task_type", "chat")),
+        "project_id": _resolve_project_id(req),
+        "strategy_source": _resolve_strategy_source(req, env, policies),
+        "project_override_applied": bool(project_override),
+        "global_task_override_applied": bool(root_task_override),
+        "project_task_override_applied": bool(project_task_override),
+        "effective_defaults": defaults,
+        "effective_selection": selection,
+        "candidate_chain": list(candidate_chain if isinstance(candidate_chain, list) else []),
+    }
 
 
 def _resolve_bool_pref(req_val: bool | None, default_val: bool) -> bool:
@@ -4279,6 +4349,95 @@ def _conversion_paths_for_hf(repo_id: str, bits: float, args: dict, env: dict) -
     return Path(base_models_dir) / safe_name, Path(webui_models_dir) / f"{safe_name}_exl2_b{bits_tag}"
 
 
+def _conversion_paths_for_merged(model_key: str, args: dict) -> tuple[Path, Path]:
+    source_model_dir = str(args.get("source_model_dir") or "").strip()
+    output_dir = str(args.get("output_dir") or "").strip()
+
+    source_path = Path(source_model_dir) if source_model_dir else (ROOT / "output" / f"merged_{model_key}")
+    output_path = Path(output_dir) if output_dir else (ROOT / "output" / f"lora_{model_key}")
+    return source_path, output_path
+
+
+def _safe_read_json_file(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(errors="replace"))
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _chat_template_in_model_dir(model_dir: Path) -> tuple[str | None, str | None]:
+    for filename in ("tokenizer_config.json", "config.json", "generation_config.json"):
+        payload = _safe_read_json_file(model_dir / filename)
+        template = payload.get("chat_template")
+        if isinstance(template, str) and template.strip():
+            return template.strip(), filename
+    return None, None
+
+
+def _conversion_source_sha(output_dir: Path) -> str:
+    hash_files = [
+        output_dir / "source_model_sha256.txt",
+        output_dir / "converted_from_merge_hash.txt",
+    ]
+    for path in hash_files:
+        if not path.exists():
+            continue
+        try:
+            value = path.read_text(errors="replace").strip()
+        except Exception:
+            value = ""
+        if value:
+            return value
+    return ""
+
+
+def _conversion_preservation_checks(source_dir: Path, output_dir: Path) -> dict:
+    file_rows = []
+    missing = []
+    expected = 0
+    copied = 0
+
+    for filename in CONVERSION_TOKENIZER_FILES:
+        source_exists = (source_dir / filename).exists()
+        output_exists = (output_dir / filename).exists()
+        if source_exists:
+            expected += 1
+            if output_exists:
+                copied += 1
+            else:
+                missing.append(filename)
+        file_rows.append({
+            "name": filename,
+            "source_exists": source_exists,
+            "output_exists": output_exists,
+        })
+
+    source_template, source_template_file = _chat_template_in_model_dir(source_dir)
+    output_template, output_template_file = _chat_template_in_model_dir(output_dir)
+    source_has_template = bool(source_template)
+    output_has_template = bool(output_template)
+    template_preserved = None
+    if source_has_template:
+        template_preserved = bool(output_has_template and source_template == output_template)
+
+    ok = (not missing) and (template_preserved is not False)
+    return {
+        "ok": ok,
+        "tokenizer_artifacts_expected": expected,
+        "tokenizer_artifacts_present": copied,
+        "missing_tokenizer_artifacts": missing,
+        "chat_template_source_present": source_has_template,
+        "chat_template_output_present": output_has_template,
+        "chat_template_preserved": template_preserved,
+        "source_chat_template_file": source_template_file,
+        "output_chat_template_file": output_template_file,
+        "files": file_rows,
+    }
+
+
 def _trim_conversion_runs(runs: dict[str, dict]) -> dict[str, dict]:
     rows = [row for row in runs.values() if isinstance(row, dict) and str(row.get("id", ""))]
     rows.sort(key=lambda row: str(row.get("created_ts", "")), reverse=True)
@@ -4349,18 +4508,15 @@ def _upsert_local_converted_catalog_entry(artifact: dict) -> dict:
 
 def _build_exl2_artifact_record(run_row: dict) -> dict:
     output_dir = Path(str(run_row.get("output_dir") or ""))
+    source_model_dir = Path(str(run_row.get("source_model_dir") or ""))
+    source_type = str(run_row.get("source_type") or "huggingface_repo")
     output_model_dir = str(run_row.get("output_model_dir") or output_dir.name)
-    source_repo_id = str(run_row.get("source_repo_id") or "")
+    source_repo_id = str(run_row.get("source_repo_id") or run_row.get("model_key") or "")
     bits = _as_positive_float(run_row.get("bits"), 6.5)
     groupsize = _as_positive_int(run_row.get("groupsize"), 2048)
 
-    source_sha = ""
-    try:
-        hash_path = output_dir / "source_model_sha256.txt"
-        if hash_path.exists():
-            source_sha = hash_path.read_text(errors="replace").strip()
-    except Exception:
-        source_sha = ""
+    source_sha = _conversion_source_sha(output_dir)
+    preservation_checks = _conversion_preservation_checks(source_model_dir, output_dir)
 
     output_size_bytes = 0
     if output_dir.exists() and output_dir.is_dir():
@@ -4383,16 +4539,20 @@ def _build_exl2_artifact_record(run_row: dict) -> dict:
         except Exception:
             loader = "transformers"
 
-    artifact_key = f"hf-exl2:{source_repo_id}:{bits}:{groupsize}:{output_dir}"
+    artifact_key = f"{source_type}-exl2:{source_repo_id}:{bits}:{groupsize}:{output_dir}"
     artifact_id = hashlib.sha256(artifact_key.encode("utf-8")).hexdigest()[:16]
     created_ts = datetime.utcnow().isoformat() + "Z"
     recommended_backend = "tabbyapi" if detected_kind in {"exl2", "exl3"} else "tgw"
 
+    artifact_status = "missing_output"
+    if output_dir.exists():
+        artifact_status = "ready" if bool(preservation_checks.get("ok", False)) else "ready_with_warnings"
+
     return {
         "artifact_id": artifact_id,
         "job_id": str(run_row.get("job_id") or run_row.get("id") or ""),
-        "status": "ready" if output_dir.exists() else "missing_output",
-        "source_type": "huggingface_repo",
+        "status": artifact_status,
+        "source_type": source_type,
         "source_repo_id": source_repo_id,
         "source_model_dir": str(run_row.get("source_model_dir") or ""),
         "source_sha256": source_sha,
@@ -4406,30 +4566,47 @@ def _build_exl2_artifact_record(run_row: dict) -> dict:
         "recommended_backend": recommended_backend,
         "loader": loader,
         "model_ref": output_model_dir,
+        "preservation_checks": preservation_checks,
         "created_ts": created_ts,
         "updated_ts": created_ts,
     }
 
 
-def _record_conversion_run_start(job_id: str, args: dict, env: dict, log_path: Path, pid: int) -> dict:
-    repo_id = str(args.get("repo_id") or "").strip()
+def _record_conversion_run_start(job_id: str, kind: str, args: dict, env: dict, log_path: Path, pid: int) -> dict:
+    source_type = str(args.get("source_type") or "").strip().lower()
+    if kind == "convert_hf_exl2":
+        source_type = "huggingface_repo"
+    elif kind == "convert_merged_exl2":
+        source_type = "merged_local_model"
+
     bits = _as_positive_float(args.get("bits"), 6.5)
     groupsize = _as_positive_int(args.get("groupsize"), 2048)
-    source_model_dir, output_dir = _conversion_paths_for_hf(repo_id, bits, args, env)
+    source_repo_id = ""
+    model_key = ""
+    if source_type == "merged_local_model":
+        model_key = str(args.get("model_key") or "").strip()
+        source_model_dir, output_dir = _conversion_paths_for_merged(model_key, args)
+        source_repo_id = model_key
+    else:
+        repo_id = str(args.get("repo_id") or "").strip()
+        source_model_dir, output_dir = _conversion_paths_for_hf(repo_id, bits, args, env)
+        source_repo_id = repo_id
+
     now_iso = datetime.utcnow().isoformat() + "Z"
 
     row = {
         "id": job_id,
         "job_id": job_id,
-        "kind": "convert_hf_exl2",
+        "kind": kind,
         "status": "running",
         "created_ts": now_iso,
         "started_ts": now_iso,
         "updated_ts": now_iso,
         "pid": int(pid),
         "log": str(log_path),
-        "source_type": "huggingface_repo",
-        "source_repo_id": repo_id,
+        "source_type": source_type,
+        "source_repo_id": source_repo_id,
+        "model_key": model_key,
         "source_model_dir": str(source_model_dir),
         "format": "exl2",
         "bits": bits,
@@ -4437,6 +4614,7 @@ def _record_conversion_run_start(job_id: str, args: dict, env: dict, log_path: P
         "force": bool(args.get("force", False)),
         "output_dir": str(output_dir),
         "output_model_dir": output_dir.name,
+        "preservation_checks": None,
         "catalog_sync": {"ok": False, "updated": False},
     }
 
@@ -4464,6 +4642,13 @@ def _record_conversion_run_finish(job_id: str, returncode: int):
         row["updated_ts"] = now_iso
 
         if int(returncode) == 0:
+            source_model_dir = Path(str(row.get("source_model_dir") or ""))
+            output_dir = Path(str(row.get("output_dir") or ""))
+            checks = _conversion_preservation_checks(source_model_dir, output_dir)
+            row["preservation_checks"] = checks
+            if not bool(checks.get("ok", False)):
+                row["status"] = "completed_with_warnings"
+
             artifact = _build_exl2_artifact_record(row)
             artifacts = state.get("conversion_artifacts", {}) if isinstance(state.get("conversion_artifacts"), dict) else {}
             artifacts[str(artifact["artifact_id"])] = artifact
@@ -4509,6 +4694,7 @@ def _launch_job(kind: str, args: dict) -> dict:
         "merge":   SCRIPTS_DIR / "merge_lora.py",
         "convert": SCRIPTS_DIR / "convert_lora.py",
         "convert_hf_exl2": SCRIPTS_DIR / "download_convert_chat_model.py",
+        "convert_merged_exl2": SCRIPTS_DIR / "convert_lora.py",
     }
     script = script_map.get(kind)
     if not script or not script.exists():
@@ -4576,8 +4762,36 @@ def _launch_job(kind: str, args: dict) -> dict:
             value = str(args.get(arg_name) or "").strip()
             if value:
                 env[env_name] = value
+
+    elif kind == "convert_merged_exl2":
+        model_key = str(args.get("model_key") or "").strip()
+        if not model_key:
+            raise HTTPException(400, "model_key required for convert_merged_exl2")
+        bits = _as_positive_float(args.get("bits"), 6.5)
+        groupsize = _as_positive_int(args.get("groupsize"), 2048)
+        cmd = [
+            "python3",
+            str(script),
+            "--model_key",
+            model_key,
+            "--bits",
+            str(bits),
+            "--groupsize",
+            str(groupsize),
+        ]
+        if bool(args.get("force", False)):
+            cmd.append("--force")
+        source_model_dir = str(args.get("source_model_dir") or "").strip()
+        output_dir = str(args.get("output_dir") or "").strip()
+        if source_model_dir:
+            cmd += ["--source_dir", source_model_dir]
+        if output_dir:
+            cmd += ["--output_dir", output_dir]
+        exllama_root = str(args.get("exllama_root") or "").strip()
+        if exllama_root:
+            env["EXLLAMA_ROOT"] = exllama_root
     else:
-        raise HTTPException(400, "kind must be train|merge|convert|convert_hf_exl2")
+        raise HTTPException(400, "kind must be train|merge|convert|convert_hf_exl2|convert_merged_exl2")
 
     with open(log_path, "w", buffering=1) as lf:
         lf.write(f"### {kind} job {job_id} @ {datetime.now().isoformat()}\n")
@@ -4590,8 +4804,8 @@ def _launch_job(kind: str, args: dict) -> dict:
         "status": "running", "log": str(log_path),
     }
 
-    if kind == "convert_hf_exl2":
-        JOBS[job_id]["conversion"] = _record_conversion_run_start(job_id, args, env, log_path, proc.pid)
+    if kind in {"convert_hf_exl2", "convert_merged_exl2"}:
+        JOBS[job_id]["conversion"] = _record_conversion_run_start(job_id, kind, args, env, log_path, proc.pid)
 
     def _watch():
         rc = proc.wait()
@@ -4600,7 +4814,7 @@ def _launch_job(kind: str, args: dict) -> dict:
             j["end_ts"] = time.time()
             j["returncode"] = rc
             j["status"] = "ok" if rc == 0 else "error"
-        if kind == "convert_hf_exl2":
+        if kind in {"convert_hf_exl2", "convert_merged_exl2"}:
             _record_conversion_run_finish(job_id, rc)
 
     threading.Thread(target=_watch, daemon=True).start()
@@ -4666,7 +4880,11 @@ class JobStart(BaseModel):
 
 class Exl2ConversionStartReq(BaseModel):
     model_config = {"protected_namespaces": ()}
-    repo_id: str
+    source_type: str = "huggingface_repo"
+    repo_id: str | None = None
+    model_key: str | None = None
+    source_model_dir: str | None = None
+    output_dir: str | None = None
     bits: float = Field(default=6.5, gt=0)
     groupsize: int = Field(default=2048, gt=0)
     force: bool = False
@@ -4696,6 +4914,20 @@ class ProviderModelFlagsReq(BaseModel):
     model_key: str
     disabled_until_manual_review: bool | None = None
     exclude_from_free_rotation: bool | None = None
+    reason: str
+    actor: str = "webui"
+
+
+class CuratedModelUpdateReq(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    provider: str
+    bucket: str
+    model_id: str
+    enabled: bool | None = None
+    priority: int | None = None
+    backend: str | None = None
+    notes: str | None = None
+    expected_version: str | None = None
     reason: str
     actor: str = "webui"
 
@@ -4856,6 +5088,124 @@ def set_knobs(k: Knobs):
     return redacted_env(env)
 
 
+def _curated_bucket_rows(doc: dict, provider: str, bucket: str, create_missing: bool = False) -> list[dict] | None:
+    provider_key = str(provider or "").strip().lower()
+    bucket_key = str(bucket or "").strip().lower()
+
+    if provider_key == "local" and bucket_key == "slots":
+        local = doc.get("local")
+        if not isinstance(local, dict):
+            if not create_missing:
+                return None
+            local = {}
+            doc["local"] = local
+        slots = local.get("slots")
+        if not isinstance(slots, list):
+            if not create_missing:
+                return None
+            slots = []
+            local["slots"] = slots
+        return slots
+
+    if provider_key == "local" and bucket_key == "converted_models":
+        local = doc.get("local")
+        if not isinstance(local, dict):
+            if not create_missing:
+                return None
+            local = {}
+            doc["local"] = local
+        rows = local.get("converted_models")
+        if not isinstance(rows, list):
+            if not create_missing:
+                return None
+            rows = []
+            local["converted_models"] = rows
+        return rows
+
+    if provider_key == "openrouter" and bucket_key in {"free", "paid"}:
+        openrouter = doc.get("openrouter")
+        if not isinstance(openrouter, dict):
+            if not create_missing:
+                return None
+            openrouter = {}
+            doc["openrouter"] = openrouter
+        rows = openrouter.get(bucket_key)
+        if not isinstance(rows, list):
+            if not create_missing:
+                return None
+            rows = []
+            openrouter[bucket_key] = rows
+        return rows
+
+    if provider_key == "openai" and bucket_key == "allowed":
+        openai = doc.get("openai")
+        if not isinstance(openai, dict):
+            if not create_missing:
+                return None
+            openai = {}
+            doc["openai"] = openai
+        rows = openai.get("allowed")
+        if not isinstance(rows, list):
+            if not create_missing:
+                return None
+            rows = []
+            openai["allowed"] = rows
+        return rows
+
+    return None
+
+
+def _curated_model_summary_rows(doc: dict, state: dict) -> list[dict]:
+    runtime = state.get("provider_model_state", {}) if isinstance(state.get("provider_model_state"), dict) else {}
+    rows = []
+
+    def _append(provider: str, bucket: str, source_rows: list[dict]):
+        for row in source_rows:
+            if not isinstance(row, dict):
+                continue
+            model_id = str(row.get("id", "") or "").strip()
+            if not model_id:
+                continue
+            runtime_key = _provider_model_key(provider, model_id)
+            runtime_row = runtime.get(runtime_key, {}) if isinstance(runtime.get(runtime_key), dict) else {}
+            rows.append({
+                "provider": provider,
+                "bucket": bucket,
+                "model_id": model_id,
+                "label": str(row.get("label") or model_id),
+                "enabled": bool(row.get("enabled", True)),
+                "priority": row.get("priority"),
+                "backend": row.get("backend"),
+                "family": row.get("family"),
+                "tier": row.get("tier"),
+                "format": row.get("format"),
+                "max_context": row.get("max_context"),
+                "notes": row.get("notes"),
+                "runtime": {
+                    "promotion_state": runtime_row.get("promotion_state"),
+                    "disabled_until_manual_review": bool(runtime_row.get("disabled_until_manual_review", False)),
+                    "exclude_from_free_rotation": bool(runtime_row.get("exclude_from_free_rotation", False)),
+                    "failure_count_24h": int(runtime_row.get("failure_count_24h", 0) or 0),
+                    "failure_count_7d": int(runtime_row.get("failure_count_7d", 0) or 0),
+                    "last_error_type": runtime_row.get("last_error_type"),
+                },
+            })
+
+    _append("local", "slots", _curated_bucket_rows(doc, "local", "slots") or [])
+    _append("local", "converted_models", _curated_bucket_rows(doc, "local", "converted_models") or [])
+    _append("openrouter", "free", _curated_bucket_rows(doc, "openrouter", "free") or [])
+    _append("openrouter", "paid", _curated_bucket_rows(doc, "openrouter", "paid") or [])
+    _append("openai", "allowed", _curated_bucket_rows(doc, "openai", "allowed") or [])
+
+    rows.sort(key=lambda item: (
+        str(item.get("provider", "")),
+        str(item.get("bucket", "")),
+        int(item.get("priority", 999999) if isinstance(item.get("priority"), (int, float)) else 999999),
+        str(item.get("model_id", "")),
+    ))
+    return rows
+
+
 @app.get("/providers/models")
 def providers_models():
     doc = read_provider_models()
@@ -4865,6 +5215,124 @@ def providers_models():
         "source": str(PROVIDER_MODELS_PATH),
         "local_conversion_artifacts": _conversion_artifact_rows(format_filter="exl2")[:200],
         "time": datetime.utcnow().isoformat() + "Z",
+    }
+
+
+@app.get("/providers/models/curated-summary")
+def providers_models_curated_summary(
+    provider: str | None = Query(None),
+    bucket: str | None = Query(None),
+    enabled_only: bool = Query(False),
+    search: str | None = Query(None),
+    limit: int = Query(300, ge=1, le=2000),
+):
+    doc = read_provider_models()
+    state = read_provider_runtime_state()
+    rows = _curated_model_summary_rows(doc, state)
+
+    provider_filter = str(provider or "").strip().lower()
+    if provider_filter:
+        rows = [row for row in rows if str(row.get("provider", "")).lower() == provider_filter]
+
+    bucket_filter = str(bucket or "").strip().lower()
+    if bucket_filter:
+        rows = [row for row in rows if str(row.get("bucket", "")).lower() == bucket_filter]
+
+    if enabled_only:
+        rows = [row for row in rows if bool(row.get("enabled", False))]
+
+    search_q = str(search or "").strip().lower()
+    if search_q:
+        rows = [
+            row for row in rows
+            if search_q in str(row.get("model_id", "")).lower()
+            or search_q in str(row.get("label", "")).lower()
+            or search_q in str(row.get("notes", "")).lower()
+        ]
+
+    return {
+        "ok": True,
+        "time": datetime.utcnow().isoformat() + "Z",
+        "count": min(limit, len(rows)),
+        "version": _doc_version(doc),
+        "rows": rows[:limit],
+    }
+
+
+@app.post("/providers/models/curated-entry")
+def providers_models_curated_entry_update(req: CuratedModelUpdateReq):
+    reason = str(req.reason or "").strip()
+    if not reason:
+        raise HTTPException(422, {"errors": ["reason is required"]})
+
+    provider_key = str(req.provider or "").strip().lower()
+    bucket_key = str(req.bucket or "").strip().lower()
+    model_id = str(req.model_id or "").strip()
+    if not provider_key or not bucket_key or not model_id:
+        raise HTTPException(422, {"errors": ["provider, bucket, and model_id are required"]})
+
+    if req.backend is not None and provider_key != "local":
+        raise HTTPException(422, {"errors": ["backend updates are only supported for local curated entries"]})
+
+    if req.backend is not None and bucket_key == "slots":
+        backend_val = str(req.backend or "").strip().lower()
+        if backend_val not in SUPPORTED_BACKENDS:
+            raise HTTPException(422, {"errors": [f"backend must be one of: {', '.join(sorted(SUPPORTED_BACKENDS))}"]})
+
+    current_doc = read_provider_models()
+    new_doc = json.loads(json.dumps(current_doc))
+    rows = _curated_bucket_rows(new_doc, provider_key, bucket_key, create_missing=False)
+    if rows is None:
+        raise HTTPException(422, {"errors": ["unsupported provider/bucket pair"]})
+
+    target = None
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("id", "") or "").strip() == model_id:
+            target = row
+            break
+    if target is None:
+        raise HTTPException(404, {"message": "curated model entry not found", "provider": provider_key, "bucket": bucket_key, "model_id": model_id})
+
+    if req.enabled is not None:
+        target["enabled"] = bool(req.enabled)
+    if req.priority is not None:
+        target["priority"] = int(req.priority)
+    if req.backend is not None:
+        target["backend"] = str(req.backend)
+    if req.notes is not None:
+        target["notes"] = str(req.notes)
+
+    result = _governance_apply(
+        resource="models",
+        target_path=PROVIDER_MODELS_PATH,
+        current_doc=current_doc,
+        new_doc=new_doc,
+        expected_version=req.expected_version,
+        actor=str(req.actor or "webui"),
+        reason=reason,
+        validate_only=False,
+    )
+
+    updated_row = next(
+        (
+            row for row in _curated_model_summary_rows(new_doc, read_provider_runtime_state())
+            if str(row.get("provider", "")) == provider_key
+            and str(row.get("bucket", "")) == bucket_key
+            and str(row.get("model_id", "")) == model_id
+        ),
+        None,
+    )
+
+    return {
+        "ok": True,
+        "time": datetime.utcnow().isoformat() + "Z",
+        "provider": provider_key,
+        "bucket": bucket_key,
+        "model_id": model_id,
+        "entry": updated_row,
+        "governance": result,
     }
 
 
@@ -5376,6 +5844,7 @@ def router_chat(req: RouterChatRequest):
     strategy = _resolve_strategy(req, env, policies)
     chain = _candidate_chain_for_strategy(strategy, req, policies)
     effective_defaults = _effective_policy_defaults(req, policies)
+    effective_selection = _effective_policy_selection(req, policies)
     allow_fallbacks = _resolve_bool_pref(
         req.provider_preferences.allow_fallbacks,
         bool(effective_defaults.get("allow_fallbacks", True)),
@@ -5487,9 +5956,18 @@ def router_chat(req: RouterChatRequest):
         total_tokens=int(usage_raw.get("total_tokens", 0) or 0),
     )
 
-    selected_backend = read_slot_backends().get("chat", "tgw") if selected_provider == "local" else "remote"
+    selected_backend = read_slot_backends().get("chat", "tgw") if selected_provider == "local" else selected_provider
     active_chat = current_links().get("chat")
     selected_active = os.path.basename(active_chat.rstrip("/")) if active_chat else None
+    policy_context = _build_route_policy_context(
+        req,
+        env,
+        policies,
+        strategy,
+        chain,
+        effective_defaults=effective_defaults,
+        effective_selection=effective_selection,
+    )
 
     choices_raw = raw.get("choices", []) if isinstance(raw, dict) else []
     normalized_choices = []
@@ -5508,8 +5986,11 @@ def router_chat(req: RouterChatRequest):
     decision = {
         "request_id": uuid.uuid4().hex[:12],
         "ts": now_ts,
+        "task_type": _normalize_task_type(getattr(req, "task_type", "chat")),
         "project_id": _resolve_project_id(req),
         "strategy": strategy,
+        "strategy_source": policy_context.get("strategy_source"),
+        "policy_context": policy_context,
         "candidate_chain": chain,
         "selected_lane": selected_lane,
         "selected_provider": selected_provider,
@@ -5562,6 +6043,7 @@ def router_completions(req: RouterCompletionRequest):
     strategy = _resolve_strategy(req, env, policies)
     chain = _candidate_chain_for_strategy(strategy, req, policies)
     effective_defaults = _effective_policy_defaults(req, policies)
+    effective_selection = _effective_policy_selection(req, policies)
     allow_fallbacks = _resolve_bool_pref(
         req.provider_preferences.allow_fallbacks,
         bool(effective_defaults.get("allow_fallbacks", True)),
@@ -5683,17 +6165,31 @@ def router_completions(req: RouterCompletionRequest):
     if not choices:
         choices = [RouterCompletionChoice(index=0, text="", finish_reason="stop")]
 
+    selected_backend = read_slot_backends().get("chat", "tgw") if selected_provider == "local" else selected_provider
+    policy_context = _build_route_policy_context(
+        req,
+        env,
+        policies,
+        strategy,
+        chain,
+        effective_defaults=effective_defaults,
+        effective_selection=effective_selection,
+    )
+
     now_ts = datetime.utcnow().isoformat() + "Z"
     decision = {
         "request_id": uuid.uuid4().hex[:12],
         "ts": now_ts,
+        "task_type": _normalize_task_type(getattr(req, "task_type", "completion")),
         "project_id": _resolve_project_id(req),
         "strategy": strategy,
+        "strategy_source": policy_context.get("strategy_source"),
+        "policy_context": policy_context,
         "candidate_chain": chain,
         "selected_lane": selected_lane,
         "selected_provider": selected_provider,
         "selected_model": selected_model,
-        "selected_backend": read_slot_backends().get("chat", "tgw") if selected_provider == "local" else "remote",
+        "selected_backend": selected_backend,
         "selected_active_local_model": None,
         "outcome": "ok",
         "attempt_errors": routing_errors,
@@ -5741,6 +6237,7 @@ def router_embed(req: RouterEmbedRequest):
     strategy = _resolve_strategy(req, env, policies)
     chain = _candidate_chain_for_strategy(strategy, req, policies)
     effective_defaults = _effective_policy_defaults(req, policies)
+    effective_selection = _effective_policy_selection(req, policies)
     allow_fallbacks = _resolve_bool_pref(
         req.provider_preferences.allow_fallbacks,
         bool(effective_defaults.get("allow_fallbacks", True)),
@@ -5858,17 +6355,31 @@ def router_embed(req: RouterEmbedRequest):
     if not data:
         data = [RouterEmbedDatum(index=0, embedding=[])]
 
+    selected_backend = read_slot_backends().get("chat", "tgw") if selected_provider == "local" else selected_provider
+    policy_context = _build_route_policy_context(
+        req,
+        env,
+        policies,
+        strategy,
+        chain,
+        effective_defaults=effective_defaults,
+        effective_selection=effective_selection,
+    )
+
     now_ts = datetime.utcnow().isoformat() + "Z"
     decision = {
         "request_id": uuid.uuid4().hex[:12],
         "ts": now_ts,
+        "task_type": _normalize_task_type(getattr(req, "task_type", "embed")),
         "project_id": _resolve_project_id(req),
         "strategy": strategy,
+        "strategy_source": policy_context.get("strategy_source"),
+        "policy_context": policy_context,
         "candidate_chain": chain,
         "selected_lane": selected_lane,
         "selected_provider": selected_provider,
         "selected_model": selected_model,
-        "selected_backend": read_slot_backends().get("chat", "tgw") if selected_provider == "local" else "remote",
+        "selected_backend": selected_backend,
         "selected_active_local_model": None,
         "outcome": "ok",
         "attempt_errors": routing_errors,
@@ -5942,6 +6453,104 @@ def router_last_decisions(limit: int = Query(20, ge=1, le=200)):
         "time": datetime.utcnow().isoformat() + "Z",
         "count": min(limit, len(logs)),
         "decisions": logs[-limit:],
+    }
+
+
+def _compact_router_decision(decision: dict) -> dict:
+    attempt_errors = decision.get("attempt_errors", []) if isinstance(decision.get("attempt_errors"), list) else []
+    error_types = []
+    for row in attempt_errors:
+        if not isinstance(row, dict):
+            continue
+        err = row.get("error", {}) if isinstance(row.get("error"), dict) else {}
+        err_type = str(err.get("type", "unknown") or "unknown")
+        if err_type not in error_types:
+            error_types.append(err_type)
+
+    policy_context = decision.get("policy_context", {}) if isinstance(decision.get("policy_context"), dict) else {}
+    effective_defaults = policy_context.get("effective_defaults", {}) if isinstance(policy_context.get("effective_defaults"), dict) else {}
+
+    return {
+        "request_id": decision.get("request_id"),
+        "ts": decision.get("ts"),
+        "task_type": decision.get("task_type") or policy_context.get("task_type"),
+        "project_id": decision.get("project_id"),
+        "strategy": decision.get("strategy"),
+        "strategy_source": decision.get("strategy_source") or policy_context.get("strategy_source"),
+        "selected_lane": decision.get("selected_lane"),
+        "selected_provider": decision.get("selected_provider"),
+        "selected_model": decision.get("selected_model"),
+        "selected_backend": decision.get("selected_backend"),
+        "outcome": decision.get("outcome"),
+        "candidate_chain": decision.get("candidate_chain", []),
+        "attempt_error_count": len(attempt_errors),
+        "attempt_error_types": error_types,
+        "estimated_cost_usd": decision.get("estimated_cost_usd"),
+        "usage": decision.get("usage", {}),
+        "policy_context": {
+            "project_override_applied": bool(policy_context.get("project_override_applied", False)),
+            "global_task_override_applied": bool(policy_context.get("global_task_override_applied", False)),
+            "project_task_override_applied": bool(policy_context.get("project_task_override_applied", False)),
+            "selection_keys": sorted(
+                list(policy_context.get("effective_selection", {}).keys())
+                if isinstance(policy_context.get("effective_selection"), dict)
+                else []
+            ),
+            "allow_fallbacks": effective_defaults.get("allow_fallbacks"),
+            "free_only": effective_defaults.get("free_only"),
+            "paid_allowed": effective_defaults.get("paid_allowed"),
+            "preferred_provider": effective_defaults.get("preferred_provider"),
+        },
+    }
+
+
+@app.get("/router/decision-traces")
+def router_decision_traces(
+    limit: int = Query(40, ge=1, le=500),
+    compact: bool = Query(True),
+):
+    state = read_provider_runtime_state()
+    logs = state.get("request_logs", []) if isinstance(state.get("request_logs"), list) else []
+    recent = logs[-limit:]
+
+    by_task_type = {}
+    by_backend = {}
+    by_provider = {}
+    by_strategy = {}
+    by_error_type = {}
+    for row in recent:
+        if not isinstance(row, dict):
+            continue
+        task_type = str(row.get("task_type", "chat") or "chat")
+        backend = str(row.get("selected_backend", "unknown") or "unknown")
+        provider = str(row.get("selected_provider", "unknown") or "unknown")
+        strategy = str(row.get("strategy", "unknown") or "unknown")
+        by_task_type[task_type] = by_task_type.get(task_type, 0) + 1
+        by_backend[backend] = by_backend.get(backend, 0) + 1
+        by_provider[provider] = by_provider.get(provider, 0) + 1
+        by_strategy[strategy] = by_strategy.get(strategy, 0) + 1
+
+        attempt_errors = row.get("attempt_errors", []) if isinstance(row.get("attempt_errors"), list) else []
+        for attempt in attempt_errors:
+            if not isinstance(attempt, dict):
+                continue
+            err = attempt.get("error", {}) if isinstance(attempt.get("error"), dict) else {}
+            err_type = str(err.get("type", "unknown") or "unknown")
+            by_error_type[err_type] = by_error_type.get(err_type, 0) + 1
+
+    traces = [_compact_router_decision(row) for row in recent if isinstance(row, dict)] if compact else recent
+    return {
+        "ok": True,
+        "time": datetime.utcnow().isoformat() + "Z",
+        "count": len(traces),
+        "summary": {
+            "by_task_type": by_task_type,
+            "by_backend": by_backend,
+            "by_provider": by_provider,
+            "by_strategy": by_strategy,
+            "by_error_type": by_error_type,
+        },
+        "traces": traces,
     }
 
 
@@ -6539,10 +7148,43 @@ def jobs_cancel(job_id: str):
 
 @app.post("/conversions/exl2")
 def conversions_exl2_start(req: Exl2ConversionStartReq):
-    job = _launch_job("convert_hf_exl2", req.dict())
+    payload = req.dict()
+    source_type = str(req.source_type or "huggingface_repo").strip().lower()
+    kind = ""
+
+    if source_type in {"huggingface_repo", "hf", "repo"}:
+        repo_id = str(req.repo_id or "").strip()
+        if not repo_id:
+            raise HTTPException(422, {"errors": ["repo_id is required when source_type is huggingface_repo"]})
+        payload["repo_id"] = repo_id
+        payload["source_type"] = "huggingface_repo"
+        kind = "convert_hf_exl2"
+    elif source_type in {"merged_local_model", "merged", "local_merged"}:
+        model_key = str(req.model_key or "").strip()
+        source_model_dir = str(req.source_model_dir or "").strip()
+        if not model_key and source_model_dir:
+            source_name = Path(source_model_dir).name
+            if source_name.startswith("merged_"):
+                model_key = source_name[len("merged_"):]
+        if not model_key:
+            raise HTTPException(422, {"errors": ["model_key is required when source_type is merged_local_model"]})
+
+        source_path = Path(source_model_dir) if source_model_dir else (ROOT / "output" / f"merged_{model_key}")
+        if not source_path.exists():
+            raise HTTPException(404, {"message": "merged source directory not found", "source_model_dir": str(source_path)})
+
+        payload["model_key"] = model_key
+        payload["source_model_dir"] = str(source_path)
+        payload["source_type"] = "merged_local_model"
+        kind = "convert_merged_exl2"
+    else:
+        raise HTTPException(422, {"errors": ["source_type must be huggingface_repo or merged_local_model"]})
+
+    job = _launch_job(kind, payload)
     return {
         "ok": True,
         "job": job,
+        "source_type": payload.get("source_type"),
         "conversion": _conversion_run_by_job_id(str(job.get("id", ""))),
         "time": datetime.utcnow().isoformat() + "Z",
     }
@@ -6552,7 +7194,12 @@ def conversions_exl2_start(req: Exl2ConversionStartReq):
 def conversions_exl2_jobs(limit: int = Query(200, ge=1, le=1000)):
     state = read_provider_runtime_state()
     runs = state.get("conversion_runs", {}) if isinstance(state.get("conversion_runs"), dict) else {}
-    rows = [row for row in runs.values() if isinstance(row, dict) and str(row.get("kind", "")) == "convert_hf_exl2"]
+    rows = [
+        row
+        for row in runs.values()
+        if isinstance(row, dict)
+        and str(row.get("kind", "")) in {"convert_hf_exl2", "convert_merged_exl2"}
+    ]
     rows.sort(key=lambda row: str(row.get("created_ts", "")), reverse=True)
     return {
         "ok": True,

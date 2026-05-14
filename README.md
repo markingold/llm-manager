@@ -175,6 +175,8 @@ Process/service environment commonly used in deployment:
 | GET | `/providers/policies` | Read provider policy config |
 | GET | `/providers/state` | Read provider runtime state scaffold |
 | POST | `/providers/state/provider-model-flags` | Update provider-model manual-review and free-rotation flags |
+| GET | `/providers/models/curated-summary` | Flattened curated provider model rows for operator filtering and review |
+| POST | `/providers/models/curated-entry` | Targeted curated model updates (enabled/priority/backend/notes) with governance audit |
 | PUT | `/providers/models` | Validate/apply provider model governance document |
 | POST | `/providers/models/rollback` | Roll back provider model document to last good snapshot |
 | PUT | `/providers/policies` | Validate/apply provider policy governance document |
@@ -183,7 +185,7 @@ Process/service environment commonly used in deployment:
 | POST | `/providers/openrouter/refresh` | Refresh upstream OpenRouter metadata cache, optionally with rankings |
 | POST | `/providers/openrouter/discover-free` | Manually build and optionally activate temporary OpenRouter free fallback candidates (includes ranking + smoke evidence fields) |
 | GET | `/providers/openrouter/free-candidates` | Inspect the current manual OpenRouter free candidate pool with lifecycle/smoke evidence |
-| POST | `/conversions/exl2` | Start managed EXL2 conversion from Hugging Face repo id |
+| POST | `/conversions/exl2` | Start managed EXL2 conversion from Hugging Face repo or merged local source |
 | GET | `/conversions/exl2/jobs` | List persisted managed EXL2 conversion runs |
 | GET | `/conversions/exl2/jobs/{job_id}` | Get one managed conversion run with log tail |
 | GET | `/conversions/exl2/artifacts` | List persisted EXL2 conversion artifacts |
@@ -194,6 +196,7 @@ Process/service environment commonly used in deployment:
 | POST | `/router/route-test` | Dry-run route resolution with task-aware strategy and candidate-chain inspection |
 | GET | `/router/health` | Router config and decision-log health |
 | GET | `/router/last-decisions` | Recent router decision logs |
+| GET | `/router/decision-traces` | Compact route traces with task-policy context and backend/task mix summary |
 | GET | `/router/usage-summary` | Aggregated token/request usage logs |
 | GET | `/router/budget-state` | Budget guardrail and spend state snapshot |
 | GET | `/router/queue-state` | Free-tier queue depth and pending items |
@@ -245,8 +248,11 @@ Process/service environment commonly used in deployment:
 | POST | `/jobs` | Start job: `{ kind, model_key, force, ... }` |
 | POST | `/jobs/{id}/cancel` | Cancel running job |
 
-`/jobs` also supports `kind=convert_hf_exl2` with fields:
+`/jobs` also supports `kind=convert_hf_exl2` and `kind=convert_merged_exl2` with fields:
 - `repo_id`
+- `model_key`
+- `source_model_dir`
+- `output_dir`
 - `bits`
 - `groupsize`
 - `force`
@@ -284,6 +290,7 @@ Notes:
 - `POST /providers/openrouter/discover-free` is a manual-only workflow that filters cached OpenRouter free models by size, popularity, context, family, and capabilities, then stores a temporary candidate pool in runtime state
 - OpenRouter discovery candidates now persist richer ranking fields (`top_weekly_rank`, `category_ranks`) when available
 - OpenRouter discovery candidate payloads now surface lifecycle and smoke evidence (`recent_promotion_transitions`, `recent_smoke_checks`, `lifecycle_evidence`)
+- Router decision logs now include task-policy trace context (`task_type`, `strategy_source`, `policy_context`) and are summarized via `GET /router/decision-traces`
 - `GET /providers/openrouter/free-candidates` shows the temporary candidate pool and any manually activated `active_ids`
 - The `openrouter.free` lane only uses manually activated temporary candidates after curated free models are exhausted
 - Free-tier overflow behavior now follows policy `queue_behavior` (`wait`, `fail_fast`, `fallback_to_local`, `upgrade_to_paid`)
@@ -294,8 +301,10 @@ Notes:
 - Local evaluation queue supports priority lanes (`interactive`, `batch`, `evaluation`) for async runs
 - Dashboard now includes an Evaluation Ops panel showing queue health, latest reports, and suite rerun controls
 - Dashboard Evaluation now includes a Lane Sufficiency panel for comparing reference lanes vs cheaper sufficient lanes
-- Dashboard now includes a Router Ops panel for fallback health, budget state, free-tier queue pressure, provider model flags, and manual OpenRouter free-candidate discovery/activation
-- Dashboard Jobs now includes a Managed EXL2 panel for starting conversions and monitoring persisted runs/artifacts without direct API calls
+- Dashboard now includes a Router Ops panel for fallback health, budget state, free-tier queue pressure, provider model flags, route decision traces, and manual OpenRouter free-candidate discovery/activation
+- Dashboard now includes a Provider Governance quick-admin grid for curated model enable/priority/backend updates
+- Dashboard Jobs now includes a Managed EXL2 panel for starting conversions from HF or merged-local sources and monitoring persisted runs/artifacts without direct API calls
+- Managed EXL2 artifacts now include tokenizer and chat-template preservation checks for conversion closeout audits
 - Local evaluation candidate_models now support mixed provider targets (for example `chat_active_model`, `openrouter:model_id`, `openai:model_id`)
 - `/router/evaluations` supports filtering by status, target mode, project, candidate model, provider, lane, suite pass, tag, and since timestamp
 - Evaluation summaries now include by-provider aggregates and estimated-cost totals when provider catalog pricing metadata is available

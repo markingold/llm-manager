@@ -47,22 +47,22 @@
 - `app/src/llm_manager/convert_lora.py` is narrower than its name first suggests: it converts merged LoRA outputs from `output/merged_<model_key>` into EXL2, not arbitrary raw base-model folders.
 - So the current answer is: full-model to EXL2 exists and is now promoted to a managed llm-manager workflow for HF repo sources, while EXL3 conversion is not yet implemented as a parallel managed path.
 
-## Implementation status (2026-05-09)
+## Implementation status (2026-05-14)
 
-Estimated completion: about 65%.
+Estimated completion: about 75%.
 
 ### Completed
 
-- Managed EXL2 conversion API flow is now implemented for Hugging Face repo sources.
+- Managed EXL2 conversion API flow is now implemented for both Hugging Face repo sources and merged local model sources.
 - New managed endpoints are live: `/conversions/exl2`, `/conversions/exl2/jobs`, `/conversions/exl2/jobs/{job_id}`, `/conversions/exl2/artifacts`, `/conversions/exl2/artifacts/{artifact_id}`.
 - Conversion run and artifact metadata are persisted in runtime state (`conversion_runs`, `conversion_artifacts`).
-- Persisted metadata includes source repo id/hash, bits, groupsize, output path/model dir, timestamps, and detected loader/kind.
+- Persisted metadata includes source type and source id/hash, bits, groupsize, output path/model dir, timestamps, and detected loader/kind.
+- Conversion metadata now includes preservation checks for tokenizer artifacts and chat-template continuity to reduce instruct-format regressions.
 - Converted artifact metadata is surfaced in `/models` and `/providers/models` and synced into provider catalog state under `local.converted_models`.
 
 ### Partially completed
 
-- Managed conversion currently covers Hugging Face repo-id source flow.
-- Existing merged-LoRA conversion script remains available, but that source path is not yet promoted into the same managed API workflow.
+- Canonical host-level output placement under `/srv/2bananas/engines` remains a deployment/layout discipline item rather than an enforced API invariant.
 
 ### Not completed
 
@@ -110,11 +110,11 @@ Estimated completion: about 65%.
 
 ## Phase 1: managed EXL2 conversion
 
-1. Promote existing EXL2 conversion support into a first-class llm-manager workflow instead of leaving it as a standalone helper script.
-2. Support converting raw HF-format model directories and merged local model directories into EXL2.
+1. Promote existing EXL2 conversion support into a first-class llm-manager workflow instead of leaving it as a standalone helper script. (implemented)
+2. Support converting raw HF-format model directories and merged local model directories into EXL2. (implemented)
 3. Write converted outputs into the centralized `/srv/2bananas/engines` model area and record canonical paths in metadata.
-4. Persist conversion metadata so converted models can be cataloged, inspected, and reused by the router and UI.
-5. Add admin endpoints or CLI commands to submit, monitor, and inspect conversion jobs.
+4. Persist conversion metadata so converted models can be cataloged, inspected, and reused by the router and UI. (implemented)
+5. Add admin endpoints or CLI commands to submit, monitor, and inspect conversion jobs. (implemented)
 
 ## Phase 2: EXL3 conversion enablement
 

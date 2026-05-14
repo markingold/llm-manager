@@ -170,10 +170,12 @@ Notes:
 - `GET /models`
 - `GET /knobs`
 - `GET /providers/models`
+- `GET /providers/models/curated-summary`
 - `GET /providers/policies`
 - `GET /providers/state`
 - `GET /router/health`
 - `GET /router/last-decisions`
+- `GET /router/decision-traces`
 - `GET /router/usage-summary`
 - `GET /router/queue-state`
 - `GET /router/fallback-stats`
@@ -202,10 +204,12 @@ Useful commands:
     curl http://localhost:8101/models | python3 -m json.tool
     curl http://localhost:8101/knobs | python3 -m json.tool
     curl http://localhost:8101/providers/models | python3 -m json.tool
+    curl "http://localhost:8101/providers/models/curated-summary?limit=50" | python3 -m json.tool
     curl http://localhost:8101/providers/policies | python3 -m json.tool
     curl http://localhost:8101/providers/state | python3 -m json.tool
     curl http://localhost:8101/router/health | python3 -m json.tool
     curl "http://localhost:8101/router/last-decisions?limit=20" | python3 -m json.tool
+    curl "http://localhost:8101/router/decision-traces?limit=20&compact=true" | python3 -m json.tool
     curl "http://localhost:8101/router/usage-summary?limit=200" | python3 -m json.tool
     curl http://localhost:8101/router/queue-state | python3 -m json.tool
     curl "http://localhost:8101/router/fallback-stats?limit=500" | python3 -m json.tool

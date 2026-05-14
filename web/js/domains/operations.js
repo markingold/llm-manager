@@ -123,13 +123,17 @@ function renderConversionRows(runs, artifacts) {
         const status = String(row.status || "unknown");
         const quant = `b${row.bits ?? "?"} / g${row.groupsize ?? "?"}`;
         const updated = row.updated_ts || row.completed_ts || row.started_ts || row.created_ts;
+        const sourceType = String(row.source_type || "huggingface_repo");
+        const sourceLabel = sourceType === "merged_local_model"
+          ? (row.model_key || row.source_repo_id || "-")
+          : (row.source_repo_id || "-");
         const btn = jobId
           ? `<button data-conv-job="${escapeHtml(jobId)}">Details</button>`
           : "<button disabled>Details</button>";
         return `
           <tr>
             <td class="mono">${escapeHtml(jobId || "-")}</td>
-            <td>${escapeHtml(row.source_repo_id || "-")}</td>
+            <td>${escapeHtml(sourceType)} / ${escapeHtml(sourceLabel)}</td>
             <td>${escapeHtml(quant)}</td>
             <td><span class="pill ${conversionTone(status)}">${escapeHtml(status)}</span></td>
             <td>${escapeHtml(formatTs(updated))}</td>
@@ -150,13 +154,17 @@ function renderConversionRows(runs, artifacts) {
       artifactsBody.innerHTML = artifacts.slice(0, MAX_CONVERSION_ROWS).map((row) => {
         const artifactId = String(row.artifact_id || "");
         const status = String(row.status || "unknown");
+        const sourceType = String(row.source_type || "huggingface_repo");
+        const sourceLabel = sourceType === "merged_local_model"
+          ? (row.source_repo_id || "-")
+          : (row.source_repo_id || "-");
         const btn = artifactId
           ? `<button data-conv-artifact="${escapeHtml(artifactId)}">Details</button>`
           : "<button disabled>Details</button>";
         return `
           <tr>
             <td class="mono">${escapeHtml(artifactId || "-")}</td>
-            <td>${escapeHtml(row.source_repo_id || "-")}</td>
+            <td>${escapeHtml(sourceType)} / ${escapeHtml(sourceLabel)}</td>
             <td class="mono">${escapeHtml(row.model_ref || row.output_model_dir || "-")}</td>
             <td><span class="pill ${conversionTone(status)}">${escapeHtml(status)}</span></td>
             <td>${escapeHtml(formatTs(row.created_ts))}</td>
@@ -200,8 +208,15 @@ function renderConversionStats(runs, artifacts) {
 }
 
 function buildConversionStartPayload() {
+  const sourceType = $("convSourceType")?.value?.trim() || "huggingface_repo";
   const repoId = $("convRepoId")?.value?.trim() || "";
-  if (!repoId) throw new Error("Repo ID is required.");
+  const modelKey = $("convModelKey")?.value?.trim() || "";
+  if (sourceType === "huggingface_repo" && !repoId) {
+    throw new Error("Repo ID is required for Hugging Face source.");
+  }
+  if (sourceType === "merged_local_model" && !modelKey) {
+    throw new Error("Model key is required for merged local source.");
+  }
 
   const bits = Number($("convBits")?.value || "");
   if (!Number.isFinite(bits) || bits <= 0) throw new Error("Bits must be a positive number.");
@@ -210,20 +225,34 @@ function buildConversionStartPayload() {
   if (!Number.isFinite(groupsize) || groupsize <= 0) throw new Error("Groupsize must be a positive integer.");
 
   const payload = {
-    repo_id: repoId,
+    source_type: sourceType,
     bits,
     groupsize,
     force: Boolean($("convForce")?.checked),
   };
+  if (repoId) payload.repo_id = repoId;
+  if (modelKey) payload.model_key = modelKey;
 
+  const sourceModelDir = $("convSourceModelDir")?.value?.trim();
+  const outputDir = $("convOutputDir")?.value?.trim();
   const baseModelsDir = $("convBaseModelsDir")?.value?.trim();
   const webuiModelsDir = $("convWebuiModelsDir")?.value?.trim();
   const exllamaRoot = $("convExllamaRoot")?.value?.trim();
+  if (sourceModelDir) payload.source_model_dir = sourceModelDir;
+  if (outputDir) payload.output_dir = outputDir;
   if (baseModelsDir) payload.base_models_dir = baseModelsDir;
   if (webuiModelsDir) payload.webui_models_dir = webuiModelsDir;
   if (exllamaRoot) payload.exllama_root = exllamaRoot;
 
   return payload;
+}
+
+function applyConversionSourceTypeUI() {
+  const sourceType = $("convSourceType")?.value?.trim() || "huggingface_repo";
+  const repoInput = $("convRepoId");
+  const modelKeyInput = $("convModelKey");
+  if (repoInput) repoInput.disabled = sourceType !== "huggingface_repo";
+  if (modelKeyInput) modelKeyInput.disabled = sourceType !== "merged_local_model";
 }
 
 async function refreshConversionPanel() {
@@ -495,12 +524,21 @@ export function wireOperationsDomain() {
   $("btnRefresh")?.addEventListener("click", refreshAll);
   $("convStartBtn")?.addEventListener("click", startManagedExl2Conversion);
   $("convRefreshBtn")?.addEventListener("click", refreshConversionPanel);
+  $("convSourceType")?.addEventListener("change", applyConversionSourceTypeUI);
   $("convRepoId")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
       startManagedExl2Conversion();
     }
   });
+  $("convModelKey")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      startManagedExl2Conversion();
+    }
+  });
+
+  applyConversionSourceTypeUI();
 
   $("btnTestChat")?.addEventListener("click", () => runTest("chat"));
   $("btnTestIntent")?.addEventListener("click", () => runTest("intent"));

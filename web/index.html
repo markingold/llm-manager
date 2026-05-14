@@ -713,6 +713,8 @@
         <span id="routerFallbackPill" class="pill">fallbacks: ...</span>
         <span id="routerQueuePill" class="pill">queue: ...</span>
         <span id="routerBudgetPill" class="pill">budget: ...</span>
+        <span id="routerBackendPill" class="pill">backend mix: ...</span>
+        <span id="routerTaskPill" class="pill">tasks: ...</span>
         <span id="routerManualCandidatesPill" class="pill">manual candidates: ...</span>
         <span id="routerManualActivePill" class="pill">manual active: ...</span>
       </div>
@@ -722,6 +724,11 @@
         <button id="btnRouterFreeCandidatesRefresh">Refresh Manual Candidates</button>
       </div>
       <pre id="routerManualSnapshot">…</pre>
+      <div class="row" style="margin:10px 0 8px 0">
+        <span class="muted">Recent route decision traces (task-policy + backend context)</span>
+        <button id="btnRouterDecisionTraceRefresh">Refresh Decision Traces</button>
+      </div>
+      <pre id="routerDecisionSnapshot">…</pre>
     </div>
     <div class="card" data-surface="mutate">
       <h2>Router Mutations</h2>
@@ -828,6 +835,47 @@
           <button id="btnGovApplyFlags">Apply Flags</button>
         </div>
       </div>
+      <div class="card" data-surface="mutate">
+        <h2>Curated Model Quick Admin</h2>
+        <div class="muted" style="margin-bottom:10px">
+          Fast enable/priority/backend edits for curated model rows. Use the same actor/reason fields above for audited mutations.
+        </div>
+        <div class="row" style="margin-bottom:10px">
+          <select id="curatedProviderFilter" style="max-width:180px">
+            <option value="">provider: all</option>
+            <option value="local">local</option>
+            <option value="openrouter">openrouter</option>
+            <option value="openai">openai</option>
+          </select>
+          <select id="curatedBucketFilter" style="max-width:210px">
+            <option value="">bucket: all</option>
+            <option value="slots">slots</option>
+            <option value="converted_models">converted_models</option>
+            <option value="free">openrouter.free</option>
+            <option value="paid">openrouter.paid</option>
+            <option value="allowed">openai.allowed</option>
+          </select>
+          <input id="curatedSearch" placeholder="search id/label/notes" style="min-width:260px;flex:1" />
+          <label class="muted" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="curatedEnabledOnly" /> enabled only</label>
+          <button id="btnCuratedRefresh">Refresh Curated Rows</button>
+        </div>
+        <div class="table-wrap">
+          <table style="min-width:1100px">
+            <thead>
+              <tr>
+                <th>Provider/Bucket</th>
+                <th>Model</th>
+                <th>Enabled</th>
+                <th>Priority</th>
+                <th>Backend</th>
+                <th>Runtime</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="curatedModelsBody"></tbody>
+          </table>
+        </div>
+      </div>
       <div class="card" data-surface="read">
         <h2>Governance Audit Trail</h2>
         <div class="table-wrap">
@@ -853,13 +901,26 @@
       <div class="card" data-surface="mutate">
         <h2>Managed EXL2 Conversion</h2>
         <div class="muted" style="margin-bottom:10px">
-          Start an EXL2 conversion from a Hugging Face repo id and persist run/artifact metadata.
+          Start an EXL2 conversion from either a Hugging Face repo or a merged local source and persist run/artifact metadata.
         </div>
         <div class="grid3" style="margin-bottom:10px">
           <div>
-            <div class="muted" style="margin-bottom:6px">Repo ID</div>
+            <div class="muted" style="margin-bottom:6px">Source Type</div>
+            <select id="convSourceType">
+              <option value="huggingface_repo">Hugging Face repo</option>
+              <option value="merged_local_model">Merged local model</option>
+            </select>
+          </div>
+          <div>
+            <div class="muted" style="margin-bottom:6px">Repo ID (HF source)</div>
             <input id="convRepoId" placeholder="Qwen/Qwen2.5-7B-Instruct" />
           </div>
+          <div>
+            <div class="muted" style="margin-bottom:6px">Model Key (merged source)</div>
+            <input id="convModelKey" placeholder="qwen25_7b" />
+          </div>
+        </div>
+        <div class="grid3" style="margin-bottom:10px">
           <div>
             <div class="muted" style="margin-bottom:6px">Bits</div>
             <input id="convBits" type="number" step="0.1" min="0.1" value="6.5" />
@@ -868,8 +929,10 @@
             <div class="muted" style="margin-bottom:6px">Groupsize</div>
             <input id="convGroupsize" type="number" step="1" min="1" value="2048" />
           </div>
+          <input id="convSourceModelDir" placeholder="source_model_dir (optional for merged source)" />
         </div>
         <div class="grid3" style="margin-bottom:10px">
+          <input id="convOutputDir" placeholder="output_dir (optional for merged source)" />
           <input id="convBaseModelsDir" placeholder="base_models_dir (optional)" />
           <input id="convWebuiModelsDir" placeholder="webui_models_dir (optional)" />
           <input id="convExllamaRoot" placeholder="exllama_root (optional)" />
@@ -943,7 +1006,7 @@
     </section>
   </main>
 
-  <script type="module" src="app.js?v=20260514_130500"></script>
+  <script type="module" src="app.js?v=20260514_233000"></script>
 </body>
 
 </html>

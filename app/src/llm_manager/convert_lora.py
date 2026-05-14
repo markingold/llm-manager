@@ -13,14 +13,21 @@ from utils import hash_file, choose_model, load_configs, EXLLAMA_ROOT, CUDA_DEVI
 all_configs = load_configs()
 
 # --- Convert Logic ---
-def convert_to_exl2(model_key, force=False):
+def convert_to_exl2(
+    model_key,
+    force=False,
+    bits_override=None,
+    groupsize_override=None,
+    source_dir=None,
+    output_dir=None,
+):
     config = all_configs[model_key]
 
-    source = Path(f"output/merged_{model_key}")
-    dest = Path(f"output/lora_{model_key}")
+    source = Path(source_dir) if source_dir else Path(f"output/merged_{model_key}")
+    dest = Path(output_dir) if output_dir else Path(f"output/lora_{model_key}")
     script_path = Path(config.get("convert_script_path", str(EXLLAMA_ROOT / "convert.py")))
-    bits = config.get("convert_bits", 6.5)
-    groupsize = config.get("convert_groupsize", 2048)
+    bits = bits_override if bits_override is not None else config.get("convert_bits", 6.5)
+    groupsize = groupsize_override if groupsize_override is not None else config.get("convert_groupsize", 2048)
 
     if not source.exists():
         print(f"❌ Skipping {model_key}: Merged folder does not exist: {source}")
@@ -63,7 +70,16 @@ def convert_to_exl2(model_key, force=False):
         print(f"❌ Conversion failed for {model_key} (exit code {result.returncode})")
         return
 
-    for fname in ["config.json", "generation_config.json", "tokenizer.json", "tokenizer_config.json", "tokenizer.model"]:
+    for fname in [
+        "config.json",
+        "generation_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "tokenizer.model",
+        "vocab.json",
+        "merges.txt",
+        "special_tokens_map.json",
+    ]:
         src = source / fname
         if src.exists():
             shutil.copy(src, dest / fname)
@@ -80,6 +96,10 @@ if __name__ == "__main__":
     parser.add_argument("--model_key", help="Convert a specific model to EXL2")
     parser.add_argument("--convert_all", action="store_true", help="Convert all merged models")
     parser.add_argument("--force", action="store_true", help="Force reconversion even if hash matches")
+    parser.add_argument("--bits", type=float, help="Override bits-per-weight")
+    parser.add_argument("--groupsize", type=int, help="Override groupsize")
+    parser.add_argument("--source_dir", help="Optional explicit merged source directory")
+    parser.add_argument("--output_dir", help="Optional explicit output directory")
     args = parser.parse_args()
 
     # --- Determine which to convert ---
@@ -93,4 +113,11 @@ if __name__ == "__main__":
 
     # --- Run conversions ---
     for key in keys_to_convert:
-        convert_to_exl2(key, force=args.force)
+        convert_to_exl2(
+            key,
+            force=args.force,
+            bits_override=args.bits,
+            groupsize_override=args.groupsize,
+            source_dir=args.source_dir,
+            output_dir=args.output_dir,
+        )

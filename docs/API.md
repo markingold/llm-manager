@@ -113,6 +113,13 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
 - POST /providers/state/provider-model-flags
   - Updates provider-model flags for manual review and free-rotation control
   - Body: { model_key, disabled_until_manual_review?, exclude_from_free_rotation?, reason, actor }
+- GET /providers/models/curated-summary
+  - Returns flattened curated model rows across `local.slots`, `local.converted_models`, `openrouter.free`, `openrouter.paid`, and `openai.allowed`
+  - Supports optional filtering by `provider`, `bucket`, `enabled_only`, and `search`
+- POST /providers/models/curated-entry
+  - Applies targeted curated-row updates without full-document editing
+  - Body: { provider, bucket, model_id, enabled?, priority?, backend?, notes?, expected_version?, reason, actor }
+  - Uses the same governance/audit flow as full `PUT /providers/models`
 - PUT /providers/models
   - Safe governance write contract for provider model catalog
   - Body: { document, expected_version?, validate_only, reason, actor }
@@ -175,6 +182,8 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
   - Includes cached OpenRouter catalog, rankings freshness, and manual free-candidate counts
 - GET /router/last-decisions?limit=20
   - Returns recent routing decision records
+- GET /router/decision-traces?limit=40&compact=true
+  - Returns recent route traces with task-policy context (`task_type`, `strategy_source`, `policy_context`) and backend/task/provider summary counters for operator dashboards
 - GET /router/usage-summary?limit=200
   - Aggregates usage logs by provider across the selected window
 - GET /router/budget-state
@@ -281,7 +290,7 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
 - POST /jobs/{id}/cancel
 
 Job payloads support:
-- kind: train, merge, convert, or convert_hf_exl2
+- kind: train, merge, convert, convert_hf_exl2, or convert_merged_exl2
 - model_key
 - repo_id
 - bits
@@ -299,15 +308,17 @@ Notes:
 - Jobs are launched as local subprocesses rooted at the project directory
 - Generic job process state is kept in memory only
 - Logs are written to run/logs/
-- For `convert_hf_exl2`, run/artifact metadata is also persisted in run/state/provider_runtime_state.json
+- For managed EXL2 jobs (`convert_hf_exl2`, `convert_merged_exl2`), run and artifact metadata is also persisted in run/state/provider_runtime_state.json
 
 ## Managed EXL2 Conversion
 
 - POST /conversions/exl2
-  - Starts managed EXL2 conversion from Hugging Face repo id
-  - Body: { repo_id, bits, groupsize, force?, base_models_dir?, webui_models_dir?, exllama_root? }
+  - Starts managed EXL2 conversion from either source type:
+    - `source_type=huggingface_repo` with `repo_id`
+    - `source_type=merged_local_model` with `model_key` (optional `source_model_dir`, `output_dir` overrides)
+  - Body: { source_type, repo_id?, model_key?, source_model_dir?, output_dir?, bits, groupsize, force?, base_models_dir?, webui_models_dir?, exllama_root? }
 - GET /conversions/exl2/jobs
-  - Lists persisted EXL2 conversion runs
+  - Lists persisted EXL2 conversion runs for both HF and merged-local source types
 - GET /conversions/exl2/jobs/{job_id}
   - Returns one persisted conversion run with log tail
 - GET /conversions/exl2/artifacts
@@ -315,7 +326,7 @@ Notes:
 - GET /conversions/exl2/artifacts/{artifact_id}
   - Returns one converted artifact record
 
-Persisted EXL2 metadata fields include source repo id/hash, bits, groupsize, output directory/model dir, timestamps, detected format/loader, and catalog sync result.
+Persisted EXL2 metadata fields include source type and source id/hash, bits, groupsize, output directory/model dir, timestamps, detected format/loader, preservation checks (`tokenizer` artifacts + chat-template continuity), and catalog sync result.
 
 ## Test Endpoints
 

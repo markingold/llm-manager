@@ -27,8 +27,8 @@ WebUI overhaul status update (2026-05-07):
 - [x] Add automatic smoke-check promotion and lifecycle state transitions for discovered OpenRouter free candidates. - effort: medium | source: docs/plans/OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md
 - [x] Persist richer OpenRouter discovery ranking fields and lifecycle/smoke evidence surfacing (`top_weekly_rank`, `category_ranks`, transition/smoke evidence fields). - effort: medium | source: docs/plans/NEXT_PUSH.md, docs/plans/OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md
 - [x] Promote EXL2 conversion into a first-class managed workflow for HF-format sources. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md (managed `/conversions/exl2/*` API flow is live)
-- [ ] Extend managed EXL2 conversion workflow to merged local model sources. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md
-- [ ] Ensure EXL2 conversion preserves tokenizer metadata and chat templates required for correct instruct prompting. - effort: medium | source: local runtime troubleshooting 2026-04-28
+- [x] Extend managed EXL2 conversion workflow to merged local model sources. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md (managed `/conversions/exl2` now supports `source_type=merged_local_model`)
+- [x] Ensure EXL2 conversion preserves tokenizer metadata and chat templates required for correct instruct prompting. - effort: medium | source: local runtime troubleshooting 2026-04-28 (preservation checks now persisted on conversion runs/artifacts)
 - [x] Persist conversion metadata so converted models can be cataloged and routed. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md (runtime state + `/models` and `/providers/models` surfacing)
 - [ ] Add a TabbyAPI launcher and treat EXL2 and EXL3 as first-class ExLlama-backed lanes. - effort: large | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md, docs/plans/EXLLAMA_CONVERSION_PLAN.md
 - [x] Add OpenRouter metadata refresh, error normalization, cooldown state, and automatic free-model cycling. - effort: large | source: docs/plans/PROVIDER_ROUTER_PLAN.md (including smoke-check promotion path, lifecycle states, and rolling failure windows)
@@ -45,7 +45,8 @@ WebUI overhaul status update (2026-05-07):
 - [x] Add router observability endpoints for health, last decisions, fallback stats, usage summaries, queue state, and evaluation summaries. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/EVALUATION_PLAN.md (evaluation summary endpoint implemented)
 - [ ] Surface backend, model format, and recommendation data in the dashboard. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [ ] Hide or disable unsupported operations per backend in the UI. - effort: small | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
-- [ ] Add admin controls for enabling, disabling, prioritizing, and testing curated provider models. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md
+- [x] Add admin controls for enabling, disabling, prioritizing, and testing curated provider models. - effort: medium | source: docs/plans/PROVIDER_ROUTER_PLAN.md (`/providers/models/curated-summary`, `/providers/models/curated-entry`, dashboard quick-admin grid)
+- [x] Expand route decision traces with task-policy context and backend visibility for operator triage. - effort: medium | source: docs/plans/NEXT_PUSH.md (`/router/decision-traces`, router decision `policy_context` fields, dashboard trace panel)
 - [x] Support rerunning historical evaluation suites against new candidate models. - effort: medium | source: docs/plans/EVALUATION_PLAN.md (initial suite rerun endpoint implemented for local pipeline)
 - [x] Generate compact comparison artifacts suitable for ChatGPT or Copilot adjudication. - effort: medium | source: docs/plans/EVALUATION_PLAN.md (initial compare-compact endpoint implemented)
 - [x] Add async evaluation queueing with configurable priority classes for local batch runs. - effort: medium | source: docs/plans/EVALUATION_PLAN.md (interactive/batch/evaluation queue slice implemented)

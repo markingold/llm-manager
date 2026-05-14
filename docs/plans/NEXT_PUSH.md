@@ -1,6 +1,6 @@
 <!--
 id: PLAN-NEXT-PUSH
-version: 1.4
+version: 1.5
 last_updated: 2026-05-14
 title: Next Push Recommendations
 purpose:
@@ -11,7 +11,7 @@ purpose:
 ## Docs sweep update (2026-05-14)
 
 - stale conversion/catalog checkboxes were updated in `CHECKLIST.md` and `ROADMAP.md`
-- managed EXL2 milestones are now split into completed HF-source scope vs pending merged-source scope
+- managed EXL2 milestones are now marked complete for HF + merged-local source scope, including tokenizer/chat-template preservation checks
 
 ## Implementation update (2026-05-14)
 
@@ -31,9 +31,20 @@ Completed items from the locked queue:
   - richer ranking fields (`top_weekly_rank`, `category_ranks`) now persist in catalog/discovery candidate payloads when available
   - lifecycle/smoke evidence is now surfaced on candidate rows (`recent_promotion_transitions`, `recent_smoke_checks`, `lifecycle_evidence`)
   - smoke evidence retention is now configurable via `retention.smoke_checks_max`
+- item 5: provider admin and operator UI controls are now implemented
+  - curated model quick-admin API and workflow added: `GET /providers/models/curated-summary`, `POST /providers/models/curated-entry`
+  - dashboard governance panel now supports filtered curated-row updates (enabled/priority/backend/notes) with actor/reason audit fields
+  - route/backend visibility expanded in Router Ops with decision trace summaries and backend/task/provider mix pills
+- item 6: EXL2 Phase 1 closeout is now implemented
+  - managed conversion now supports merged local sources via `source_type=merged_local_model` in `POST /conversions/exl2`
+  - conversion jobs list now includes both HF and merged-local managed runs
+  - conversion run/artifact metadata now includes tokenizer/chat-template preservation checks for post-conversion validation
+- route decision trace expansion is now implemented
+  - routing decisions now capture task-policy context fields (`task_type`, `strategy_source`, `policy_context`)
+  - compact trace endpoint added: `GET /router/decision-traces`
 
 Next queued item:
-- item 5: provider admin and operator UI controls
+- item 7: cross-provider strategy hardening and deterministic fallback visibility
 
 ## Implementation update (2026-05-09)
 
@@ -60,10 +71,10 @@ Previously completed in this sequence:
 ## Completion status snapshot
 
 Checklist baseline from `docs/plans/CHECKLIST.md`:
-- total tracked tasks: 53
-- complete: 34
-- pending: 19
-- completion: 64.2%
+- total tracked tasks: 54
+- complete: 38
+- pending: 16
+- completion: 70.4%
 
 Interpretation:
 - Core broker and operator capabilities are now established.
@@ -82,11 +93,14 @@ Interpretation:
 4. [x] OpenRouter discovery polish
 - Persist richer ranking fields (`top_weekly_rank`, `category_ranks`) and add lifecycle/smoke evidence surfacing.
 
-5. [ ] Provider admin and operator UI controls
+5. [x] Provider admin and operator UI controls
 - Add curated-provider admin controls and improve route/backend visibility in dashboard workflows.
 
-6. [ ] EXL2 Phase 1 closeout
+6. [x] EXL2 Phase 1 closeout
 - Extend managed EXL2 conversion to merged local model sources and lock tokenizer/chat-template preservation checks.
+
+7. [ ] Cross-provider strategy hardening
+- Improve deterministic strategy behavior and fallback observability across `local_first`, `free_first`, `paid_first`, `best_available`, and `strict_provider`.
 
 ## Biggest remaining value gaps
 
@@ -109,12 +123,12 @@ Interpretation:
 ## Suggested immediate execution package (next 1-2 pushes)
 
 Push 1:
-- route-decision traces expanded with task-type policy context
-- provider admin and operator UI controls for curated model governance and route/backend visibility
-- docs update for provider admin and operator workflows
+- Cross-provider strategy hardening for deterministic fallback behavior and clearer reason codes
+- OpenRouter capability-aware smoke checks (JSON schema + tools)
+- docs update for strategy and failure-mode operator playbooks
 
 Push 2:
-- OpenRouter capability-aware smoke checks (JSON schema + tools)
 - vLLM/Tabby lane capability surfacing and fallback policy hardening
+- canonical `/srv/2bananas/engines` layout doc + migration checklist
 
 If both pushes land cleanly, broker maturity and operator confidence increase significantly while setting up Phase-3 backend goals.

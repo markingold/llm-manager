@@ -34,8 +34,8 @@ WebUI overhaul status:
 - [x] Add a shared free-tier rate limiter capped at 20 requests per minute. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (OpenRouter free-tier local limiter slice)
 - [x] Add free-tier queueing with configurable wait, fail-fast, paid-upgrade, or local-fallback behavior. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (initial queue behavior slice)
 - [x] Promote existing EXL2 conversion into a first-class llm-manager workflow for raw HF models. - _source: docs/plans/EXLLAMA_CONVERSION_PLAN.md_ (managed `/conversions/exl2/*` API flow)
-- [ ] Extend managed EXL2 conversion workflow to merged local models. - _source: docs/plans/EXLLAMA_CONVERSION_PLAN.md_
-- [ ] Preserve tokenizer metadata and chat templates during EXL2 conversion so converted instruct models retain correct prompt formatting after deployment. - _source: local runtime troubleshooting (2026-04-28)_
+- [x] Extend managed EXL2 conversion workflow to merged local models. - _source: docs/plans/EXLLAMA_CONVERSION_PLAN.md_ (`source_type=merged_local_model` support in managed conversion API)
+- [x] Preserve tokenizer metadata and chat templates during EXL2 conversion so converted instruct models retain correct prompt formatting after deployment. - _source: local runtime troubleshooting (2026-04-28)_ (tokenizer/chat-template preservation checks now persisted in conversion metadata)
 - [x] Persist conversion metadata in the model catalog. - _source: docs/plans/EXLLAMA_CONVERSION_PLAN.md_ (runtime state + catalog surfacing in `/models` and `/providers/models`)
 - [x] Add admin API support to submit, monitor, and inspect conversion jobs. - _source: docs/plans/EXLLAMA_CONVERSION_PLAN.md_ (`/conversions/exl2/*`)
 
@@ -61,9 +61,10 @@ WebUI overhaul status:
 - [x] Add threshold-based pass/fail gating and filtered evaluation-run listing for faster triage loops. - _source: docs/plans/EVALUATION_PLAN.md_ (case/suite thresholds and `/router/evaluations` filters implemented)
 - [x] Document routed inference usage and evaluation-suite submission for external projects. - _source: docs/plans/EVALUATION_PLAN.md, docs/plans/PROVIDER_ROUTER_PLAN.md, docs/TODO/README.md_ (`docs/guides/EXTERNAL_INTEGRATION.md` added)
 - [x] Add router health, decision logs, fallback stats, queue state, and evaluation summary endpoints. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/EVALUATION_PLAN.md_ (evaluation summary slice implemented)
+- [x] Expand route decision traces with task-policy context and backend/task mix summaries for operator triage. - _source: docs/plans/NEXT_PUSH.md_ (`GET /router/decision-traces` + enriched decision metadata)
 - [ ] Show slot backend, model format, backend recommendation, provider health, and fallback chains in the UI. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md, docs/plans/PROVIDER_ROUTER_PLAN.md_
 - [x] Add a lightweight dashboard evaluation operations panel for queue and report visibility. - _source: docs/plans/EVALUATION_PLAN.md_ (initial Evaluation Ops panel in `web/`)
-- [ ] Add admin controls for enabling, disabling, prioritizing, and testing curated provider models. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
+- [x] Add admin controls for enabling, disabling, prioritizing, and testing curated provider models. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (curated summary/update APIs + dashboard quick-admin grid)
 
 ## Phase 5: Governance, Spend, And Policy Controls (Future)
 - [x] Record token usage by provider and model. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_

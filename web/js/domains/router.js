@@ -34,6 +34,12 @@ function setRouterDiscoverResult(payload) {
   panel.textContent = JSON.stringify(payload || {}, null, 2);
 }
 
+function setRouterDecisionSnapshot(payload) {
+  const panel = $("routerDecisionSnapshot");
+  if (!panel) return;
+  panel.textContent = JSON.stringify(payload || {}, null, 2);
+}
+
 function currentDiscoveryPayload(overrides = {}) {
   return {
     refresh_catalog: !!$("routerDiscoverRefreshCatalog")?.checked,
@@ -65,7 +71,7 @@ export async function refreshRouterPanel() {
   if (!panel) return;
 
   try {
-    const [health, fallback, usage, queue, budget, pstate, freeCandidates] = await Promise.all([
+    const [health, fallback, usage, queue, budget, pstate, freeCandidates, decisionTraces] = await Promise.all([
       api("/router/health"),
       api("/router/fallback-stats?limit=500"),
       api("/router/usage-summary?limit=500"),
@@ -73,6 +79,7 @@ export async function refreshRouterPanel() {
       api("/router/budget-state"),
       api("/providers/state"),
       api("/providers/openrouter/free-candidates"),
+      api("/router/decision-traces?limit=40&compact=true"),
     ]);
 
     const state = pstate?.state || {};
@@ -97,6 +104,10 @@ export async function refreshRouterPanel() {
         error: openrouterCatalog.error,
       },
       openrouter_manual_free_candidates: freeCandidates?.free_candidates || {},
+      route_decision_traces: {
+        count: Number(decisionTraces?.count || 0),
+        summary: decisionTraces?.summary || {},
+      },
       flagged_provider_models: flaggedModels,
     };
 
@@ -132,6 +143,24 @@ export async function refreshRouterPanel() {
       budgetPill.className = `pill ${tone}`;
     }
 
+    const backendPill = $("routerBackendPill");
+    if (backendPill) {
+      const byBackend = decisionTraces?.summary?.by_backend || {};
+      const pairs = Object.entries(byBackend).sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0));
+      const compactMix = pairs.slice(0, 3).map(([k, v]) => `${k}:${v}`).join(" ");
+      backendPill.textContent = `backend mix: ${compactMix || "n/a"}`;
+      backendPill.className = `pill ${pairs.length > 0 ? "ok" : "warn"}`;
+    }
+
+    const taskPill = $("routerTaskPill");
+    if (taskPill) {
+      const byTaskType = decisionTraces?.summary?.by_task_type || {};
+      const pairs = Object.entries(byTaskType).sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0));
+      const compactMix = pairs.slice(0, 3).map(([k, v]) => `${k}:${v}`).join(" ");
+      taskPill.textContent = `tasks: ${compactMix || "n/a"}`;
+      taskPill.className = `pill ${pairs.length > 0 ? "ok" : "warn"}`;
+    }
+
     const manualCandidates = freeCandidates?.free_candidates || {};
     const candidateCount = Number(manualCandidates?.candidate_count || (manualCandidates?.candidates || []).length || 0);
     const activeCount = Array.isArray(manualCandidates?.active_ids) ? manualCandidates.active_ids.length : 0;
@@ -150,10 +179,12 @@ export async function refreshRouterPanel() {
 
     panel.textContent = JSON.stringify(snapshot, null, 2);
     setRouterManualSnapshot(freeCandidates || {});
+    setRouterDecisionSnapshot(decisionTraces || {});
     updateBudgetBannerFromSnapshot(budget, setBudgetBanner);
   } catch (e) {
     panel.textContent = JSON.stringify({ error: e.message }, null, 2);
     setRouterManualSnapshot({ error: e.message });
+    setRouterDecisionSnapshot({ error: e.message });
     setBudgetBanner("");
   }
 }
@@ -205,6 +236,7 @@ export function wireRouterDomain() {
   $("btnRouterRefresh")?.addEventListener("click", refreshRouterPanel);
   $("btnRouterCatalogRefresh")?.addEventListener("click", refreshOpenRouterCatalog);
   $("btnRouterFreeCandidatesRefresh")?.addEventListener("click", refreshOpenRouterFreeCandidates);
+  $("btnRouterDecisionTraceRefresh")?.addEventListener("click", refreshRouterPanel);
   $("btnRouterDiscoverFree")?.addEventListener("click", () => discoverOpenRouterFreeCandidates());
   $("btnRouterClearActive")?.addEventListener("click", () => discoverOpenRouterFreeCandidates({
     activate_top_n: 0,

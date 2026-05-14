@@ -11,6 +11,8 @@ const VERSIONS = {
   policies: "",
 };
 
+let CURATED_ROWS = [];
+
 function selectedResource() {
   return $("govResource")?.value || "models";
 }
@@ -37,6 +39,15 @@ function parseEditorDoc() {
   const parsed = JSON.parse(raw);
   if (!parsed || typeof parsed !== "object") throw new Error("governance document must be a JSON object");
   return parsed;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function renderAudit(rows) {
@@ -67,6 +78,126 @@ function renderAudit(rows) {
   }
 }
 
+function curatedFilters() {
+  return {
+    provider: $("curatedProviderFilter")?.value?.trim() || "",
+    bucket: $("curatedBucketFilter")?.value?.trim() || "",
+    search: $("curatedSearch")?.value?.trim() || "",
+    enabled_only: !!$("curatedEnabledOnly")?.checked,
+  };
+}
+
+function renderCuratedRows(rows) {
+  const body = $("curatedModelsBody");
+  if (!body) return;
+
+  CURATED_ROWS = Array.isArray(rows) ? rows : [];
+  if (!CURATED_ROWS.length) {
+    body.innerHTML = '<tr><td colspan="7" class="muted">No curated model rows found for current filters.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = CURATED_ROWS.map((row, idx) => {
+    const backendEditable = String(row?.provider || "") === "local";
+    const runtime = row?.runtime || {};
+    const runtimeText = [
+      runtime?.promotion_state ? `state=${runtime.promotion_state}` : null,
+      `f24=${Number(runtime?.failure_count_24h || 0)}`,
+      `f7d=${Number(runtime?.failure_count_7d || 0)}`,
+      runtime?.disabled_until_manual_review ? "manual_review=true" : null,
+      runtime?.exclude_from_free_rotation ? "excluded=true" : null,
+    ].filter(Boolean).join(" | ");
+    const currentPriority = Number.isFinite(Number(row?.priority)) ? String(Number(row.priority)) : "";
+
+    return `
+      <tr data-curated-row="${idx}">
+        <td>${escapeHtml(String(row?.provider || "-"))}/${escapeHtml(String(row?.bucket || "-"))}</td>
+        <td>
+          <div class="mono">${escapeHtml(String(row?.model_id || "-"))}</div>
+          <div class="muted">${escapeHtml(String(row?.label || ""))}</div>
+        </td>
+        <td><input type="checkbox" data-curated-field="enabled" ${row?.enabled ? "checked" : ""} /></td>
+        <td><input data-curated-field="priority" type="number" step="1" value="${escapeHtml(currentPriority)}" style="max-width:100px" /></td>
+        <td><input data-curated-field="backend" value="${escapeHtml(String(row?.backend || ""))}" ${backendEditable ? "" : "disabled"} style="max-width:170px" /></td>
+        <td class="mono">${escapeHtml(runtimeText || "-")}</td>
+        <td><button data-curated-apply="${idx}">Apply</button></td>
+      </tr>
+    `;
+  }).join("");
+
+  body.querySelectorAll("button[data-curated-apply]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.getAttribute("data-curated-apply") || "-1");
+      applyCuratedRowUpdate(idx);
+    });
+  });
+}
+
+async function refreshCuratedModelRows() {
+  const body = $("curatedModelsBody");
+  if (!body) return;
+
+  try {
+    const filters = curatedFilters();
+    const params = new URLSearchParams();
+    if (filters.provider) params.set("provider", filters.provider);
+    if (filters.bucket) params.set("bucket", filters.bucket);
+    if (filters.search) params.set("search", filters.search);
+    if (filters.enabled_only) params.set("enabled_only", "true");
+    params.set("limit", "400");
+
+    const res = await api(`/providers/models/curated-summary?${params.toString()}`);
+    renderCuratedRows(Array.isArray(res?.rows) ? res.rows : []);
+  } catch (e) {
+    body.innerHTML = `<tr><td colspan="7" class="muted">${escapeHtml(e.message || "Failed to load curated rows")}</td></tr>`;
+  }
+}
+
+async function applyCuratedRowUpdate(index) {
+  const row = CURATED_ROWS[index];
+  if (!row) return;
+
+  const actor = $("govActor")?.value?.trim() || "webui";
+  const reason = $("govReason")?.value?.trim() || "";
+  if (!reason) {
+    setOut({ error: "reason is required for curated model updates" });
+    return;
+  }
+
+  const tr = document.querySelector(`tr[data-curated-row="${index}"]`);
+  if (!tr) return;
+
+  const enabled = !!tr.querySelector('[data-curated-field="enabled"]')?.checked;
+  const priorityRaw = tr.querySelector('[data-curated-field="priority"]')?.value?.trim() || "";
+  const priority = priorityRaw ? Number(priorityRaw) : null;
+  const backendRaw = tr.querySelector('[data-curated-field="backend"]')?.value?.trim() || "";
+
+  const payload = {
+    provider: row.provider,
+    bucket: row.bucket,
+    model_id: row.model_id,
+    enabled,
+    priority: Number.isFinite(priority) ? Number(priority) : null,
+    reason,
+    actor,
+  };
+  if (String(row.provider) === "local") {
+    payload.backend = backendRaw || null;
+  }
+
+  try {
+    setOut({ running: true, action: "curated_model_update", payload });
+    const result = await api("/providers/models/curated-entry", {
+      method: "POST",
+      body: payload,
+    });
+    setOut(result);
+    await refreshGovernancePanel();
+  } catch (e) {
+    setOut({ error: e.message, action: "curated_model_update", payload });
+  }
+}
+
 export async function refreshGovernancePanel() {
   try {
     const [modelsRes, policiesRes, stateRes] = await Promise.all([
@@ -85,6 +216,7 @@ export async function refreshGovernancePanel() {
 
     const state = stateRes?.state || {};
     renderAudit(state?.governance_audit || []);
+    await refreshCuratedModelRows();
   } catch (e) {
     setOut({ error: e.message, action: "governance_refresh" });
   }
@@ -203,6 +335,17 @@ export function wireGovernanceDomain() {
   $("btnGovApply")?.addEventListener("click", () => governanceWrite(false));
   $("btnGovRollback")?.addEventListener("click", governanceRollback);
   $("btnGovApplyFlags")?.addEventListener("click", applyProviderFlags);
+  $("btnCuratedRefresh")?.addEventListener("click", refreshCuratedModelRows);
+
+  ["curatedProviderFilter", "curatedBucketFilter", "curatedEnabledOnly"].forEach((id) => {
+    $(id)?.addEventListener("change", refreshCuratedModelRows);
+  });
+  $("curatedSearch")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      refreshCuratedModelRows();
+    }
+  });
 
   refreshGovernancePanel();
 }

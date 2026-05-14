@@ -495,9 +495,9 @@ Projects that call llm-manager should not need direct provider API keys if llm-m
 
 ## Implementation progress snapshot
 
-As of 2026-05-09:
-- overall completion estimate: about 95%
-- status note: this update reflects completion of TGW WebUI slot decoupling and managed EXL2 conversion metadata integration.
+As of 2026-05-14:
+- overall completion estimate: about 97%
+- status note: this update reflects completion of curated admin/operator controls, route decision trace expansion, and merged-source EXL2 closeout validation.
 - core provider-router architecture is implemented and running in production code paths
 - router broker endpoints are implemented: `POST /router/chat`, `POST /router/completions`, `POST /router/embed`
 - provider adapters are implemented for local, OpenRouter, and OpenAI
@@ -506,6 +506,7 @@ As of 2026-05-09:
 - OpenRouter free-tier controls are implemented: upstream free enforcement, cooldown/failure handling, local limiter, queue overflow policies, and priority-aware queue scheduling
 - observability endpoints are implemented: health, last decisions, usage summary, queue state, fallback stats, budget state
 - governance endpoints for models/policies and rollback are implemented
+- curated quick-admin endpoints are implemented for targeted operator edits (`GET /providers/models/curated-summary`, `POST /providers/models/curated-entry`)
 - OpenRouter catalog refresh and manual free-candidate discovery endpoints are implemented
 - missing high-value planned endpoints are now implemented: `POST /router/route-test`, `POST /providers/policies/test`, `GET /providers/openrouter/rate-limit-state`
 - per-project policy overrides are implemented in routing policy resolution (`project_overrides` in policy config + request `project_id`/metadata)
@@ -514,8 +515,11 @@ As of 2026-05-09:
 - OpenRouter discovery polish is implemented for richer ranking persistence (`top_weekly_rank`, `category_ranks`) and lifecycle/smoke evidence surfacing on candidate payloads
 - local evaluation/evaluation-queue framework is implemented and integrated into runtime state and dashboard
 - managed EXL2 conversion endpoints and metadata persistence are implemented (`/conversions/exl2/*`, `conversion_runs`, `conversion_artifacts`)
+- managed EXL2 now supports both HF and merged-local sources (`source_type=huggingface_repo|merged_local_model`) with shared run/artifact observability
+- conversion metadata now includes tokenizer and chat-template preservation checks for instruct safety validation
 - converted artifact metadata now surfaces in catalog/inspection responses (`/models`, `/providers/models`) and syncs into `local.converted_models`
 - TGW slot launch path is explicitly decoupled from WebUI toggles (slot services force `--no-webui`)
+- route decision tracing now includes task-policy context fields (`task_type`, `strategy_source`, `policy_context`) and compact operator endpoint `GET /router/decision-traces`
 
 ## Phase status summary (2026-05-14)
 
@@ -524,7 +528,7 @@ As of 2026-05-09:
 - Phase 2 (curated routing + manual selection + limiter/queue): complete for current scope.
 - Phase 3 (automatic OpenRouter free cycling): complete for current scope, including smoke-tested auto-promotion and lifecycle/quarantine-retirement flows.
 - Phase 4 (cross-provider fallback): complete for strategy-chain routing and inspection endpoints.
-- Phase 5 (cost/quota/governance): partially complete; usage/spend/budget guardrails, per-project and per-task-type overrides, retention/audit controls, managed EXL2 conversion metadata, and lane-sufficiency reporting are live.
+- Phase 5 (cost/quota/governance): mostly complete for current scope; usage/spend/budget guardrails, per-project and per-task-type overrides, retention/audit controls, managed EXL2 conversion metadata, lane-sufficiency reporting, and curated admin/operator controls are live.
 
 ## Remaining high-impact gaps
 
