@@ -174,6 +174,7 @@ Process/service environment commonly used in deployment:
 | GET | `/providers/models` | Read provider model catalog config |
 | GET | `/providers/policies` | Read provider policy config |
 | GET | `/providers/state` | Read provider runtime state scaffold |
+| GET | `/providers/retention-state` | Inspect effective retention controls and current audit/history row counts |
 | POST | `/providers/state/provider-model-flags` | Update provider-model manual-review and free-rotation flags |
 | PUT | `/providers/models` | Validate/apply provider model governance document |
 | POST | `/providers/models/rollback` | Roll back provider model document to last good snapshot |
@@ -278,6 +279,7 @@ Notes:
 - `/router/chat` now performs real adapter-backed provider dispatch with policy-chain fallback
 - `/router/completions` and `/router/embed` use the same policy-chain dispatch path
 - Routing policy now supports task-specific overrides via `task_overrides.chat|completion|embed` and per-project task overrides under `project_overrides.<project>.task_overrides.*`
+- Routing policy now supports retention controls under `retention` for request/usage/spend/governance log caps, budget-history windows, and lifecycle failure/promotion history depth
 - Routed chat and completions requests support `no_thinking=true`; for local provider dispatch this maps to `enable_thinking=false`
 - OpenRouter free-tier requests are protectively throttled by a local rpm limiter and provider-model cooldown tracking
 - `POST /providers/openrouter/refresh` updates a cached upstream OpenRouter catalog and free-model set for hardened free-tier cycling, and can enrich the cache with rankings using `include_rankings=true`

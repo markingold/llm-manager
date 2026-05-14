@@ -108,8 +108,11 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
   - Returns routing and policy config from config/provider_policies.json
   - Includes deterministic document version hash for optimistic concurrency
   - Supports optional task-scoped overrides under `task_overrides.chat|completion|embed`
+  - Supports optional retention controls under `retention` for router audit logs, spend history, and lifecycle failure history
 - GET /providers/state
   - Returns provider runtime state scaffold from run/state/provider_runtime_state.json
+- GET /providers/retention-state
+  - Returns effective retention settings plus current counts for request, usage, spend, governance, and provider lifecycle history rows
 - POST /providers/state/provider-model-flags
   - Updates provider-model flags for manual review and free-rotation control
   - Body: { model_key, disabled_until_manual_review?, exclude_from_free_rotation?, reason, actor }

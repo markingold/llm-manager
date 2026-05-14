@@ -70,6 +70,7 @@ WebUI overhaul status:
 - [x] Add per-project routing policy overrides. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
 - [x] Add per-task-type routing policy overrides for chat, completion, and embed. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (`task_overrides` + `project_overrides.<project>.task_overrides`)
 - [x] Add budget guardrails for paid routing. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
+- [x] Add longer-horizon retention and audit controls for router/governance/lifecycle history. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (`retention` policy config + `/providers/retention-state`)
 - [x] Report whether a cheaper model lane is already sufficient for a task. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/EVALUATION_PLAN.md_ (`/router/lane-sufficiency-report` + dashboard lane sufficiency panel)
 
 ## Parking Lot

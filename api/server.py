@@ -101,6 +101,17 @@ DEFAULT_PROVIDER_POLICIES = {
         "best_available": ["local", "openrouter.paid", "openai", "openrouter.free"],
         "strict_provider": [],
     },
+    "retention": {
+        "request_logs_max": 200,
+        "usage_logs_max": 1000,
+        "spend_logs_max": 2000,
+        "governance_audit_max": 500,
+        "failure_events_max": 500,
+        "failure_events_retention_days": 30,
+        "promotion_transitions_max": 50,
+        "budget_daily_history_days": 60,
+        "budget_monthly_history_months": 24,
+    },
     "task_overrides": {},
     "project_overrides": {},
 }
@@ -669,15 +680,76 @@ def _validate_provider_policies_document(doc: dict):
     if providers is None:
         errors.append("budget.providers must be an object")
 
+    retention = doc.get("retention", {})
+    if retention is not None and not isinstance(retention, dict):
+        errors.append("retention must be an object when provided")
+    if isinstance(retention, dict):
+        retention_int_fields = {
+            "request_logs_max": 1,
+            "usage_logs_max": 1,
+            "spend_logs_max": 1,
+            "governance_audit_max": 1,
+            "failure_events_max": 1,
+            "failure_events_retention_days": 8,
+            "promotion_transitions_max": 1,
+            "budget_daily_history_days": 1,
+            "budget_monthly_history_months": 1,
+        }
+        for field, min_value in retention_int_fields.items():
+            if field not in retention:
+                continue
+            raw = retention.get(field)
+            if isinstance(raw, bool):
+                errors.append(f"retention.{field} must be an integer >= {min_value}")
+                continue
+            try:
+                value = int(raw)
+            except Exception:
+                errors.append(f"retention.{field} must be an integer >= {min_value}")
+                continue
+            if value < min_value:
+                errors.append(f"retention.{field} must be >= {min_value}")
+
     if errors:
         raise HTTPException(422, {"errors": errors})
 
 
+def _retention_int(raw_value, default: int, minimum: int = 1, maximum: int = 100000) -> int:
+    if isinstance(raw_value, bool):
+        return default
+    try:
+        value = int(raw_value)
+    except Exception:
+        return default
+    if value < minimum:
+        return minimum
+    if value > maximum:
+        return maximum
+    return value
+
+
+def _retention_policy_settings(policies: dict | None = None) -> dict:
+    policy_doc = policies if isinstance(policies, dict) else read_provider_policies()
+    retention = policy_doc.get("retention", {}) if isinstance(policy_doc.get("retention"), dict) else {}
+    return {
+        "request_logs_max": _retention_int(retention.get("request_logs_max", MAX_REQUEST_LOGS), MAX_REQUEST_LOGS, 1, 100000),
+        "usage_logs_max": _retention_int(retention.get("usage_logs_max", MAX_USAGE_LOGS), MAX_USAGE_LOGS, 1, 200000),
+        "spend_logs_max": _retention_int(retention.get("spend_logs_max", MAX_SPEND_LOGS), MAX_SPEND_LOGS, 1, 500000),
+        "governance_audit_max": _retention_int(retention.get("governance_audit_max", MAX_GOVERNANCE_AUDIT), MAX_GOVERNANCE_AUDIT, 1, 500000),
+        "failure_events_max": _retention_int(retention.get("failure_events_max", 500), 500, 1, 100000),
+        "failure_events_retention_days": _retention_int(retention.get("failure_events_retention_days", 30), 30, 8, 3650),
+        "promotion_transitions_max": _retention_int(retention.get("promotion_transitions_max", 50), 50, 1, 100000),
+        "budget_daily_history_days": _retention_int(retention.get("budget_daily_history_days", 60), 60, 1, 3650),
+        "budget_monthly_history_months": _retention_int(retention.get("budget_monthly_history_months", 24), 24, 1, 600),
+    }
+
+
 def _append_governance_audit(entry: dict):
     state = read_provider_runtime_state()
+    retention = _retention_policy_settings()
     rows = state.get("governance_audit", []) if isinstance(state.get("governance_audit"), list) else []
     rows.append(entry)
-    state["governance_audit"] = rows[-MAX_GOVERNANCE_AUDIT:]
+    state["governance_audit"] = rows[-retention["governance_audit_max"]:]
     write_provider_runtime_state(state)
     return {
         "ts": entry.get("ts"),
@@ -830,13 +902,14 @@ def _governance_rollback(resource: str, target_path: Path, current_doc: dict, ex
     }
 
 
-def _append_router_decision(decision: dict):
+def _append_router_decision(decision: dict, policies: dict | None = None):
     state = read_provider_runtime_state()
+    retention = _retention_policy_settings(policies)
     logs = state.get("request_logs", [])
     if not isinstance(logs, list):
         logs = []
     logs.append(decision)
-    state["request_logs"] = logs[-MAX_REQUEST_LOGS:]
+    state["request_logs"] = logs[-retention["request_logs_max"]:]
 
     usage = state.get("usage_logs", [])
     if not isinstance(usage, list):
@@ -852,7 +925,7 @@ def _append_router_decision(decision: dict):
         "total_tokens": decision.get("usage", {}).get("total_tokens", 0),
         "estimated_cost_usd": decision.get("estimated_cost_usd"),
     })
-    state["usage_logs"] = usage[-MAX_USAGE_LOGS:]
+    state["usage_logs"] = usage[-retention["usage_logs_max"]:]
     write_provider_runtime_state(state)
 
 
@@ -865,6 +938,7 @@ def _set_promotion_state_on_row(row: dict, new_state: str, reason: str = "", act
     ts = str(at_ts or (datetime.utcnow().isoformat() + "Z"))
     prev = str(row.get("promotion_state", "") or "")
     if prev != state:
+        retention = _retention_policy_settings()
         transitions = row.get("promotion_transitions", [])
         if not isinstance(transitions, list):
             transitions = []
@@ -875,17 +949,37 @@ def _set_promotion_state_on_row(row: dict, new_state: str, reason: str = "", act
             "reason": reason or None,
             "actor": actor,
         })
-        row["promotion_transitions"] = transitions[-50:]
+        row["promotion_transitions"] = transitions[-retention["promotion_transitions_max"]:]
     row["promotion_state"] = state
     row["promotion_state_updated_ts"] = ts
     if reason:
         row["promotion_state_reason"] = reason
 
 
-def _prune_failure_events(events: list[dict], now_ts: float | None = None) -> list[dict]:
+def _prune_failure_events(
+    events: list[dict],
+    now_ts: float | None = None,
+    retention_days: int | None = None,
+    max_events: int | None = None,
+) -> list[dict]:
     rows = events if isinstance(events, list) else []
     now_epoch = float(now_ts or time.time())
-    keep_cutoff = now_epoch - (FAILURE_WINDOW_7D_SECONDS + FAILURE_WINDOW_24H_SECONDS)
+    retention = _retention_policy_settings()
+    keep_days_default = retention["failure_events_retention_days"]
+    keep_max_default = retention["failure_events_max"]
+    keep_days = keep_days_default
+    keep_max = keep_max_default
+    try:
+        if retention_days is not None:
+            keep_days = max(1, int(retention_days))
+    except Exception:
+        keep_days = keep_days_default
+    try:
+        if max_events is not None:
+            keep_max = max(1, int(max_events))
+    except Exception:
+        keep_max = keep_max_default
+    keep_cutoff = now_epoch - (keep_days * 24 * 60 * 60)
     out = []
     for row in rows:
         if not isinstance(row, dict):
@@ -895,7 +989,7 @@ def _prune_failure_events(events: list[dict], now_ts: float | None = None) -> li
             continue
         if ts.timestamp() >= keep_cutoff:
             out.append(row)
-    return out[-500:]
+    return out[-keep_max:]
 
 
 def _failure_window_counts(row: dict, now_ts: float | None = None) -> dict[str, int]:
@@ -1484,13 +1578,22 @@ def _estimate_request_cost_usd(provider_models: dict, provider: str, model: str,
     return round(total, 8)
 
 
-def _record_spend(provider: str, lane: str, model: str, amount_usd: float, request_id: str, strategy: str):
+def _record_spend(
+    provider: str,
+    lane: str,
+    model: str,
+    amount_usd: float,
+    request_id: str,
+    strategy: str,
+    policies: dict | None = None,
+):
     if amount_usd is None:
         return
     amount = float(amount_usd)
     if amount <= 0:
         return
 
+    retention = _retention_policy_settings(policies)
     state = read_provider_runtime_state()
     budget_state = state.get("budget_state", {}) if isinstance(state.get("budget_state"), dict) else {}
     daily = budget_state.get("daily", {}) if isinstance(budget_state.get("daily"), dict) else {}
@@ -1521,11 +1624,13 @@ def _record_spend(provider: str, lane: str, model: str, amount_usd: float, reque
     monthly[month_key] = mon_row
 
     # Keep recent windows only.
-    if len(daily) > 60:
-        for k in sorted(daily.keys())[:-60]:
+    daily_keep = retention["budget_daily_history_days"]
+    monthly_keep = retention["budget_monthly_history_months"]
+    if len(daily) > daily_keep:
+        for k in sorted(daily.keys())[:-daily_keep]:
             daily.pop(k, None)
-    if len(monthly) > 24:
-        for k in sorted(monthly.keys())[:-24]:
+    if len(monthly) > monthly_keep:
+        for k in sorted(monthly.keys())[:-monthly_keep]:
             monthly.pop(k, None)
 
     lifetime = round(float(budget_state.get("lifetime_total_usd", 0.0) or 0.0) + amount, 8)
@@ -1545,7 +1650,7 @@ def _record_spend(provider: str, lane: str, model: str, amount_usd: float, reque
         "strategy": strategy,
         "amount_usd": amount,
     })
-    state["spend_logs"] = spend_logs[-MAX_SPEND_LOGS:]
+    state["spend_logs"] = spend_logs[-retention["spend_logs_max"]:]
     write_provider_runtime_state(state)
 
 
@@ -4686,6 +4791,65 @@ def providers_state():
     }
 
 
+@app.get("/providers/retention-state")
+def providers_retention_state():
+    policies = read_provider_policies()
+    state = read_provider_runtime_state()
+    retention = _retention_policy_settings(policies)
+
+    request_logs = state.get("request_logs", []) if isinstance(state.get("request_logs"), list) else []
+    usage_logs = state.get("usage_logs", []) if isinstance(state.get("usage_logs"), list) else []
+    spend_logs = state.get("spend_logs", []) if isinstance(state.get("spend_logs"), list) else []
+    governance_audit = state.get("governance_audit", []) if isinstance(state.get("governance_audit"), list) else []
+    provider_model_state = state.get("provider_model_state", {}) if isinstance(state.get("provider_model_state"), dict) else {}
+
+    failure_events_total = 0
+    promotion_transitions_total = 0
+    models_with_failure_events = 0
+    models_with_transitions = 0
+    for row in provider_model_state.values():
+        if not isinstance(row, dict):
+            continue
+        failure_events = row.get("failure_events", []) if isinstance(row.get("failure_events"), list) else []
+        transitions = row.get("promotion_transitions", []) if isinstance(row.get("promotion_transitions"), list) else []
+        if failure_events:
+            models_with_failure_events += 1
+            failure_events_total += len(failure_events)
+        if transitions:
+            models_with_transitions += 1
+            promotion_transitions_total += len(transitions)
+
+    def _first_ts(rows: list[dict]) -> str | None:
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            ts = str(row.get("ts", "") or "").strip()
+            if ts:
+                return ts
+        return None
+
+    return {
+        "ok": True,
+        "time": datetime.utcnow().isoformat() + "Z",
+        "retention": retention,
+        "counts": {
+            "request_logs": len(request_logs),
+            "usage_logs": len(usage_logs),
+            "spend_logs": len(spend_logs),
+            "governance_audit": len(governance_audit),
+            "provider_model_rows": len(provider_model_state),
+            "failure_events_total": failure_events_total,
+            "promotion_transitions_total": promotion_transitions_total,
+            "models_with_failure_events": models_with_failure_events,
+            "models_with_transitions": models_with_transitions,
+            "oldest_request_ts": _first_ts(request_logs),
+            "oldest_usage_ts": _first_ts(usage_logs),
+            "oldest_spend_ts": _first_ts(spend_logs),
+            "oldest_governance_audit_ts": _first_ts(governance_audit),
+        },
+    }
+
+
 @app.post("/providers/state/provider-model-flags")
 def providers_model_flags_update(req: ProviderModelFlagsReq):
     if not str(req.reason or "").strip():
@@ -5175,8 +5339,9 @@ def router_chat(req: RouterChatRequest):
         amount_usd=float(est_cost or 0.0),
         request_id=str(decision["request_id"]),
         strategy=str(strategy),
+        policies=policies,
     )
-    _append_router_decision(decision)
+    _append_router_decision(decision, policies=policies)
 
     return RouterChatResponse(
         id=f"router-{decision['request_id']}",
@@ -5353,8 +5518,9 @@ def router_completions(req: RouterCompletionRequest):
         amount_usd=float(est_cost or 0.0),
         request_id=str(decision["request_id"]),
         strategy=str(strategy),
+        policies=policies,
     )
-    _append_router_decision(decision)
+    _append_router_decision(decision, policies=policies)
 
     return RouterCompletionResponse(
         id=f"router-{decision['request_id']}",
@@ -5527,8 +5693,9 @@ def router_embed(req: RouterEmbedRequest):
         amount_usd=float(est_cost or 0.0),
         request_id=str(decision["request_id"]),
         strategy=str(strategy),
+        policies=policies,
     )
-    _append_router_decision(decision)
+    _append_router_decision(decision, policies=policies)
 
     return RouterEmbedResponse(
         id=f"router-{decision['request_id']}",

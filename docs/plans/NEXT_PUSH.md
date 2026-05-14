@@ -1,6 +1,6 @@
 <!--
 id: PLAN-NEXT-PUSH
-version: 1.2
+version: 1.3
 last_updated: 2026-05-14
 title: Next Push Recommendations
 purpose:
@@ -23,9 +23,13 @@ Completed items from the locked queue:
 - item 2: per-task-type policy overrides (`chat`, `completion`, `embed`) are now implemented in strategy and lane-chain resolution
   - policy schema now supports `task_overrides` at global and `project_overrides.<project>.task_overrides` scopes
   - task-aware diagnostics now supported in `POST /providers/policies/test` and `POST /router/route-test`
+- item 3: retention and audit controls are now implemented for longer-horizon routing audit and lifecycle/failure history
+  - policy schema now supports configurable `retention` controls in `config/provider_policies.json`
+  - runtime retention controls now govern request/usage/spend/governance history windows and lifecycle failure/promotion history depth
+  - API endpoint added: `GET /providers/retention-state`
 
 Next queued item:
-- item 3: retention and audit controls
+- item 4: OpenRouter discovery polish
 
 ## Implementation update (2026-05-09)
 
@@ -68,7 +72,7 @@ Interpretation:
 2. [x] Per-task-type policy overrides
 - Add policy overrides by task type (`chat`, `completion`, `embed`) in addition to project defaults.
 
-3. [ ] Retention and audit controls
+3. [x] Retention and audit controls
 - Add longer-horizon routing audit retention and lifecycle/failure-history retention controls.
 
 4. [ ] OpenRouter discovery polish
@@ -102,7 +106,7 @@ Interpretation:
 
 Push 1:
 - route-decision traces expanded with task-type policy context
-- lifecycle evidence and retention controls
+- OpenRouter discovery evidence surfacing (`top_weekly_rank`, `category_ranks`, smoke evidence)
 - docs update for retention and audit operations
 
 Push 2:

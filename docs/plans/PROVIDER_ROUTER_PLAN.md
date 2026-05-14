@@ -510,6 +510,7 @@ As of 2026-05-09:
 - missing high-value planned endpoints are now implemented: `POST /router/route-test`, `POST /providers/policies/test`, `GET /providers/openrouter/rate-limit-state`
 - per-project policy overrides are implemented in routing policy resolution (`project_overrides` in policy config + request `project_id`/metadata)
 - per-task-type policy overrides are implemented for `chat`, `completion`, and `embed` across strategy and lane-chain resolution (`task_overrides` + `project_overrides.<project>.task_overrides`)
+- retention and audit controls are implemented for longer-horizon router/governance history and lifecycle/failure history (`retention` policy config + `/providers/retention-state`)
 - local evaluation/evaluation-queue framework is implemented and integrated into runtime state and dashboard
 - managed EXL2 conversion endpoints and metadata persistence are implemented (`/conversions/exl2/*`, `conversion_runs`, `conversion_artifacts`)
 - converted artifact metadata now surfaces in catalog/inspection responses (`/models`, `/providers/models`) and syncs into `local.converted_models`
@@ -522,12 +523,11 @@ As of 2026-05-09:
 - Phase 2 (curated routing + manual selection + limiter/queue): complete for current scope.
 - Phase 3 (automatic OpenRouter free cycling): complete for current scope, including smoke-tested auto-promotion and lifecycle/quarantine-retirement flows.
 - Phase 4 (cross-provider fallback): complete for strategy-chain routing and inspection endpoints.
-- Phase 5 (cost/quota/governance): partially complete; usage/spend/budget guardrails, per-project and per-task-type overrides, managed EXL2 conversion metadata, and lane-sufficiency reporting are live.
+- Phase 5 (cost/quota/governance): partially complete; usage/spend/budget guardrails, per-project and per-task-type overrides, retention/audit controls, managed EXL2 conversion metadata, and lane-sufficiency reporting are live.
 
 ## Remaining high-impact gaps
 
 - Add cost-aware dynamic model ranking within a strategy (beyond fixed lane order).
-- Add longer-horizon routing audit and retention controls beyond the current recent-decision window.
 
 ## Phase 0: shape the config and data model
 
@@ -573,6 +573,7 @@ As of 2026-05-09:
 4. Add per-task-type policy overrides for `chat`, `completion`, and `embed` in addition to per-project defaults. (implemented)
 5. Add optional budget guardrails for paid routing.
 6. Add model-lane sufficiency reporting so you can tell when a cheaper tier is already good enough for a task. (implemented via `/router/lane-sufficiency-report` and dashboard panel)
+7. Add longer-horizon retention and audit controls for router/governance/lifecycle history. (implemented via `retention` policy config and `/providers/retention-state`)
 
 ## Summary recommendation
 
