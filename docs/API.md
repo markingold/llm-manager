@@ -138,7 +138,7 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
 - POST /providers/policies/test
   - Evaluates effective routing policy resolution for a probe request
   - Supports task-aware and project-aware policy testing via `task_type`, `project_id`, and `provider_preferences`
-  - Includes `strategy_resolution`, `chain_resolution`, and `policy_context` so operators can verify resolved strategy, chain source, service-tier influence, and fallback normalization
+  - Includes `strategy_resolution`, `chain_resolution`, and `policy_context` so operators can verify resolved strategy, chain source, strict-provider task constraints, service-tier influence, and fallback normalization
 - POST /providers/openrouter/refresh
   - Fetches upstream OpenRouter model metadata and updates runtime cache including detected free model ids
   - Query: include_rankings=true optionally scrapes OpenRouter rankings into the same cache for popularity-aware discovery
@@ -181,7 +181,7 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
   - Decision records include deterministic `attempt_trace` and `fallback_summary` fields for incident triage, plus typed dispatch reason codes
 - POST /router/route-test
   - Dry-run route resolution utility that returns strategy, candidate chain, selected models per lane, and cooldown/lifecycle hints
-  - Includes `strategy_resolution`, `chain_resolution`, and `policy_context` for deterministic strategy-source, chain-source, and service-tier inspection
+  - Includes `strategy_resolution`, `chain_resolution`, and `policy_context` for deterministic strategy-source, chain-source, strict-provider task-constraint, and service-tier inspection
   - Optional `execute_first=true` runs a lightweight execution against the first eligible candidate for validation
 - GET /router/health
   - Router config load status plus recent decision-log signal

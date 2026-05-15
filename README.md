@@ -292,6 +292,7 @@ Notes:
 - OpenRouter discovery candidates now persist richer ranking fields (`top_weekly_rank`, `category_ranks`) when available
 - OpenRouter discovery candidate payloads now surface lifecycle and smoke evidence (`recent_promotion_transitions`, `recent_smoke_checks`, `lifecycle_evidence`)
 - Router decision logs now include task-policy trace context (`task_type`, `strategy_source`, `policy_context`) and are summarized via `GET /router/decision-traces`
+- `strict_provider` routing now enforces task-type lane constraints (for example embed routes do not use `openrouter.free`) and surfaces constraint context in `chain_resolution` and `policy_context`
 - Router decision logs now include deterministic fallback visibility (`attempt_trace`, `fallback_summary`) and failed route attempts are also persisted for incident review
 - Router attempt traces now include typed dispatch reason codes (`dispatch_rate_limited`, `dispatch_auth_error`, etc.) and provider-block skip reasons after auth failures
 - `GET /router/decision-traces` summary now includes `by_reason_code` and `with_selected_fallback` counters for deterministic fallback analysis
@@ -307,7 +308,9 @@ Notes:
 - Dashboard now includes an Evaluation Ops panel showing queue health, latest reports, and suite rerun controls
 - Dashboard Evaluation now includes a Lane Sufficiency panel for comparing reference lanes vs cheaper sufficient lanes
 - Dashboard now includes a Router Ops panel for fallback health, budget state, free-tier queue pressure, provider model flags, route decision traces, and manual OpenRouter free-candidate discovery/activation
+- Router Ops now includes deterministic fallback reason and selected-fallback ratio pills for incident triage
 - Dashboard now includes a Provider Governance quick-admin grid for curated model enable/priority/backend updates
+- Provider Governance includes one-click `Rollback Last Good`; row-level one-click restore is available through Curated Model Quick Admin `Apply`
 - Dashboard Jobs now includes a Managed EXL2 panel for starting conversions from HF or merged-local sources and monitoring persisted runs/artifacts without direct API calls
 - Managed EXL2 artifacts now include tokenizer and chat-template preservation checks for conversion closeout audits
 - Local evaluation candidate_models now support mixed provider targets (for example `chat_active_model`, `openrouter:model_id`, `openai:model_id`)

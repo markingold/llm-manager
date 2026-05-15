@@ -3,6 +3,7 @@ from __future__ import annotations
 import os, json, subprocess, time, uuid, threading, signal, shutil, re, hashlib
 from pathlib import Path
 from datetime import datetime
+from urllib.parse import urlparse
 from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -56,11 +57,17 @@ LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 SUPPORTED_BACKENDS = {"tgw", "vllm", "tabbyapi"}
 DEFAULT_SLOT_BACKENDS = {"chat": "tgw", "intent": "tgw", "small": "tgw"}
+SLOT_DEFAULT_PORTS = {"chat": 8500, "intent": 8501, "small": 8502}
 SENSITIVE_ENV_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD")
 POLICY_TASK_TYPES = {"chat", "completion", "embed"}
 ROUTING_STRATEGIES = {"local_first", "free_first", "paid_first", "best_available", "strict_provider"}
 ROUTING_LANES = {"local", "openrouter.free", "openrouter.paid", "openai"}
 ROUTING_SERVICE_TIERS = {"default", "local", "low", "medium", "high"}
+STRICT_PROVIDER_TASK_ALLOWED_LANES = {
+    "chat": {"local", "openrouter.free", "openrouter.paid", "openai"},
+    "completion": {"local", "openrouter.free", "openrouter.paid", "openai"},
+    "embed": {"local", "openrouter.paid", "openai"},
+}
 
 DEFAULT_PROVIDER_MODELS = {
     "local": {"slots": []},
@@ -242,6 +249,15 @@ DEFAULTS = {
   "LLM_CHAT_API_BASE":   os.getenv("LLM_CHAT_API_BASE",   "http://127.0.0.1:8500"),
   "LLM_INTENT_API_BASE": os.getenv("LLM_INTENT_API_BASE", "http://127.0.0.1:8501"),
   "LLM_SMALL_API_BASE":  os.getenv("LLM_SMALL_API_BASE",  "http://127.0.0.1:8502"),
+    "LLM_CHAT_API_BASE_TGW": os.getenv("LLM_CHAT_API_BASE_TGW", ""),
+    "LLM_CHAT_API_BASE_VLLM": os.getenv("LLM_CHAT_API_BASE_VLLM", ""),
+    "LLM_CHAT_API_BASE_TABBYAPI": os.getenv("LLM_CHAT_API_BASE_TABBYAPI", ""),
+    "LLM_INTENT_API_BASE_TGW": os.getenv("LLM_INTENT_API_BASE_TGW", ""),
+    "LLM_INTENT_API_BASE_VLLM": os.getenv("LLM_INTENT_API_BASE_VLLM", ""),
+    "LLM_INTENT_API_BASE_TABBYAPI": os.getenv("LLM_INTENT_API_BASE_TABBYAPI", ""),
+    "LLM_SMALL_API_BASE_TGW": os.getenv("LLM_SMALL_API_BASE_TGW", ""),
+    "LLM_SMALL_API_BASE_VLLM": os.getenv("LLM_SMALL_API_BASE_VLLM", ""),
+    "LLM_SMALL_API_BASE_TABBYAPI": os.getenv("LLM_SMALL_API_BASE_TABBYAPI", ""),
   "SMART_ASSISTANT_URL": os.getenv("SMART_ASSISTANT_URL", "http://127.0.0.1:8100/command"),
   "CUDA_VISIBLE_DEVICES":os.getenv("CUDA_VISIBLE_DEVICES","0"),
   "PM2_CHAT":   os.getenv("PM2_CHAT",   "llm_chat"),
@@ -1907,6 +1923,10 @@ def _build_route_policy_context(
             "paid_allowed": bool(chain_ctx.get("paid_allowed", True)),
         },
         "strict_provider_target": chain_ctx.get("strict_provider_target"),
+        "strict_provider_task_allowed_lanes": list(chain_ctx.get("strict_provider_task_allowed_lanes", [])),
+        "strict_provider_task_constraint_applied": bool(chain_ctx.get("strict_provider_task_constraint_applied", False)),
+        "strict_provider_task_constraint_reason": chain_ctx.get("strict_provider_task_constraint_reason"),
+        "strict_provider_filter_relaxed": bool(chain_ctx.get("strict_provider_filter_relaxed", False)),
         "service_tier": chain_ctx.get("service_tier"),
         "service_tier_requested": chain_ctx.get("service_tier_requested"),
         "service_tier_source": chain_ctx.get("service_tier_source"),
@@ -1968,11 +1988,17 @@ def _candidate_chain_resolution(
 ) -> dict:
     defaults = effective_defaults if isinstance(effective_defaults, dict) else _effective_policy_defaults(req, policies)
     selection = effective_selection if isinstance(effective_selection, dict) else _effective_policy_selection(req, policies)
+    task_type = _normalize_task_type(getattr(req, "task_type", "chat"))
 
     free_only = _resolve_bool_pref(req.provider_preferences.free_only, bool(defaults.get("free_only", False)))
     paid_allowed = _resolve_bool_pref(req.provider_preferences.paid_allowed, bool(defaults.get("paid_allowed", True)))
 
     strict_target = None
+    strict_task_constraint_applied = False
+    strict_task_constraint_reason = None
+    strict_task_allowed_lanes = sorted(list(STRICT_PROVIDER_TASK_ALLOWED_LANES.get(task_type, ROUTING_LANES)))
+    strict_filter_relaxed = False
+
     if strategy == "strict_provider":
         strict_target = _normalize_preferred_provider_lane(
             req.provider_preferences.preferred_provider or defaults.get("preferred_provider", "local")
@@ -1984,6 +2010,22 @@ def _candidate_chain_resolution(
         else:
             raw_chain = ["local"]
         chain_source = f"strict_provider.{strict_target}"
+
+        if task_type == "embed" and strict_target in {"openrouter", "openrouter.free"}:
+            raw_chain = ["openrouter.paid"]
+            strict_task_constraint_applied = True
+            strict_task_constraint_reason = "embed_openrouter_paid_only"
+
+        task_allowed = STRICT_PROVIDER_TASK_ALLOWED_LANES.get(task_type, ROUTING_LANES)
+        task_filtered_chain = [lane for lane in raw_chain if lane in task_allowed]
+        if task_filtered_chain != raw_chain and not strict_task_constraint_reason:
+            strict_task_constraint_applied = True
+            strict_task_constraint_reason = f"task_type_lane_filter.{task_type}"
+        if task_filtered_chain:
+            raw_chain = task_filtered_chain
+
+        if strict_task_constraint_applied:
+            chain_source = f"{chain_source}.task_{task_type}"
     else:
         tier_ctx = _service_tier_chain(req, policies, effective_defaults=defaults)
         if bool(tier_ctx.get("applied", False)):
@@ -2009,17 +2051,30 @@ def _candidate_chain_resolution(
         if not paid_allowed and lane in {"openrouter.paid", "openai"}:
             continue
         filtered.append(lane)
-    filtered_chain = _normalize_candidate_chain(filtered) or ["local"]
+    filtered_chain = _normalize_candidate_chain(filtered)
+    if not filtered_chain:
+        if strategy == "strict_provider":
+            filtered_chain = _normalize_candidate_chain(normalized_chain) or ["local"]
+            strict_filter_relaxed = True
+            if not strict_task_constraint_reason:
+                strict_task_constraint_reason = "strict_provider_filter_relaxed"
+        else:
+            filtered_chain = ["local"]
 
     tier_ctx = _service_tier_chain(req, policies, effective_defaults=defaults)
     return {
         "strategy": strategy,
+        "task_type": task_type,
         "chain_source": chain_source,
         "normalized_chain": normalized_chain,
         "filtered_chain": filtered_chain,
         "free_only": free_only,
         "paid_allowed": paid_allowed,
         "strict_provider_target": strict_target,
+        "strict_provider_task_allowed_lanes": strict_task_allowed_lanes,
+        "strict_provider_task_constraint_applied": strict_task_constraint_applied,
+        "strict_provider_task_constraint_reason": strict_task_constraint_reason,
+        "strict_provider_filter_relaxed": strict_filter_relaxed,
         "service_tier": tier_ctx.get("service_tier"),
         "service_tier_requested": tier_ctx.get("requested"),
         "service_tier_source": tier_ctx.get("source"),
@@ -7691,6 +7746,10 @@ def _compact_router_decision(decision: dict) -> dict:
             "service_tier": policy_context.get("service_tier"),
             "service_tier_source": policy_context.get("service_tier_source"),
             "strict_provider_target": policy_context.get("strict_provider_target"),
+            "strict_provider_task_allowed_lanes": list(policy_context.get("strict_provider_task_allowed_lanes", [])),
+            "strict_provider_task_constraint_applied": bool(policy_context.get("strict_provider_task_constraint_applied", False)),
+            "strict_provider_task_constraint_reason": policy_context.get("strict_provider_task_constraint_reason"),
+            "strict_provider_filter_relaxed": bool(policy_context.get("strict_provider_filter_relaxed", False)),
             "project_override_applied": bool(policy_context.get("project_override_applied", False)),
             "global_task_override_applied": bool(policy_context.get("global_task_override_applied", False)),
             "project_task_override_applied": bool(policy_context.get("project_task_override_applied", False)),

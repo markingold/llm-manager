@@ -121,10 +121,10 @@ export async function refreshRouterPanel() {
 
     const fallbackPill = $("routerFallbackPill");
     if (fallbackPill) {
-      const rows = Array.isArray(fallback?.rows) ? fallback.rows : [];
-      const errors = rows.reduce((acc, row) => acc + Number(row?.errors || 0), 0);
-      fallbackPill.textContent = `fallbacks/errors: ${errors}`;
-      fallbackPill.className = `pill ${errors > 0 ? "warn" : "ok"}`;
+      const withErrors = Number(fallback?.with_attempt_errors || 0);
+      const withSelectedFallback = Number(fallback?.with_selected_fallback || 0);
+      fallbackPill.textContent = `fallbacks/errors: ${withSelectedFallback}/${withErrors}`;
+      fallbackPill.className = `pill ${withErrors > 0 || withSelectedFallback > 0 ? "warn" : "ok"}`;
     }
 
     const queuePill = $("routerQueuePill");
@@ -159,6 +159,25 @@ export async function refreshRouterPanel() {
       const compactMix = pairs.slice(0, 3).map(([k, v]) => `${k}:${v}`).join(" ");
       taskPill.textContent = `tasks: ${compactMix || "n/a"}`;
       taskPill.className = `pill ${pairs.length > 0 ? "ok" : "warn"}`;
+    }
+
+    const reasonPill = $("routerReasonPill");
+    if (reasonPill) {
+      const byReasonCode = decisionTraces?.summary?.by_reason_code || {};
+      const reasonPairs = Object.entries(byReasonCode)
+        .filter(([reason]) => String(reason || "") !== "selected")
+        .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0));
+      const compactReasons = reasonPairs.slice(0, 3).map(([k, v]) => `${k}:${v}`).join(" ");
+      reasonPill.textContent = `reasons: ${compactReasons || "none"}`;
+      reasonPill.className = `pill ${reasonPairs.length > 0 ? "warn" : "ok"}`;
+    }
+
+    const selectedFallbackPill = $("routerSelectedFallbackPill");
+    if (selectedFallbackPill) {
+      const selectedFallbackCount = Number(decisionTraces?.summary?.with_selected_fallback || fallback?.with_selected_fallback || 0);
+      const traceCount = Number(decisionTraces?.count || 0);
+      selectedFallbackPill.textContent = `selected fallback: ${selectedFallbackCount}${traceCount > 0 ? `/${traceCount}` : ""}`;
+      selectedFallbackPill.className = `pill ${selectedFallbackCount > 0 ? "warn" : "ok"}`;
     }
 
     const manualCandidates = freeCandidates?.free_candidates || {};

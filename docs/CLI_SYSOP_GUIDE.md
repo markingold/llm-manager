@@ -396,6 +396,19 @@ Operator expectations:
 - Slot cards disappear when `ENABLE_CHAT`, `ENABLE_INTENT`, or `ENABLE_SMALL` is set to `0` in `secrets/.env`
 - The dashboard supports test calls for `chat`, `intent`, and `small`
 
+Compact incident checklist (dashboard):
+- Router view: click `Refresh Router` and `Refresh Decision Traces`.
+- Read Router Ops pills in order: `reasons`, `selected fallback`, `queue`, `budget`.
+- Providers/Budget view: set `actor` + `reason` before any mutation.
+- If a curated model is failing: use Curated Model Quick Admin row `Apply` to disable or reprioritize in one click.
+- Re-verify with Router view refresh; stabilization target is lower `selected fallback` and fewer non-`selected` reason buckets.
+
+One-click rollback and restore guidance:
+- One-click rollback: Providers/Budget -> Provider Governance -> choose `models` or `policies` -> click `Rollback Last Good`.
+- One-click restore (row-level): Curated Model Quick Admin -> set row back to known-good values -> click row `Apply`.
+- One-click restore (document-level): keep a known-good JSON snapshot in the editor and click `Apply` once to restore forward.
+- After rollback or restore, always click `Refresh Governance State` then `Refresh Router` + `Refresh Decision Traces`.
+
 ---
 
 ## 10. Strict Baseline Reports

@@ -46,8 +46,10 @@ Completed items from the locked queue:
 - item 7: cross-provider strategy hardening is now completed
   - deterministic chain resolution now includes explicit chain source metadata and service-tier-aware lane selection
   - strict-provider behavior now supports lane-level targets (`openrouter.free`, `openrouter.paid`, `openai`, `local`)
+  - strict-provider lane targets are now task-type constrained (`embed` excludes `openrouter.free` and resolves strict OpenRouter embed requests to `openrouter.paid`)
   - route traces now emit typed dispatch reason codes (`dispatch_rate_limited`, `dispatch_auth_error`, etc.) and provider-block skip reasons when auth failures occur
   - `POST /providers/policies/test` and `POST /router/route-test` now expose `chain_resolution` in addition to `strategy_resolution`
+  - Router Ops now includes deterministic fallback reason and selected-fallback ratio pills for incident triage
 - OpenRouter resilience hardening is now completed
   - OpenRouter adapter error normalization now parses HTTP status + provider error body fields and emits richer normalized types (`context_too_large`, `provider_timeout`, etc.)
   - runtime failure state now stores `last_error_status_code` and provider codes/types for incident triage
