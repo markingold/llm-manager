@@ -311,7 +311,83 @@ Operational note:
 
 ---
 
-## 8. Dashboard
+## 8. Incident Runbook: Curated Admin + Decision Traces
+
+Use this when routed requests are failing, flapping between providers, or showing unexpected fallback behavior.
+
+1) Capture deterministic route traces first:
+
+    curl "http://localhost:8101/router/decision-traces?limit=40&compact=true" | python3 -m json.tool
+
+Focus on:
+- `summary.by_reason_code`
+- `summary.with_selected_fallback`
+- per-trace `attempt_reason_codes`
+- per-trace `fallback_summary`
+
+2) Confirm policy resolution for the affected task/project:
+
+    curl -X POST http://localhost:8101/providers/policies/test \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "task_type":"chat",
+        "project_id":"<project_id>",
+        "provider_preferences":{"strategy":"local_first"}
+      }' | python3 -m json.tool
+
+Verify `strategy_resolution`, `chain_resolution`, and `policy_context` to ensure strategy source, service-tier effects, and fallback normalization are what you expect.
+
+3) Apply a targeted curated quick-admin change (no full JSON document edit):
+
+Disable a failing OpenRouter free model temporarily:
+
+    curl -X POST http://localhost:8101/providers/models/curated-entry \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "provider":"openrouter",
+        "bucket":"free",
+        "model_id":"meta-llama/llama-3.3-8b-instruct:free",
+        "enabled":false,
+        "actor":"ops-oncall",
+        "reason":"incident: repeated fallback reason_code=dispatch_rate_limited"
+      }' | python3 -m json.tool
+
+Increase priority for a known-good paid fallback during incident mitigation:
+
+    curl -X POST http://localhost:8101/providers/models/curated-entry \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "provider":"openrouter",
+        "bucket":"paid",
+        "model_id":"openai/gpt-4o-mini",
+        "priority":1,
+        "actor":"ops-oncall",
+        "reason":"incident mitigation: elevate stable fallback"
+      }' | python3 -m json.tool
+
+4) Re-verify route behavior before closing incident:
+
+    curl -X POST http://localhost:8101/router/route-test \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "task_type":"chat",
+        "project_id":"<project_id>",
+        "prompt":"incident verification probe",
+        "provider_preferences":{"strategy":"local_first"}
+      }' | python3 -m json.tool
+
+Then refresh traces:
+
+    curl "http://localhost:8101/router/decision-traces?limit=40&compact=true" | python3 -m json.tool
+
+Expected stabilization signals:
+- lower `summary.by_reason_code.dispatch_rate_limited` and related `dispatch_*` buckets
+- lower `summary.by_reason_code.free_tier_limiter` during non-peak periods
+- lower `summary.with_selected_fallback` after mitigation (unless strategy intentionally prefers fallback lanes)
+
+---
+
+## 9. Dashboard
 
 The web dashboard lives in `web/` and talks to the API through Apache at `/llm-manager-api`.
 
@@ -322,7 +398,7 @@ Operator expectations:
 
 ---
 
-## 9. Strict Baseline Reports
+## 10. Strict Baseline Reports
 
 Use the strict baseline harness to generate reproducible quality and promotion artifacts:
 

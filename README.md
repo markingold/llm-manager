@@ -181,7 +181,7 @@ Process/service environment commonly used in deployment:
 | POST | `/providers/models/rollback` | Roll back provider model document to last good snapshot |
 | PUT | `/providers/policies` | Validate/apply provider policy governance document |
 | POST | `/providers/policies/rollback` | Roll back provider policy document to last good snapshot |
-| POST | `/providers/policies/test` | Evaluate effective strategy/chain/defaults for a task- and project-scoped probe request |
+| POST | `/providers/policies/test` | Evaluate effective strategy/chain/defaults for a task- and project-scoped probe request (includes `strategy_resolution` + `chain_resolution`) |
 | POST | `/providers/openrouter/refresh` | Refresh upstream OpenRouter metadata cache, optionally with rankings |
 | POST | `/providers/openrouter/discover-free` | Manually build and optionally activate temporary OpenRouter free fallback candidates (includes ranking + smoke evidence fields) |
 | GET | `/providers/openrouter/free-candidates` | Inspect the current manual OpenRouter free candidate pool with lifecycle/smoke evidence |
@@ -193,10 +193,10 @@ Process/service environment commonly used in deployment:
 | POST | `/router/chat` | Normalized broker chat entrypoint (supports `no_thinking` for local dispatch) |
 | POST | `/router/completions` | Normalized broker completions entrypoint (supports `no_thinking` for local dispatch) |
 | POST | `/router/embed` | Normalized broker embeddings entrypoint |
-| POST | `/router/route-test` | Dry-run route resolution with task-aware strategy and candidate-chain inspection |
+| POST | `/router/route-test` | Dry-run route resolution with task-aware strategy, candidate-chain inspection, and `chain_resolution` diagnostics |
 | GET | `/router/health` | Router config and decision-log health |
 | GET | `/router/last-decisions` | Recent router decision logs |
-| GET | `/router/decision-traces` | Compact route traces with task-policy context and backend/task mix summary |
+| GET | `/router/decision-traces` | Compact route traces with task-policy context, typed fallback reason codes, and backend/task mix summary |
 | GET | `/router/usage-summary` | Aggregated token/request usage logs |
 | GET | `/router/budget-state` | Budget guardrail and spend state snapshot |
 | GET | `/router/queue-state` | Free-tier queue depth and pending items |
@@ -284,6 +284,7 @@ Notes:
 - `/router/chat` now performs real adapter-backed provider dispatch with policy-chain fallback
 - `/router/completions` and `/router/embed` use the same policy-chain dispatch path
 - Routing policy now supports task-specific overrides via `task_overrides.chat|completion|embed` and per-project task overrides under `project_overrides.<project>.task_overrides.*`
+- Routing chain resolution now supports service-tier influence via `defaults.service_tier` and `service_tiers.<tier>.chain` policy fields
 - Routed chat and completions requests support `no_thinking=true`; for local provider dispatch this maps to `enable_thinking=false`
 - OpenRouter free-tier requests are protectively throttled by a local rpm limiter and provider-model cooldown tracking
 - `POST /providers/openrouter/refresh` updates a cached upstream OpenRouter catalog and free-model set for hardened free-tier cycling, and can enrich the cache with rankings using `include_rankings=true`
@@ -291,9 +292,13 @@ Notes:
 - OpenRouter discovery candidates now persist richer ranking fields (`top_weekly_rank`, `category_ranks`) when available
 - OpenRouter discovery candidate payloads now surface lifecycle and smoke evidence (`recent_promotion_transitions`, `recent_smoke_checks`, `lifecycle_evidence`)
 - Router decision logs now include task-policy trace context (`task_type`, `strategy_source`, `policy_context`) and are summarized via `GET /router/decision-traces`
+- Router decision logs now include deterministic fallback visibility (`attempt_trace`, `fallback_summary`) and failed route attempts are also persisted for incident review
+- Router attempt traces now include typed dispatch reason codes (`dispatch_rate_limited`, `dispatch_auth_error`, etc.) and provider-block skip reasons after auth failures
+- `GET /router/decision-traces` summary now includes `by_reason_code` and `with_selected_fallback` counters for deterministic fallback analysis
 - `GET /providers/openrouter/free-candidates` shows the temporary candidate pool and any manually activated `active_ids`
 - The `openrouter.free` lane only uses manually activated temporary candidates after curated free models are exhausted
 - Free-tier overflow behavior now follows policy `queue_behavior` (`wait`, `fail_fast`, `fallback_to_local`, `upgrade_to_paid`)
+- OpenRouter cooldown behavior is policy-tunable via `openrouter.cooldown_seconds_*` and `openrouter.auth_error_manual_review_threshold`
 - Provider budget guardrails can be configured in `config/provider_policies.json` (`budget`) and inspected at `/router/budget-state`
 - Runtime spend and budget state are persisted in `run/state/provider_runtime_state.json` (`spend_logs`, `budget_state`)
 - Local evaluation runs can compare prompt/system/temperature variants and store recommendations for tuning

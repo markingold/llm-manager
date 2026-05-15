@@ -14,7 +14,14 @@
     "queue_behavior": "wait",
     "enforce_upstream_free_status": true,
     "quarantine_failure_count_24h": 6,
-    "retire_failure_count_7d": 20
+    "retire_failure_count_7d": 20,
+    "cooldown_seconds_rate_limited": 30,
+    "cooldown_seconds_quota_exhausted": 300,
+    "cooldown_seconds_not_free_anymore": 900,
+    "cooldown_seconds_model_unavailable": 120,
+    "cooldown_seconds_provider_error": 20,
+    "cooldown_seconds_retryable_default": 10,
+    "auth_error_manual_review_threshold": 1
   },
   "budget": {
     "daily_usd_limit": 10.0,

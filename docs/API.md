@@ -138,6 +138,7 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
 - POST /providers/policies/test
   - Evaluates effective routing policy resolution for a probe request
   - Supports task-aware and project-aware policy testing via `task_type`, `project_id`, and `provider_preferences`
+  - Includes `strategy_resolution`, `chain_resolution`, and `policy_context` so operators can verify resolved strategy, chain source, service-tier influence, and fallback normalization
 - POST /providers/openrouter/refresh
   - Fetches upstream OpenRouter model metadata and updates runtime cache including detected free model ids
   - Query: include_rankings=true optionally scrapes OpenRouter rankings into the same cache for popularity-aware discovery
@@ -161,21 +162,26 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
   - Optional request field `no_thinking` disables thinking for local provider dispatch (`enable_thinking=false`)
   - Request and response models are defined in api/router/contracts.py
   - Dispatches via provider adapters in api/providers for local, OpenRouter, and OpenAI
-  - Uses policy candidate chains with fallback when allowed
+  - Uses policy candidate chains with fallback when allowed, including service-tier-aware chain selection when configured
   - Logs routing decisions and usage into provider runtime state
+  - Decision records include deterministic `attempt_trace` and `fallback_summary` fields for incident triage
+  - Dispatch failures now use typed reason codes (`dispatch_rate_limited`, `dispatch_auth_error`, etc.) and can mark subsequent same-provider attempts as blocked for auth failures
 - POST /router/completions
   - Accepts normalized broker request shape for text completions
   - Supports `project_id` for project-specific policy overrides
   - Applies `task_overrides.completion` and `project_overrides.<project>.task_overrides.completion` when configured
   - Optional request field `no_thinking` disables thinking for local provider dispatch (`enable_thinking=false`)
   - Uses the same policy-chain dispatch and fallback model
+  - Decision records include deterministic `attempt_trace` and `fallback_summary` fields for incident triage, plus typed dispatch reason codes
 - POST /router/embed
   - Accepts normalized broker request shape for embeddings
   - Supports `project_id` for project-specific policy overrides
   - Applies `task_overrides.embed` and `project_overrides.<project>.task_overrides.embed` when configured
   - Uses the same policy-chain dispatch and fallback model
+  - Decision records include deterministic `attempt_trace` and `fallback_summary` fields for incident triage, plus typed dispatch reason codes
 - POST /router/route-test
   - Dry-run route resolution utility that returns strategy, candidate chain, selected models per lane, and cooldown/lifecycle hints
+  - Includes `strategy_resolution`, `chain_resolution`, and `policy_context` for deterministic strategy-source, chain-source, and service-tier inspection
   - Optional `execute_first=true` runs a lightweight execution against the first eligible candidate for validation
 - GET /router/health
   - Router config load status plus recent decision-log signal
@@ -184,6 +190,7 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
   - Returns recent routing decision records
 - GET /router/decision-traces?limit=40&compact=true
   - Returns recent route traces with task-policy context (`task_type`, `strategy_source`, `policy_context`) and backend/task/provider summary counters for operator dashboards
+  - Summary includes deterministic fallback visibility fields (`by_reason_code`, `with_selected_fallback`)
 - GET /router/usage-summary?limit=200
   - Aggregates usage logs by provider across the selected window
 - GET /router/budget-state
@@ -192,6 +199,7 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
   - Shows free-tier queue depth, pending and expired counts, and recent queued items
 - GET /router/fallback-stats?limit=500
   - Aggregates fallback and error patterns from recent routing decisions
+  - Includes `by_reason_code` and `with_selected_fallback` for deterministic fallback-path analysis
 - POST /router/evaluate/local
   - Runs a local evaluation suite against selected candidate models and parameter variants
   - Supports comparing system prompts and generation settings such as temperature and top_p
@@ -236,6 +244,8 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
 - On free-tier overflow, behavior follows policy queue_behavior: wait, fail_fast, fallback_to_local, or upgrade_to_paid
 - Free-tier queue scheduling is priority-aware (`interactive`, `batch`, `evaluation`) and can evict lower-priority queued entries when at capacity
 - Rate-limited or retryable provider failures can place provider-model pairs into temporary cooldown windows
+- OpenRouter cooldown behavior is policy-tunable via `openrouter.cooldown_seconds_*` settings and `openrouter.auth_error_manual_review_threshold`
+- OpenRouter failure state now captures `last_error_status_code`, `last_error_provider_code`, and `last_error_provider_type`
 - Cooldown and limiter state are persisted under provider_model_state and provider_rate_limits in run/state/provider_runtime_state.json
 - OpenRouter upstream model metadata can be refreshed and cached to harden free-tier routing decisions
 - OpenRouter rankings enrichment is optional and is only fetched when operators call refresh or discovery with include_rankings enabled
@@ -243,6 +253,7 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
 - Provider-model lifecycle now tracks promotion states (`discovered`, `candidate`, `smoke_passed`, `active`, `quarantined`, `retired`) and rolling failure-window metrics (`failure_count_24h`, `failure_count_7d`)
 - Manual discovery results are stored under openrouter_free_candidates in run/state/provider_runtime_state.json
 - The openrouter.free lane only consults manually activated active_ids after curated free entries are exhausted
+- Auto smoke checks support capability validation for structured outputs and tools when those requirements are requested during discovery
 
 ## Pricing and Budget Guardrails
 

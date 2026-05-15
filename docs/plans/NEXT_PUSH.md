@@ -1,7 +1,7 @@
 <!--
 id: PLAN-NEXT-PUSH
-version: 1.5
-last_updated: 2026-05-14
+version: 1.7
+last_updated: 2026-05-15
 title: Next Push Recommendations
 purpose:
   Fresh status scan, near-term priorities, and TGW WebUI direction for the next implementation push.
@@ -12,6 +12,7 @@ purpose:
 
 - stale conversion/catalog checkboxes were updated in `CHECKLIST.md` and `ROADMAP.md`
 - managed EXL2 milestones are now marked complete for HF + merged-local source scope, including tokenizer/chat-template preservation checks
+- CLI runbook now includes an incident workflow for curated quick-admin changes + decision trace triage
 
 ## Implementation update (2026-05-14)
 
@@ -42,9 +43,19 @@ Completed items from the locked queue:
 - route decision trace expansion is now implemented
   - routing decisions now capture task-policy context fields (`task_type`, `strategy_source`, `policy_context`)
   - compact trace endpoint added: `GET /router/decision-traces`
+- item 7: cross-provider strategy hardening is now completed
+  - deterministic chain resolution now includes explicit chain source metadata and service-tier-aware lane selection
+  - strict-provider behavior now supports lane-level targets (`openrouter.free`, `openrouter.paid`, `openai`, `local`)
+  - route traces now emit typed dispatch reason codes (`dispatch_rate_limited`, `dispatch_auth_error`, etc.) and provider-block skip reasons when auth failures occur
+  - `POST /providers/policies/test` and `POST /router/route-test` now expose `chain_resolution` in addition to `strategy_resolution`
+- OpenRouter resilience hardening is now completed
+  - OpenRouter adapter error normalization now parses HTTP status + provider error body fields and emits richer normalized types (`context_too_large`, `provider_timeout`, etc.)
+  - runtime failure state now stores `last_error_status_code` and provider codes/types for incident triage
+  - OpenRouter cooldown/manual-review thresholds are now policy-configurable (`cooldown_seconds_*`, `auth_error_manual_review_threshold`)
+  - smoke checks are now capability-aware for structured outputs and tools (including schema/tool-call validation evidence)
 
 Next queued item:
-- item 7: cross-provider strategy hardening and deterministic fallback visibility
+- vLLM and TabbyAPI lane first-classization
 
 ## Implementation update (2026-05-09)
 
@@ -99,36 +110,35 @@ Interpretation:
 6. [x] EXL2 Phase 1 closeout
 - Extend managed EXL2 conversion to merged local model sources and lock tokenizer/chat-template preservation checks.
 
-7. [ ] Cross-provider strategy hardening
-- Improve deterministic strategy behavior and fallback observability across `local_first`, `free_first`, `paid_first`, `best_available`, and `strict_provider`.
+7. [x] Cross-provider strategy hardening
+- Deterministic strategy behavior and fallback observability hardened across `local_first`, `free_first`, `paid_first`, `best_available`, and `strict_provider`.
 
 ## Biggest remaining value gaps
 
-1. Cross-provider strategy hardening
-- Tighten deterministic behavior and observability for `local_first`, `free_first`, `paid_first`, `best_available`, and `strict_provider`.
-
-2. OpenRouter resilience hardening
-- Implement deeper error normalization + cooldown semantics + curated free auto-cycling behavior.
-- Highest broker reliability gain.
-
-3. vLLM and TabbyAPI lane first-classization
+1. vLLM and TabbyAPI lane first-classization
 - Make AWQ/GPTQ prefer vLLM where supported and expose capabilities clearly.
 
-4. EXL3 conversion path (Phase 2)
+2. EXL3 conversion path (Phase 2)
 - Extend managed conversion model from EXL2 to EXL3 with matching metadata discipline.
 
-5. Canonical layout ops doc package
+3. Canonical layout ops doc package
 - Finalize `/srv/2bananas/engines` structure/runbook docs and migration checks.
+
+4. Backend-aware frontend operation gating
+- Disable unsupported backend operations by active slot/backend capabilities to reduce operator error paths.
+
+5. Recovery runbook hardening
+- Add explicit operator procedures for clearing quarantine/manual-review flags and validating recovery traces.
 
 ## Suggested immediate execution package (next 1-2 pushes)
 
 Push 1:
-- Cross-provider strategy hardening for deterministic fallback behavior and clearer reason codes
-- OpenRouter capability-aware smoke checks (JSON schema + tools)
-- docs update for strategy and failure-mode operator playbooks
+- vLLM/Tabby lane capability surfacing and fallback policy hardening
+- backend-aware UI operation disabling by active backend capabilities
+- recovery runbook refinements for quarantine/manual-review scenarios
 
 Push 2:
-- vLLM/Tabby lane capability surfacing and fallback policy hardening
+- EXL3 conversion path bootstrap + metadata parity checks
 - canonical `/srv/2bananas/engines` layout doc + migration checklist
 
 If both pushes land cleanly, broker maturity and operator confidence increase significantly while setting up Phase-3 backend goals.

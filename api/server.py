@@ -58,6 +58,9 @@ SUPPORTED_BACKENDS = {"tgw", "vllm", "tabbyapi"}
 DEFAULT_SLOT_BACKENDS = {"chat": "tgw", "intent": "tgw", "small": "tgw"}
 SENSITIVE_ENV_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD")
 POLICY_TASK_TYPES = {"chat", "completion", "embed"}
+ROUTING_STRATEGIES = {"local_first", "free_first", "paid_first", "best_available", "strict_provider"}
+ROUTING_LANES = {"local", "openrouter.free", "openrouter.paid", "openai"}
+ROUTING_SERVICE_TIERS = {"default", "local", "low", "medium", "high"}
 
 DEFAULT_PROVIDER_MODELS = {
     "local": {"slots": []},
@@ -81,6 +84,13 @@ DEFAULT_PROVIDER_POLICIES = {
         "enforce_upstream_free_status": True,
         "quarantine_failure_count_24h": 6,
         "retire_failure_count_7d": 20,
+        "cooldown_seconds_rate_limited": 30,
+        "cooldown_seconds_quota_exhausted": 300,
+        "cooldown_seconds_not_free_anymore": 900,
+        "cooldown_seconds_model_unavailable": 120,
+        "cooldown_seconds_provider_error": 20,
+        "cooldown_seconds_retryable_default": 10,
+        "auth_error_manual_review_threshold": 1,
     },
     "budget": {
         "daily_usd_limit": 10.0,
@@ -100,6 +110,28 @@ DEFAULT_PROVIDER_POLICIES = {
         "paid_first": ["openrouter.paid", "openai", "local", "openrouter.free"],
         "best_available": ["local", "openrouter.paid", "openai", "openrouter.free"],
         "strict_provider": [],
+    },
+    "service_tiers": {
+        "default": {
+            "chain": [],
+            "preferred_model_tags": [],
+        },
+        "local": {
+            "chain": ["local"],
+            "preferred_model_tags": ["local"],
+        },
+        "low": {
+            "chain": ["local", "openrouter.free", "openrouter.paid", "openai"],
+            "preferred_model_tags": ["cheap", "small"],
+        },
+        "medium": {
+            "chain": ["local", "openrouter.free", "openrouter.paid", "openai"],
+            "preferred_model_tags": ["balanced"],
+        },
+        "high": {
+            "chain": ["openrouter.paid", "openai", "local", "openrouter.free"],
+            "preferred_model_tags": ["quality", "reasoning"],
+        },
     },
     "retention": {
         "request_logs_max": 200,
@@ -601,9 +633,95 @@ def _validate_provider_policies_document(doc: dict):
     if "strategy" not in defaults:
         errors.append("defaults.strategy is required")
 
+    defaults_strategy = str(defaults.get("strategy", "") or "").strip()
+    if defaults_strategy and defaults_strategy not in ROUTING_STRATEGIES:
+        errors.append(
+            "defaults.strategy must be one of: " + ", ".join(sorted(ROUTING_STRATEGIES))
+        )
+
+    preferred_provider = str(defaults.get("preferred_provider", "") or "").strip().lower()
+    if preferred_provider and preferred_provider not in {"local", "openrouter", "openrouter.free", "openrouter.paid", "openai"}:
+        errors.append("defaults.preferred_provider must be one of: local, openrouter, openrouter.free, openrouter.paid, openai")
+
+    service_tier = str(defaults.get("service_tier", "") or "").strip().lower()
+    if service_tier and service_tier not in ROUTING_SERVICE_TIERS:
+        errors.append("defaults.service_tier must be one of: default, local, low, medium, high")
+
     selection = doc.get("selection", {}) if isinstance(doc.get("selection"), dict) else {}
     if defaults.get("strategy") and defaults.get("strategy") not in selection:
         errors.append("defaults.strategy must exist in selection map")
+    for strategy_name, lanes in selection.items():
+        sname = str(strategy_name)
+        if sname not in ROUTING_STRATEGIES:
+            errors.append(f"selection.{sname} must use one of: {', '.join(sorted(ROUTING_STRATEGIES))}")
+            continue
+        if not isinstance(lanes, list):
+            errors.append(f"selection.{sname} must be a list")
+            continue
+        bad_lanes = [str(lane) for lane in lanes if str(lane) not in ROUTING_LANES]
+        if bad_lanes:
+            errors.append(
+                f"selection.{sname} contains invalid lanes: {', '.join(sorted(set(bad_lanes)))}"
+            )
+
+    openrouter_cfg = doc.get("openrouter", {}) if isinstance(doc.get("openrouter"), dict) else {}
+    queue_behavior = str(openrouter_cfg.get("queue_behavior", "wait") or "wait").strip().lower()
+    if queue_behavior not in {"wait", "fail_fast", "fallback_to_local", "upgrade_to_paid"}:
+        errors.append("openrouter.queue_behavior must be one of: wait, fail_fast, fallback_to_local, upgrade_to_paid")
+
+    openrouter_int_fields = {
+        "free_rate_limit_rpm": 1,
+        "max_queue_depth": 1,
+        "max_queue_wait_ms": 1,
+        "quarantine_failure_count_24h": 1,
+        "retire_failure_count_7d": 1,
+        "cooldown_seconds_rate_limited": 0,
+        "cooldown_seconds_quota_exhausted": 0,
+        "cooldown_seconds_not_free_anymore": 0,
+        "cooldown_seconds_model_unavailable": 0,
+        "cooldown_seconds_provider_error": 0,
+        "cooldown_seconds_retryable_default": 0,
+        "auth_error_manual_review_threshold": 1,
+    }
+    for field, min_value in openrouter_int_fields.items():
+        if field not in openrouter_cfg:
+            continue
+        raw = openrouter_cfg.get(field)
+        if isinstance(raw, bool):
+            errors.append(f"openrouter.{field} must be an integer >= {min_value}")
+            continue
+        try:
+            value = int(raw)
+        except Exception:
+            errors.append(f"openrouter.{field} must be an integer >= {min_value}")
+            continue
+        if value < min_value:
+            errors.append(f"openrouter.{field} must be >= {min_value}")
+
+    service_tiers = doc.get("service_tiers", {})
+    if service_tiers is not None and not isinstance(service_tiers, dict):
+        errors.append("service_tiers must be an object when provided")
+    if isinstance(service_tiers, dict):
+        for tier_name, tier_row in service_tiers.items():
+            tname = str(tier_name).strip().lower()
+            if tname not in ROUTING_SERVICE_TIERS:
+                errors.append(f"service_tiers.{tier_name} must use one of: default, local, low, medium, high")
+                continue
+            if not isinstance(tier_row, dict):
+                errors.append(f"service_tiers.{tier_name} must be an object")
+                continue
+            chain = tier_row.get("chain", [])
+            tags = tier_row.get("preferred_model_tags", [])
+            if chain is not None and not isinstance(chain, list):
+                errors.append(f"service_tiers.{tier_name}.chain must be a list")
+            if tags is not None and not isinstance(tags, list):
+                errors.append(f"service_tiers.{tier_name}.preferred_model_tags must be a list")
+            if isinstance(chain, list):
+                invalid = [str(lane) for lane in chain if str(lane) not in ROUTING_LANES]
+                if invalid:
+                    errors.append(
+                        f"service_tiers.{tier_name}.chain contains invalid lanes: {', '.join(sorted(set(invalid)))}"
+                    )
 
     task_overrides = doc.get("task_overrides", {})
     if task_overrides is not None and not isinstance(task_overrides, dict):
@@ -1208,6 +1326,9 @@ def _hydrate_openrouter_candidate_runtime_fields(payload: dict):
         candidate["last_failure_ts"] = row.get("last_failure_ts")
         candidate["last_error_type"] = row.get("last_error_type")
         candidate["last_error_message"] = row.get("last_error_message")
+        candidate["last_error_status_code"] = row.get("last_error_status_code")
+        candidate["last_error_provider_code"] = row.get("last_error_provider_code")
+        candidate["last_error_provider_type"] = row.get("last_error_provider_type")
         candidate["promotion_state"] = promotion_state
         candidate["health_status"] = _openrouter_health_status(row)
         transitions = _prune_promotion_transitions(row.get("promotion_transitions", []))
@@ -1259,6 +1380,9 @@ def _mark_provider_success(provider: str, model: str):
     row["last_success_ts"] = now_iso
     row["failure_count"] = 0
     row["last_error_type"] = None
+    row["last_error_status_code"] = None
+    row["last_error_provider_code"] = None
+    row["last_error_provider_type"] = None
     row["cooldown_until"] = 0
     current_state = str(row.get("promotion_state", "") or "")
     if current_state != "retired":
@@ -1276,6 +1400,34 @@ def _mark_provider_success(provider: str, model: str):
     write_provider_runtime_state(state)
 
 
+def _openrouter_cooldown_seconds(err_type: str, retryable: bool, openrouter_cfg: dict) -> int:
+    cfg = openrouter_cfg if isinstance(openrouter_cfg, dict) else {}
+
+    def _cfg_seconds(key: str, default: int) -> int:
+        raw = cfg.get(key, default)
+        if isinstance(raw, bool):
+            return default
+        try:
+            value = int(raw)
+        except Exception:
+            return default
+        return max(0, value)
+
+    if err_type == "rate_limited":
+        return _cfg_seconds("cooldown_seconds_rate_limited", 30)
+    if err_type == "quota_exhausted":
+        return _cfg_seconds("cooldown_seconds_quota_exhausted", 300)
+    if err_type == "not_free_anymore":
+        return _cfg_seconds("cooldown_seconds_not_free_anymore", 900)
+    if err_type == "model_unavailable":
+        return _cfg_seconds("cooldown_seconds_model_unavailable", 120)
+    if err_type in {"provider_error", "provider_timeout"}:
+        return _cfg_seconds("cooldown_seconds_provider_error", 20)
+    if retryable:
+        return _cfg_seconds("cooldown_seconds_retryable_default", 10)
+    return 0
+
+
 def _mark_provider_failure(provider: str, model: str, normalized_error: dict):
     state = read_provider_runtime_state()
     model_state = state.get("provider_model_state", {})
@@ -1286,8 +1438,11 @@ def _mark_provider_failure(provider: str, model: str, normalized_error: dict):
     if not isinstance(row, dict):
         row = {}
     failures = int(row.get("failure_count", 0) or 0) + 1
-    err_type = str(normalized_error.get("type", "provider_error"))
+    err_type = str(normalized_error.get("type", "provider_error") or "provider_error").strip().lower()
     retryable = bool(normalized_error.get("retryable", False))
+    status_code = normalized_error.get("status_code")
+    provider_code = normalized_error.get("provider_code")
+    provider_type = normalized_error.get("provider_type")
     now_iso = datetime.utcnow().isoformat() + "Z"
 
     events = row.get("failure_events", []) if isinstance(row.get("failure_events"), list) else []
@@ -1296,44 +1451,76 @@ def _mark_provider_failure(provider: str, model: str, normalized_error: dict):
         "type": err_type,
         "retryable": retryable,
         "message": str(normalized_error.get("message", "") or ""),
+        "status_code": status_code,
+        "provider_code": provider_code,
+        "provider_type": provider_type,
     })
     row["failure_events"] = events
 
+    policies = read_provider_policies()
+    openrouter_cfg = policies.get("openrouter", {}) if isinstance(policies.get("openrouter"), dict) else {}
+
     cooldown_seconds = 0
-    if err_type == "rate_limited":
-        cooldown_seconds = 30
-    elif err_type in ("quota_exhausted", "not_free_anymore"):
-        cooldown_seconds = 300
-    elif retryable:
-        cooldown_seconds = 10
+    if provider == "openrouter":
+        cooldown_seconds = _openrouter_cooldown_seconds(err_type, retryable, openrouter_cfg)
+    else:
+        if err_type == "rate_limited":
+            cooldown_seconds = 30
+        elif err_type in ("quota_exhausted", "not_free_anymore"):
+            cooldown_seconds = 300
+        elif retryable:
+            cooldown_seconds = 10
 
     row["failure_count"] = failures
     row["last_failure_ts"] = now_iso
     row["last_error_type"] = err_type
     row["last_error_message"] = str(normalized_error.get("message", ""))
+    row["last_error_status_code"] = status_code
+    row["last_error_provider_code"] = provider_code
+    row["last_error_provider_type"] = provider_type
     row["cooldown_until"] = time.time() + cooldown_seconds if cooldown_seconds else 0
     counts = _refresh_failure_window_fields(row)
 
-    policies = read_provider_policies()
-    openrouter_cfg = policies.get("openrouter", {}) if isinstance(policies.get("openrouter"), dict) else {}
-    quarantine_24h = int(openrouter_cfg.get("quarantine_failure_count_24h", 6) or 6)
-    retire_7d = int(openrouter_cfg.get("retire_failure_count_7d", 20) or 20)
+    def _cfg_int(raw_value, default_value: int, minimum: int = 0) -> int:
+        if isinstance(raw_value, bool):
+            return default_value
+        try:
+            value = int(raw_value)
+        except Exception:
+            return default_value
+        return value if value >= minimum else minimum
 
-    if err_type in ("auth_error", "model_unavailable") and failures >= 3:
-        row["disabled_until_manual_review"] = True
-        _set_promotion_state_on_row(row, "quarantined", reason=f"{err_type}_threshold", at_ts=now_iso)
-    if err_type in ("not_free_anymore", "quota_exhausted"):
-        row["exclude_from_free_rotation"] = True
-        if err_type == "not_free_anymore":
-            _set_promotion_state_on_row(row, "retired", reason=err_type, at_ts=now_iso)
-        else:
-            _set_promotion_state_on_row(row, "quarantined", reason=err_type, at_ts=now_iso)
+    quarantine_24h = _cfg_int(openrouter_cfg.get("quarantine_failure_count_24h", 6), 6, 1)
+    retire_7d = _cfg_int(openrouter_cfg.get("retire_failure_count_7d", 20), 20, 1)
+    auth_manual_threshold = _cfg_int(openrouter_cfg.get("auth_error_manual_review_threshold", 1), 1, 1)
 
-    if int(counts.get("failure_count_24h", 0) or 0) >= quarantine_24h:
+    if auth_manual_threshold < 1:
+        auth_manual_threshold = 1
+
+    if provider == "openrouter":
+        if err_type == "auth_error" and failures >= auth_manual_threshold:
+            row["disabled_until_manual_review"] = True
+            row["exclude_from_free_rotation"] = True
+            _set_promotion_state_on_row(row, "quarantined", reason="auth_error_manual_review", at_ts=now_iso)
+        elif err_type == "model_unavailable" and failures >= 3:
+            row["disabled_until_manual_review"] = True
+            _set_promotion_state_on_row(row, "quarantined", reason="model_unavailable_threshold", at_ts=now_iso)
+
+        if err_type in ("not_free_anymore", "quota_exhausted"):
+            row["exclude_from_free_rotation"] = True
+            if err_type == "not_free_anymore":
+                _set_promotion_state_on_row(row, "retired", reason=err_type, at_ts=now_iso)
+            else:
+                _set_promotion_state_on_row(row, "quarantined", reason=err_type, at_ts=now_iso)
+    else:
+        if err_type in ("auth_error", "model_unavailable") and failures >= 3:
+            row["disabled_until_manual_review"] = True
+
+    if provider == "openrouter" and int(counts.get("failure_count_24h", 0) or 0) >= quarantine_24h:
         row["exclude_from_free_rotation"] = True
         _set_promotion_state_on_row(row, "quarantined", reason="failure_window_24h", at_ts=now_iso)
 
-    if int(counts.get("failure_count_7d", 0) or 0) >= retire_7d:
+    if provider == "openrouter" and int(counts.get("failure_count_7d", 0) or 0) >= retire_7d:
         row["exclude_from_free_rotation"] = True
         _set_promotion_state_on_row(row, "retired", reason="failure_window_7d", at_ts=now_iso)
 
@@ -1589,48 +1776,82 @@ def _effective_policy_selection(req, policies: dict) -> dict:
     return selection
 
 
-def _resolve_strategy(req, env: dict, policies: dict) -> str:
-    req_strategy = req.provider_preferences.strategy
-    if req_strategy and req_strategy != "default":
-        return req_strategy
-    defaults = _effective_policy_defaults(req, policies)
-    project_strategy = str(defaults.get("strategy", "") or "").strip()
-    if project_strategy:
-        return project_strategy
-    env_strategy = env.get("DEFAULT_ROUTING_STRATEGY", "").strip()
-    if env_strategy:
-        return env_strategy
-    return str((policies.get("defaults", {}) if isinstance(policies.get("defaults"), dict) else {}).get("strategy", "local_first"))
+def _normalize_strategy_name(raw_strategy: str | None) -> tuple[str, bool]:
+    strategy = str(raw_strategy or "").strip()
+    if strategy in ROUTING_STRATEGIES:
+        return strategy, True
+    return "local_first", False
 
 
-def _resolve_strategy_source(req, env: dict, policies: dict) -> str:
+def _strategy_value_and_source(req, env: dict, policies: dict) -> tuple[str, str]:
     req_strategy = str(req.provider_preferences.strategy or "").strip()
     if req_strategy and req_strategy != "default":
-        return "request.provider_preferences.strategy"
+        return req_strategy, "request.provider_preferences.strategy"
 
     project_override = _project_override_for_request(req, policies)
     project_task_override = _task_override_for_request(req, project_override)
     project_task_defaults = project_task_override.get("defaults", {}) if isinstance(project_task_override.get("defaults"), dict) else {}
-    if str(project_task_defaults.get("strategy", "") or "").strip():
-        return "project_overrides.task_overrides.defaults.strategy"
+    project_task_strategy = str(project_task_defaults.get("strategy", "") or "").strip()
+    if project_task_strategy:
+        return project_task_strategy, "project_overrides.task_overrides.defaults.strategy"
 
     project_defaults = project_override.get("defaults", {}) if isinstance(project_override.get("defaults"), dict) else {}
-    if str(project_defaults.get("strategy", "") or "").strip():
-        return "project_overrides.defaults.strategy"
+    project_strategy = str(project_defaults.get("strategy", "") or "").strip()
+    if project_strategy:
+        return project_strategy, "project_overrides.defaults.strategy"
 
     root_task_override = _task_override_for_request(req, policies)
     root_task_defaults = root_task_override.get("defaults", {}) if isinstance(root_task_override.get("defaults"), dict) else {}
-    if str(root_task_defaults.get("strategy", "") or "").strip():
-        return "task_overrides.defaults.strategy"
+    root_task_strategy = str(root_task_defaults.get("strategy", "") or "").strip()
+    if root_task_strategy:
+        return root_task_strategy, "task_overrides.defaults.strategy"
 
     defaults = policies.get("defaults", {}) if isinstance(policies.get("defaults"), dict) else {}
-    if str(defaults.get("strategy", "") or "").strip():
-        return "defaults.strategy"
+    default_strategy = str(defaults.get("strategy", "") or "").strip()
+    if default_strategy:
+        return default_strategy, "defaults.strategy"
 
     env_strategy = str(env.get("DEFAULT_ROUTING_STRATEGY", "") or "").strip()
     if env_strategy:
-        return "env.DEFAULT_ROUTING_STRATEGY"
-    return "builtin.local_first"
+        return env_strategy, "env.DEFAULT_ROUTING_STRATEGY"
+
+    return "local_first", "builtin.local_first"
+
+
+def _strategy_resolution_context(req, env: dict, policies: dict) -> dict:
+    requested, strategy_source = _strategy_value_and_source(req, env, policies)
+    resolved, strategy_valid = _normalize_strategy_name(requested)
+    return {
+        "requested_strategy": str(requested or "").strip() or "local_first",
+        "resolved_strategy": resolved,
+        "strategy_source": strategy_source,
+        "strategy_valid": strategy_valid,
+        "strategy_fallback_applied": not strategy_valid,
+        "strategy_fallback_reason": None if strategy_valid else "invalid_strategy_value",
+    }
+
+
+def _resolve_strategy(req, env: dict, policies: dict) -> str:
+    return str(_strategy_resolution_context(req, env, policies).get("resolved_strategy", "local_first"))
+
+
+def _resolve_strategy_source(req, env: dict, policies: dict) -> str:
+    return str(_strategy_resolution_context(req, env, policies).get("strategy_source", "builtin.local_first"))
+
+
+def _normalize_candidate_chain(raw_chain: list[str] | None) -> list[str]:
+    rows = raw_chain if isinstance(raw_chain, list) else []
+    out = []
+    seen = set()
+    for lane in rows:
+        normalized = str(lane or "").strip()
+        if normalized not in ROUTING_LANES:
+            continue
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        out.append(normalized)
+    return out
 
 
 def _build_route_policy_context(
@@ -1641,6 +1862,8 @@ def _build_route_policy_context(
     candidate_chain: list[str],
     effective_defaults: dict | None = None,
     effective_selection: dict | None = None,
+    strategy_resolution: dict | None = None,
+    chain_resolution: dict | None = None,
 ) -> dict:
     project_override = _project_override_for_request(req, policies)
     root_task_override = _task_override_for_request(req, policies)
@@ -1648,17 +1871,46 @@ def _build_route_policy_context(
 
     defaults = effective_defaults if isinstance(effective_defaults, dict) else _effective_policy_defaults(req, policies)
     selection = effective_selection if isinstance(effective_selection, dict) else _effective_policy_selection(req, policies)
+    strategy_ctx = strategy_resolution if isinstance(strategy_resolution, dict) else _strategy_resolution_context(req, env, policies)
+    chain_ctx = (
+        chain_resolution
+        if isinstance(chain_resolution, dict)
+        else _candidate_chain_resolution(
+            strategy,
+            req,
+            policies,
+            effective_defaults=defaults,
+            effective_selection=selection,
+        )
+    )
 
     return {
         "task_type": _normalize_task_type(getattr(req, "task_type", "chat")),
         "project_id": _resolve_project_id(req),
-        "strategy_source": _resolve_strategy_source(req, env, policies),
+        "strategy_source": strategy_ctx.get("strategy_source"),
+        "requested_strategy": strategy_ctx.get("requested_strategy"),
+        "resolved_strategy": strategy_ctx.get("resolved_strategy"),
+        "strategy_valid": bool(strategy_ctx.get("strategy_valid", False)),
+        "strategy_fallback_applied": bool(strategy_ctx.get("strategy_fallback_applied", False)),
+        "strategy_fallback_reason": strategy_ctx.get("strategy_fallback_reason"),
         "project_override_applied": bool(project_override),
         "global_task_override_applied": bool(root_task_override),
         "project_task_override_applied": bool(project_task_override),
         "effective_defaults": defaults,
         "effective_selection": selection,
         "candidate_chain": list(candidate_chain if isinstance(candidate_chain, list) else []),
+        "candidate_chain_source": chain_ctx.get("chain_source"),
+        "candidate_chain_before_filters": list(chain_ctx.get("normalized_chain", [])),
+        "candidate_chain_after_filters": list(chain_ctx.get("filtered_chain", [])),
+        "filter_flags": {
+            "free_only": bool(chain_ctx.get("free_only", False)),
+            "paid_allowed": bool(chain_ctx.get("paid_allowed", True)),
+        },
+        "strict_provider_target": chain_ctx.get("strict_provider_target"),
+        "service_tier": chain_ctx.get("service_tier"),
+        "service_tier_requested": chain_ctx.get("service_tier_requested"),
+        "service_tier_source": chain_ctx.get("service_tier_source"),
+        "service_tier_chain": list(chain_ctx.get("service_tier_chain", [])),
     }
 
 
@@ -1668,28 +1920,225 @@ def _resolve_bool_pref(req_val: bool | None, default_val: bool) -> bool:
     return bool(req_val)
 
 
-def _candidate_chain_for_strategy(strategy: str, req, policies: dict) -> list[str]:
-    if strategy == "strict_provider":
-        provider = req.provider_preferences.preferred_provider or "local"
-        if provider == "openrouter":
-            return ["openrouter.free", "openrouter.paid"]
-        return [provider]
+def _normalize_service_tier(raw_tier: str | None) -> str:
+    tier = str(raw_tier or "").strip().lower()
+    if tier in ROUTING_SERVICE_TIERS:
+        return tier
+    return "default"
 
-    selection = _effective_policy_selection(req, policies)
-    chain = list(selection.get(strategy, ["local"]))
 
-    defaults = _effective_policy_defaults(req, policies)
+def _normalize_preferred_provider_lane(raw_provider: str | None) -> str:
+    preferred = str(raw_provider or "").strip().lower()
+    if preferred in {"openrouter.free", "openrouter.paid", "openrouter", "openai", "local"}:
+        return preferred
+    return "local"
+
+
+def _service_tier_chain(req, policies: dict, effective_defaults: dict | None = None) -> dict:
+    defaults = effective_defaults if isinstance(effective_defaults, dict) else _effective_policy_defaults(req, policies)
+    req_tier = str(getattr(req.provider_preferences, "service_tier", "") or "").strip().lower()
+    default_tier = str(defaults.get("service_tier", "default") or "default").strip().lower()
+    tier_source = "request.provider_preferences.service_tier"
+    selected = req_tier
+    if not selected or selected == "default":
+        selected = default_tier
+        tier_source = "effective_defaults.service_tier"
+    normalized_tier = _normalize_service_tier(selected)
+    if normalized_tier == "default" and selected not in {"", "default"}:
+        tier_source = "invalid_service_tier_fallback"
+
+    tiers = policies.get("service_tiers", {}) if isinstance(policies.get("service_tiers"), dict) else {}
+    row = tiers.get(normalized_tier, {}) if isinstance(tiers.get(normalized_tier), dict) else {}
+    chain = _normalize_candidate_chain(row.get("chain", []) if isinstance(row.get("chain"), list) else [])
+    return {
+        "requested": selected or "default",
+        "service_tier": normalized_tier,
+        "source": tier_source,
+        "chain": chain,
+        "applied": normalized_tier != "default" and bool(chain),
+    }
+
+
+def _candidate_chain_resolution(
+    strategy: str,
+    req,
+    policies: dict,
+    effective_defaults: dict | None = None,
+    effective_selection: dict | None = None,
+) -> dict:
+    defaults = effective_defaults if isinstance(effective_defaults, dict) else _effective_policy_defaults(req, policies)
+    selection = effective_selection if isinstance(effective_selection, dict) else _effective_policy_selection(req, policies)
+
     free_only = _resolve_bool_pref(req.provider_preferences.free_only, bool(defaults.get("free_only", False)))
     paid_allowed = _resolve_bool_pref(req.provider_preferences.paid_allowed, bool(defaults.get("paid_allowed", True)))
 
+    strict_target = None
+    if strategy == "strict_provider":
+        strict_target = _normalize_preferred_provider_lane(
+            req.provider_preferences.preferred_provider or defaults.get("preferred_provider", "local")
+        )
+        if strict_target == "openrouter":
+            raw_chain = ["openrouter.free", "openrouter.paid"]
+        elif strict_target in {"openrouter.free", "openrouter.paid", "openai", "local"}:
+            raw_chain = [strict_target]
+        else:
+            raw_chain = ["local"]
+        chain_source = f"strict_provider.{strict_target}"
+    else:
+        tier_ctx = _service_tier_chain(req, policies, effective_defaults=defaults)
+        if bool(tier_ctx.get("applied", False)):
+            raw_chain = tier_ctx.get("chain", [])
+            chain_source = f"service_tiers.{tier_ctx.get('service_tier')}.chain"
+        else:
+            fallback_chain = DEFAULT_PROVIDER_POLICIES.get("selection", {}).get(strategy, ["local"])
+            if strategy in selection and isinstance(selection.get(strategy), list):
+                raw_chain = selection.get(strategy, fallback_chain)
+                chain_source = f"effective_selection.{strategy}"
+            else:
+                raw_chain = fallback_chain
+                chain_source = f"default_selection.{strategy}"
+
+    normalized_chain = _normalize_candidate_chain(raw_chain if isinstance(raw_chain, list) else ["local"])
+    if not normalized_chain:
+        normalized_chain = ["local"]
+
     filtered = []
-    for lane in chain:
-        if free_only and lane in ("openrouter.paid", "openai"):
+    for lane in normalized_chain:
+        if free_only and lane in {"openrouter.paid", "openai"}:
             continue
-        if not paid_allowed and lane in ("openrouter.paid", "openai"):
+        if not paid_allowed and lane in {"openrouter.paid", "openai"}:
             continue
         filtered.append(lane)
-    return filtered or ["local"]
+    filtered_chain = _normalize_candidate_chain(filtered) or ["local"]
+
+    tier_ctx = _service_tier_chain(req, policies, effective_defaults=defaults)
+    return {
+        "strategy": strategy,
+        "chain_source": chain_source,
+        "normalized_chain": normalized_chain,
+        "filtered_chain": filtered_chain,
+        "free_only": free_only,
+        "paid_allowed": paid_allowed,
+        "strict_provider_target": strict_target,
+        "service_tier": tier_ctx.get("service_tier"),
+        "service_tier_requested": tier_ctx.get("requested"),
+        "service_tier_source": tier_ctx.get("source"),
+        "service_tier_chain": tier_ctx.get("chain", []),
+    }
+
+
+def _candidate_chain_for_strategy(strategy: str, req, policies: dict) -> list[str]:
+    resolution = _candidate_chain_resolution(strategy, req, policies)
+    chain = resolution.get("filtered_chain", []) if isinstance(resolution, dict) else []
+    return list(chain if isinstance(chain, list) and chain else ["local"])
+
+
+def _append_route_attempt(
+    attempts: list[dict],
+    lane: str,
+    provider: str,
+    model: str,
+    result: str,
+    reason_code: str,
+    error: dict | None = None,
+    fallback_action: str | None = None,
+):
+    row = {
+        "attempt_index": len(attempts) + 1,
+        "lane": str(lane or ""),
+        "provider": str(provider or ""),
+        "model": str(model or ""),
+        "result": str(result or ""),
+        "reason_code": str(reason_code or "unknown"),
+    }
+    if isinstance(error, dict):
+        row["error"] = error
+    if fallback_action:
+        row["fallback_action"] = str(fallback_action)
+    attempts.append(row)
+
+
+def _normalized_reason_fragment(raw: str | None) -> str:
+    text = str(raw or "").strip().lower()
+    if not text:
+        return "provider_error"
+    text = re.sub(r"[^a-z0-9]+", "_", text)
+    return text.strip("_") or "provider_error"
+
+
+def _dispatch_reason_code(normalized_error: dict) -> str:
+    err_type = ""
+    if isinstance(normalized_error, dict):
+        err_type = str(normalized_error.get("type", "") or "")
+    return f"dispatch_{_normalized_reason_fragment(err_type)}"
+
+
+def _provider_block_reason(provider: str, normalized_error: dict) -> str | None:
+    provider_name = str(provider or "").strip().lower()
+    err_type = str((normalized_error or {}).get("type", "") or "").strip().lower()
+    if err_type == "auth_error" and provider_name in {"openrouter", "openai"}:
+        return "auth_error"
+    return None
+
+
+def _build_fallback_summary(
+    candidate_chain: list[str],
+    attempt_trace: list[dict],
+    allow_fallbacks: bool,
+    selected_lane: str | None,
+    selected_provider: str | None,
+    selected_model: str | None,
+) -> dict:
+    attempts = [row for row in attempt_trace if isinstance(row, dict)]
+    selected_attempt_index = None
+    reason_codes = []
+    attempted_lanes = []
+    attempted_providers = []
+    blocked_or_skipped_count = 0
+    dispatch_error_count = 0
+
+    for row in attempts:
+        result = str(row.get("result", "") or "")
+        if result == "selected" and selected_attempt_index is None:
+            try:
+                selected_attempt_index = int(row.get("attempt_index", 0) or 0)
+            except Exception:
+                selected_attempt_index = None
+
+        lane = str(row.get("lane", "") or "")
+        if lane and lane not in attempted_lanes:
+            attempted_lanes.append(lane)
+
+        provider = str(row.get("provider", "") or "")
+        if provider and provider not in attempted_providers:
+            attempted_providers.append(provider)
+
+        reason_code = str(row.get("reason_code", "") or "")
+        if reason_code and reason_code not in reason_codes:
+            reason_codes.append(reason_code)
+
+        if result in {"blocked", "skipped"}:
+            blocked_or_skipped_count += 1
+        elif result == "error":
+            dispatch_error_count += 1
+
+    used_fallback = bool(selected_attempt_index is not None and selected_attempt_index > 1)
+    return {
+        "allow_fallbacks": bool(allow_fallbacks),
+        "chain_length": len(candidate_chain if isinstance(candidate_chain, list) else []),
+        "attempt_count": len(attempts),
+        "selected_attempt_index": selected_attempt_index,
+        "selected_on_first_attempt": bool(selected_attempt_index == 1),
+        "used_fallback": used_fallback,
+        "selected_lane": selected_lane,
+        "selected_provider": selected_provider,
+        "selected_model": selected_model,
+        "attempted_lanes": attempted_lanes,
+        "attempted_providers": attempted_providers,
+        "attempt_reason_codes": reason_codes,
+        "blocked_or_skipped_count": blocked_or_skipped_count,
+        "dispatch_error_count": dispatch_error_count,
+    }
 
 
 def _openrouter_upstream_free_ids() -> set[str]:
@@ -1875,6 +2324,62 @@ def _enforce_budget_guardrail(
             })
 
 
+def _request_capability_requirements(req) -> dict:
+    requirements = {
+        "tools": bool(getattr(req, "tools", None)),
+        "structured_outputs": bool(getattr(req, "json_schema", None)),
+        "reasoning": False,
+        "vision": False,
+    }
+    model_prefs = getattr(req, "model_preferences", None)
+    preferred_tags = []
+    if model_prefs is not None and isinstance(getattr(model_prefs, "preferred_model_tags", None), list):
+        preferred_tags = [str(tag).strip().lower() for tag in model_prefs.preferred_model_tags if str(tag).strip()]
+    for tag in preferred_tags:
+        if tag in {"tools", "tool_calling", "function_calling"}:
+            requirements["tools"] = True
+        elif tag in {"structured", "structured_outputs", "json_schema", "response_format"}:
+            requirements["structured_outputs"] = True
+        elif tag in {"reasoning", "cot"}:
+            requirements["reasoning"] = True
+        elif tag in {"vision", "multimodal"}:
+            requirements["vision"] = True
+    return requirements
+
+
+def _row_supports_requirements(row: dict, requirements: dict) -> bool:
+    if not isinstance(row, dict):
+        return False
+    reqs = requirements if isinstance(requirements, dict) else {}
+
+    if bool(reqs.get("tools", False)) and row.get("supports_tools") is False:
+        return False
+    if bool(reqs.get("structured_outputs", False)):
+        supports_structured = row.get("supports_structured_outputs")
+        if supports_structured is None:
+            supports_structured = row.get("supports_json_schema")
+        if supports_structured is False:
+            return False
+    if bool(reqs.get("reasoning", False)) and row.get("supports_reasoning") is False:
+        return False
+    if bool(reqs.get("vision", False)) and row.get("supports_vision") is False:
+        return False
+    return True
+
+
+def _openrouter_state_allows_free_rotation(model_id: str) -> bool:
+    if not str(model_id or "").strip():
+        return False
+    row = _provider_model_state_row("openrouter", model_id)
+    if bool(row.get("exclude_from_free_rotation", False)):
+        return False
+    if bool(row.get("disabled_until_manual_review", False)):
+        return False
+    if str(row.get("promotion_state", "") or "").lower() in {"quarantined", "retired"}:
+        return False
+    return True
+
+
 def _pick_catalog_model(
     lane: str,
     provider_models: dict,
@@ -1882,8 +2387,25 @@ def _pick_catalog_model(
     excluded_models: set[str] | None = None,
     policies: dict | None = None,
 ) -> tuple[str, str]:
+    def _priority_sort_key(row: dict) -> tuple[int, str]:
+        try:
+            priority = int(row.get("priority", 9999) or 9999)
+        except Exception:
+            priority = 9999
+        model_id = str(row.get("id", "") or "")
+        return (priority, model_id)
+
+    def _apply_capability_filter(rows: list[dict], requirements: dict) -> list[dict]:
+        filtered = [row for row in rows if _row_supports_requirements(row, requirements)]
+        # If request has no capability requirements, keep current list untouched.
+        has_requirements = any(bool(requirements.get(k, False)) for k in ("tools", "structured_outputs", "reasoning", "vision"))
+        if not has_requirements:
+            return rows
+        return filtered
+
     excluded_models = excluded_models or set()
     policies = policies or {}
+    requirements = _request_capability_requirements(req)
     preferred = (req.model_preferences.preferred_model or "").strip()
     if preferred:
         if lane.startswith("openrouter"):
@@ -1903,11 +2425,9 @@ def _pick_catalog_model(
             if upstream_free:
                 enabled = [m for m in enabled if str(m.get("id", "")) in upstream_free]
         enabled = [m for m in enabled if str(m.get("id", "")) not in excluded_models]
-        enabled = [
-            m for m in enabled
-            if not bool(_provider_model_state_row("openrouter", str(m.get("id", ""))).get("exclude_from_free_rotation", False))
-        ]
-        enabled.sort(key=lambda m: int(m.get("priority", 9999)))
+        enabled = [m for m in enabled if _openrouter_state_allows_free_rotation(str(m.get("id", "") or ""))]
+        enabled = _apply_capability_filter(enabled, requirements)
+        enabled.sort(key=_priority_sort_key)
         if enabled:
             return "openrouter", str(enabled[0]["id"])
 
@@ -1925,10 +2445,9 @@ def _pick_catalog_model(
                 continue
             if upstream_free and model_id not in upstream_free:
                 continue
-            model_state = _provider_model_state_row("openrouter", model_id)
-            if bool(model_state.get("exclude_from_free_rotation", False)):
+            if not _openrouter_state_allows_free_rotation(model_id):
                 continue
-            if bool(model_state.get("disabled_until_manual_review", False)):
+            if not _row_supports_requirements(row, requirements):
                 continue
             return "openrouter", model_id
 
@@ -1938,7 +2457,8 @@ def _pick_catalog_model(
         items = provider_models.get("openrouter", {}).get("paid", [])
         enabled = [m for m in items if isinstance(m, dict) and m.get("enabled", True)]
         enabled = [m for m in enabled if str(m.get("id", "")) not in excluded_models]
-        enabled.sort(key=lambda m: int(m.get("priority", 9999)))
+        enabled = _apply_capability_filter(enabled, requirements)
+        enabled.sort(key=_priority_sort_key)
         picked = enabled[0]["id"] if enabled else "openrouter-paid-default"
         return "openrouter", str(picked)
 
@@ -1946,7 +2466,8 @@ def _pick_catalog_model(
         items = provider_models.get("openai", {}).get("allowed", [])
         enabled = [m for m in items if isinstance(m, dict) and m.get("enabled", True)]
         enabled = [m for m in enabled if str(m.get("id", "")) not in excluded_models]
-        enabled.sort(key=lambda m: int(m.get("priority", 9999)))
+        enabled = _apply_capability_filter(enabled, requirements)
+        enabled.sort(key=_priority_sort_key)
         picked = enabled[0]["id"] if enabled else "openai-default"
         return "openai", str(picked)
 
@@ -2412,6 +2933,7 @@ def _build_openrouter_catalog_model(row: dict, rankings_lookup: dict) -> dict | 
         "output_modalities": output_modalities,
         "supports_tools": "tools" in supported_parameters,
         "supports_structured_outputs": "structured_outputs" in supported_parameters,
+        "supports_json_schema": ("structured_outputs" in supported_parameters) or ("response_format" in supported_parameters),
         "supports_reasoning": "reasoning" in supported_parameters,
         "supports_vision": any(modality in {"image", "video"} for modality in input_modalities),
         "supports_text": not output_modalities or "text" in output_modalities,
@@ -2467,6 +2989,16 @@ def _smoke_check_openrouter_candidates(env: dict, payload: dict, req: OpenRouter
     smoke_top_n = max(0, int(req.smoke_top_n or 0))
     timeout_s = max(5, min(90, int(req.smoke_timeout_s or 15)))
     prompt = str(req.smoke_prompt or "Reply with OK only.").strip() or "Reply with OK only."
+    require_tools = bool(req.require_tools is True)
+    require_structured = bool(req.require_structured_outputs is True)
+    if require_structured:
+        prompt = (
+            f"{prompt}\nRespond ONLY as JSON matching schema with field 'ok' set to true."
+        )
+    if require_tools:
+        prompt = (
+            f"{prompt}\nUse the ping tool exactly once with argument {{\"message\": \"smoke\"}}."
+        )
     if smoke_top_n <= 0 or not candidates:
         return {
             "tested_count": 0,
@@ -2498,21 +3030,76 @@ def _smoke_check_openrouter_candidates(env: dict, payload: dict, req: OpenRouter
         tested += 1
         start = time.time()
         try:
+            smoke_payload = {
+                "model": model_id,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 48,
+                "temperature": 0,
+            }
+            if require_structured:
+                smoke_payload["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "smoke_check",
+                        "strict": True,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "ok": {"type": "boolean"},
+                            },
+                            "required": ["ok"],
+                            "additionalProperties": False,
+                        },
+                    },
+                }
+            if require_tools:
+                smoke_payload["tools"] = [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "ping",
+                            "description": "Smoke check tool",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "message": {"type": "string"},
+                                },
+                                "required": ["message"],
+                                "additionalProperties": False,
+                            },
+                        },
+                    }
+                ]
+
             raw = adapter.chat({
                 "base": env.get("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1"),
                 "api_key": env.get("OPENROUTER_API_KEY", ""),
-                "payload": {
-                    "model": model_id,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 48,
-                    "temperature": 0,
-                },
+                "payload": smoke_payload,
                 "x_title": "llm-manager-smoke",
                 "http_referer": "http://127.0.0.1/llm-manager",
                 "timeout": timeout_s,
             })
             text = _extract_chat_text(raw).strip()
             latency_ms = int((time.time() - start) * 1000)
+
+            choices = raw.get("choices", []) if isinstance(raw, dict) and isinstance(raw.get("choices"), list) else []
+            first_choice = choices[0] if choices else {}
+            message_obj = first_choice.get("message", {}) if isinstance(first_choice, dict) else {}
+            tool_calls = message_obj.get("tool_calls", []) if isinstance(message_obj, dict) and isinstance(message_obj.get("tool_calls"), list) else []
+
+            structured_ok = True
+            if require_structured:
+                structured_ok = False
+                try:
+                    parsed = json.loads(text)
+                    structured_ok = isinstance(parsed, dict) and isinstance(parsed.get("ok"), bool)
+                except Exception:
+                    structured_ok = False
+
+            tools_ok = True
+            if require_tools:
+                tools_ok = bool(tool_calls)
+
             if not text:
                 normalized = {
                     "type": "smoke_empty_response",
@@ -2542,6 +3129,49 @@ def _smoke_check_openrouter_candidates(env: dict, payload: dict, req: OpenRouter
                 })
                 continue
 
+            if not structured_ok or not tools_ok:
+                mismatch_parts = []
+                if not structured_ok:
+                    mismatch_parts.append("structured_output_check_failed")
+                if not tools_ok:
+                    mismatch_parts.append("tools_check_failed")
+                mismatch_message = ",".join(mismatch_parts) or "capability_mismatch"
+                normalized = {
+                    "type": "smoke_capability_mismatch",
+                    "message": mismatch_message,
+                    "retryable": False,
+                }
+                _mark_provider_failure("openrouter", model_id, normalized)
+                _set_provider_model_promotion_state("openrouter", model_id, "quarantined", reason="smoke_capability_mismatch", actor=req.actor)
+                evidence = {
+                    "ts": datetime.utcnow().isoformat() + "Z",
+                    "status": "failed",
+                    "latency_ms": latency_ms,
+                    "error_type": str(normalized.get("type", "provider_error")),
+                    "error_message": str(normalized.get("message", "") or ""),
+                    "prompt_preview": prompt[:120],
+                    "timeout_s": timeout_s,
+                    "actor": req.actor,
+                    "reason": req.reason or None,
+                    "requirements": {
+                        "tools": require_tools,
+                        "structured_outputs": require_structured,
+                    },
+                    "checks": {
+                        "tools_ok": tools_ok,
+                        "structured_ok": structured_ok,
+                    },
+                }
+                _append_openrouter_smoke_evidence(model_id, evidence)
+                results.append({
+                    "model": model_id,
+                    "status": "failed",
+                    "latency_ms": latency_ms,
+                    "error": normalized,
+                    "evidence": evidence,
+                })
+                continue
+
             _mark_provider_success("openrouter", model_id)
             _set_provider_model_promotion_state("openrouter", model_id, "smoke_passed", reason="smoke_check_pass", actor=req.actor)
             passed_ids.append(model_id)
@@ -2555,6 +3185,10 @@ def _smoke_check_openrouter_candidates(env: dict, payload: dict, req: OpenRouter
                 "timeout_s": timeout_s,
                 "actor": req.actor,
                 "reason": req.reason or None,
+                "requirements": {
+                    "tools": require_tools,
+                    "structured_outputs": require_structured,
+                },
             }
             _append_openrouter_smoke_evidence(model_id, evidence)
             results.append({
@@ -2743,7 +3377,7 @@ def _build_openrouter_free_candidates(provider_models: dict, discovery_req: Open
         if discovery_req.require_tools is True and not bool(row.get("supports_tools", False)):
             skipped["capabilities"] += 1
             continue
-        if discovery_req.require_structured_outputs is True and not bool(row.get("supports_structured_outputs", False)):
+        if discovery_req.require_structured_outputs is True and not bool(row.get("supports_structured_outputs", row.get("supports_json_schema", False))):
             skipped["capabilities"] += 1
             continue
         if discovery_req.require_reasoning is True and not bool(row.get("supports_reasoning", False)):
@@ -2775,6 +3409,10 @@ def _build_openrouter_free_candidates(provider_models: dict, discovery_req: Open
         candidate["last_success_ts"] = model_state.get("last_success_ts")
         candidate["last_failure_ts"] = model_state.get("last_failure_ts")
         candidate["last_error_type"] = model_state.get("last_error_type")
+        candidate["last_error_message"] = model_state.get("last_error_message")
+        candidate["last_error_status_code"] = model_state.get("last_error_status_code")
+        candidate["last_error_provider_code"] = model_state.get("last_error_provider_code")
+        candidate["last_error_provider_type"] = model_state.get("last_error_provider_type")
         candidate["promotion_state"] = promotion_state
         candidate["health_status"] = _openrouter_health_status(model_state)
         candidate["activation_eligible"] = (
@@ -5432,15 +6070,31 @@ def providers_policies_test(req: PoliciesTestReq):
             model_preferences=RouterModelPreferences(),
             metadata=req.metadata,
         )
-    strategy = _resolve_strategy(probe, env, policies)
-    chain = _candidate_chain_for_strategy(strategy, probe, policies)
+    strategy_resolution = _strategy_resolution_context(probe, env, policies)
+    strategy = str(strategy_resolution.get("resolved_strategy", "local_first"))
+    chain_resolution = _candidate_chain_resolution(strategy, probe, policies)
+    chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
+    if not chain:
+        chain = ["local"]
+    policy_context = _build_route_policy_context(
+        probe,
+        env,
+        policies,
+        strategy,
+        chain,
+        strategy_resolution=strategy_resolution,
+        chain_resolution=chain_resolution,
+    )
     return {
         "ok": True,
         "time": datetime.utcnow().isoformat() + "Z",
         "task_type": task_type,
         "project_id": _resolve_project_id(probe),
         "strategy": strategy,
+        "strategy_resolution": strategy_resolution,
+        "chain_resolution": chain_resolution,
         "candidate_chain": chain,
+        "policy_context": policy_context,
         "effective_defaults": _effective_policy_defaults(probe, policies),
         "effective_selection": _effective_policy_selection(probe, policies),
         "project_override": _project_override_for_request(probe, policies),
@@ -5736,8 +6390,21 @@ def router_route_test(req: RouterRouteTestReq):
             metadata=req.metadata,
         )
 
-    strategy = _resolve_strategy(probe, env, policies)
-    chain = _candidate_chain_for_strategy(strategy, probe, policies)
+    strategy_resolution = _strategy_resolution_context(probe, env, policies)
+    strategy = str(strategy_resolution.get("resolved_strategy", "local_first"))
+    chain_resolution = _candidate_chain_resolution(strategy, probe, policies)
+    chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
+    if not chain:
+        chain = ["local"]
+    policy_context = _build_route_policy_context(
+        probe,
+        env,
+        policies,
+        strategy,
+        chain,
+        strategy_resolution=strategy_resolution,
+        chain_resolution=chain_resolution,
+    )
 
     attempted_by_lane: dict[str, set[str]] = {}
     candidates = []
@@ -5749,6 +6416,7 @@ def router_route_test(req: RouterRouteTestReq):
         excluded.add(model_id)
         row = _provider_model_state_row(provider, model_id)
         candidates.append({
+            "attempt_order": len(candidates) + 1,
             "lane": lane,
             "provider": provider,
             "model": model_id,
@@ -5829,7 +6497,10 @@ def router_route_test(req: RouterRouteTestReq):
         "task_type": task_type,
         "project_id": _resolve_project_id(probe),
         "strategy": strategy,
+        "strategy_resolution": strategy_resolution,
+        "chain_resolution": chain_resolution,
         "candidate_chain": chain,
+        "policy_context": policy_context,
         "candidates": candidates,
         "execution": execution,
     }
@@ -5841,38 +6512,99 @@ def router_chat(req: RouterChatRequest):
     provider_models = read_provider_models()
     policies = read_provider_policies()
     _maybe_refresh_openrouter_catalog(env)
-    strategy = _resolve_strategy(req, env, policies)
-    chain = _candidate_chain_for_strategy(strategy, req, policies)
+    strategy_resolution = _strategy_resolution_context(req, env, policies)
+    strategy = str(strategy_resolution.get("resolved_strategy", "local_first"))
     effective_defaults = _effective_policy_defaults(req, policies)
     effective_selection = _effective_policy_selection(req, policies)
+    chain_resolution = _candidate_chain_resolution(
+        strategy,
+        req,
+        policies,
+        effective_defaults=effective_defaults,
+        effective_selection=effective_selection,
+    )
+    chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
+    if not chain:
+        chain = ["local"]
     allow_fallbacks = _resolve_bool_pref(
         req.provider_preferences.allow_fallbacks,
         bool(effective_defaults.get("allow_fallbacks", True)),
     )
 
     routing_errors = []
+    attempt_trace = []
     selected_provider = None
     selected_model = None
     selected_lane = None
     attempted_by_lane: dict[str, set[str]] = {}
+    blocked_providers: dict[str, str] = {}
     raw = None
     for idx, lane in enumerate(chain):
         excluded = attempted_by_lane.setdefault(lane, set())
         provider, model_id = _pick_catalog_model(lane, provider_models, req, excluded_models=excluded, policies=policies)
         if model_id in excluded:
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="skipped",
+                reason_code="duplicate_candidate",
+                fallback_action="continue_next_candidate",
+            )
             continue
         excluded.add(model_id)
-        if _is_model_in_cooldown(provider, model_id):
+
+        blocked_reason = blocked_providers.get(str(provider))
+        if blocked_reason:
+            block_error = {
+                "type": "provider_blocked",
+                "message": f"provider blocked for this request after {blocked_reason}",
+                "retryable": False,
+                "blocked_reason": blocked_reason,
+            }
             routing_errors.append({
                 "lane": lane,
                 "provider": provider,
                 "model": model_id,
-                "error": {
-                    "type": "cooldown",
-                    "message": "model is currently in cooldown",
-                    "retryable": True,
-                },
+                "error": block_error,
             })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="skipped",
+                reason_code=f"provider_blocked_{_normalized_reason_fragment(blocked_reason)}",
+                error=block_error,
+                fallback_action="break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate",
+            )
+            if idx == len(chain) - 1:
+                break
+            continue
+
+        if _is_model_in_cooldown(provider, model_id):
+            cooldown_error = {
+                "type": "cooldown",
+                "message": "model is currently in cooldown",
+                "retryable": True,
+            }
+            routing_errors.append({
+                "lane": lane,
+                "provider": provider,
+                "model": model_id,
+                "error": cooldown_error,
+            })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="skipped",
+                reason_code="cooldown_active",
+                error=cooldown_error,
+                fallback_action="break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate",
+            )
             if idx == len(chain) - 1:
                 break
             continue
@@ -5893,6 +6625,20 @@ def router_chat(req: RouterChatRequest):
                     "model": model_id,
                     "error": overflow_error,
                 })
+                _append_route_attempt(
+                    attempt_trace,
+                    lane=lane,
+                    provider=provider,
+                    model=model_id,
+                    result="blocked",
+                    reason_code="free_tier_limiter",
+                    error=overflow_error,
+                    fallback_action=(
+                        "break_overflow_policy"
+                        if action == "break"
+                        else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
+                    ),
+                )
                 if action == "break" or idx == len(chain) - 1:
                     break
                 continue
@@ -5916,6 +6662,20 @@ def router_chat(req: RouterChatRequest):
                     "retryable": False,
                 },
             })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="blocked",
+                reason_code="budget_guardrail",
+                error={
+                    "type": "budget_blocked",
+                    "message": str(e.detail),
+                    "retryable": False,
+                },
+                fallback_action="break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate",
+            )
             if idx == len(chain) - 1:
                 break
             continue
@@ -5926,27 +6686,97 @@ def router_chat(req: RouterChatRequest):
             selected_model = model_id
             selected_lane = lane
             _mark_provider_success(provider, model_id)
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="selected",
+                reason_code="selected",
+                fallback_action="selected",
+            )
             break
         except Exception as e:
             normalized = _normalize_provider_error(provider, e)
             _mark_provider_failure(provider, model_id, normalized)
+            block_reason = _provider_block_reason(provider, normalized)
+            if block_reason:
+                blocked_providers[str(provider)] = block_reason
             routing_errors.append({
                 "lane": lane,
                 "provider": provider,
                 "model": model_id,
                 "error": normalized,
             })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="error",
+                reason_code=_dispatch_reason_code(normalized),
+                error=normalized,
+                fallback_action=(
+                    "break_fallback_disabled"
+                    if not allow_fallbacks
+                    else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
+                ),
+            )
             if not allow_fallbacks:
                 break
             if idx == len(chain) - 1:
                 break
 
     if raw is None or selected_provider is None or selected_model is None:
+        now_ts = datetime.utcnow().isoformat() + "Z"
+        failure_policy_context = _build_route_policy_context(
+            req,
+            env,
+            policies,
+            strategy,
+            chain,
+            effective_defaults=effective_defaults,
+            effective_selection=effective_selection,
+            strategy_resolution=strategy_resolution,
+            chain_resolution=chain_resolution,
+        )
+        failure_decision = {
+            "request_id": uuid.uuid4().hex[:12],
+            "ts": now_ts,
+            "task_type": _normalize_task_type(getattr(req, "task_type", "chat")),
+            "project_id": _resolve_project_id(req),
+            "strategy": strategy,
+            "strategy_source": failure_policy_context.get("strategy_source"),
+            "policy_context": failure_policy_context,
+            "candidate_chain": chain,
+            "selected_lane": None,
+            "selected_provider": None,
+            "selected_model": None,
+            "selected_backend": None,
+            "selected_active_local_model": None,
+            "outcome": "error",
+            "attempt_errors": routing_errors,
+            "attempt_trace": attempt_trace,
+            "fallback_summary": _build_fallback_summary(
+                chain,
+                attempt_trace,
+                allow_fallbacks,
+                None,
+                None,
+                None,
+            ),
+            "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+            "metadata": req.metadata,
+        }
+        _append_router_decision(failure_decision, policies=policies)
         raise HTTPException(502, {
             "message": "No provider candidate succeeded",
             "strategy": strategy,
             "candidate_chain": chain,
             "errors": routing_errors,
+            "attempt_trace": attempt_trace,
+            "fallback_summary": failure_decision.get("fallback_summary", {}),
+            "request_id": failure_decision.get("request_id"),
         })
 
     usage_raw = raw.get("usage", {}) if isinstance(raw, dict) else {}
@@ -5967,6 +6797,8 @@ def router_chat(req: RouterChatRequest):
         chain,
         effective_defaults=effective_defaults,
         effective_selection=effective_selection,
+        strategy_resolution=strategy_resolution,
+        chain_resolution=chain_resolution,
     )
 
     choices_raw = raw.get("choices", []) if isinstance(raw, dict) else []
@@ -5999,6 +6831,15 @@ def router_chat(req: RouterChatRequest):
         "selected_active_local_model": selected_active,
         "outcome": "ok",
         "attempt_errors": routing_errors,
+        "attempt_trace": attempt_trace,
+        "fallback_summary": _build_fallback_summary(
+            chain,
+            attempt_trace,
+            allow_fallbacks,
+            selected_lane,
+            selected_provider,
+            selected_model,
+        ),
         "usage": usage.dict(),
         "metadata": req.metadata,
     }
@@ -6040,38 +6881,99 @@ def router_completions(req: RouterCompletionRequest):
     provider_models = read_provider_models()
     policies = read_provider_policies()
     _maybe_refresh_openrouter_catalog(env)
-    strategy = _resolve_strategy(req, env, policies)
-    chain = _candidate_chain_for_strategy(strategy, req, policies)
+    strategy_resolution = _strategy_resolution_context(req, env, policies)
+    strategy = str(strategy_resolution.get("resolved_strategy", "local_first"))
     effective_defaults = _effective_policy_defaults(req, policies)
     effective_selection = _effective_policy_selection(req, policies)
+    chain_resolution = _candidate_chain_resolution(
+        strategy,
+        req,
+        policies,
+        effective_defaults=effective_defaults,
+        effective_selection=effective_selection,
+    )
+    chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
+    if not chain:
+        chain = ["local"]
     allow_fallbacks = _resolve_bool_pref(
         req.provider_preferences.allow_fallbacks,
         bool(effective_defaults.get("allow_fallbacks", True)),
     )
 
     routing_errors = []
+    attempt_trace = []
     selected_provider = None
     selected_model = None
     selected_lane = None
     attempted_by_lane: dict[str, set[str]] = {}
+    blocked_providers: dict[str, str] = {}
     raw = None
     for idx, lane in enumerate(chain):
         excluded = attempted_by_lane.setdefault(lane, set())
         provider, model_id = _pick_catalog_model(lane, provider_models, req, excluded_models=excluded, policies=policies)
         if model_id in excluded:
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="skipped",
+                reason_code="duplicate_candidate",
+                fallback_action="continue_next_candidate",
+            )
             continue
         excluded.add(model_id)
-        if _is_model_in_cooldown(provider, model_id):
+
+        blocked_reason = blocked_providers.get(str(provider))
+        if blocked_reason:
+            block_error = {
+                "type": "provider_blocked",
+                "message": f"provider blocked for this request after {blocked_reason}",
+                "retryable": False,
+                "blocked_reason": blocked_reason,
+            }
             routing_errors.append({
                 "lane": lane,
                 "provider": provider,
                 "model": model_id,
-                "error": {
-                    "type": "cooldown",
-                    "message": "model is currently in cooldown",
-                    "retryable": True,
-                },
+                "error": block_error,
             })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="skipped",
+                reason_code=f"provider_blocked_{_normalized_reason_fragment(blocked_reason)}",
+                error=block_error,
+                fallback_action="break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate",
+            )
+            if idx == len(chain) - 1:
+                break
+            continue
+
+        if _is_model_in_cooldown(provider, model_id):
+            cooldown_error = {
+                "type": "cooldown",
+                "message": "model is currently in cooldown",
+                "retryable": True,
+            }
+            routing_errors.append({
+                "lane": lane,
+                "provider": provider,
+                "model": model_id,
+                "error": cooldown_error,
+            })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="skipped",
+                reason_code="cooldown_active",
+                error=cooldown_error,
+                fallback_action="break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate",
+            )
             if idx == len(chain) - 1:
                 break
             continue
@@ -6092,6 +6994,20 @@ def router_completions(req: RouterCompletionRequest):
                     "model": model_id,
                     "error": overflow_error,
                 })
+                _append_route_attempt(
+                    attempt_trace,
+                    lane=lane,
+                    provider=provider,
+                    model=model_id,
+                    result="blocked",
+                    reason_code="free_tier_limiter",
+                    error=overflow_error,
+                    fallback_action=(
+                        "break_overflow_policy"
+                        if action == "break"
+                        else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
+                    ),
+                )
                 if action == "break" or idx == len(chain) - 1:
                     break
                 continue
@@ -6115,6 +7031,20 @@ def router_completions(req: RouterCompletionRequest):
                     "retryable": False,
                 },
             })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="blocked",
+                reason_code="budget_guardrail",
+                error={
+                    "type": "budget_blocked",
+                    "message": str(e.detail),
+                    "retryable": False,
+                },
+                fallback_action="break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate",
+            )
             if idx == len(chain) - 1:
                 break
             continue
@@ -6125,25 +7055,95 @@ def router_completions(req: RouterCompletionRequest):
             selected_model = model_id
             selected_lane = lane
             _mark_provider_success(provider, model_id)
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="selected",
+                reason_code="selected",
+                fallback_action="selected",
+            )
             break
         except Exception as e:
             normalized = _normalize_provider_error(provider, e)
             _mark_provider_failure(provider, model_id, normalized)
+            block_reason = _provider_block_reason(provider, normalized)
+            if block_reason:
+                blocked_providers[str(provider)] = block_reason
             routing_errors.append({
                 "lane": lane,
                 "provider": provider,
                 "model": model_id,
                 "error": normalized,
             })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="error",
+                reason_code=_dispatch_reason_code(normalized),
+                error=normalized,
+                fallback_action=(
+                    "break_fallback_disabled"
+                    if not allow_fallbacks
+                    else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
+                ),
+            )
             if not allow_fallbacks or idx == len(chain) - 1:
                 break
 
     if raw is None or selected_provider is None or selected_model is None:
+        now_ts = datetime.utcnow().isoformat() + "Z"
+        failure_policy_context = _build_route_policy_context(
+            req,
+            env,
+            policies,
+            strategy,
+            chain,
+            effective_defaults=effective_defaults,
+            effective_selection=effective_selection,
+            strategy_resolution=strategy_resolution,
+            chain_resolution=chain_resolution,
+        )
+        failure_decision = {
+            "request_id": uuid.uuid4().hex[:12],
+            "ts": now_ts,
+            "task_type": _normalize_task_type(getattr(req, "task_type", "completion")),
+            "project_id": _resolve_project_id(req),
+            "strategy": strategy,
+            "strategy_source": failure_policy_context.get("strategy_source"),
+            "policy_context": failure_policy_context,
+            "candidate_chain": chain,
+            "selected_lane": None,
+            "selected_provider": None,
+            "selected_model": None,
+            "selected_backend": None,
+            "selected_active_local_model": None,
+            "outcome": "error",
+            "attempt_errors": routing_errors,
+            "attempt_trace": attempt_trace,
+            "fallback_summary": _build_fallback_summary(
+                chain,
+                attempt_trace,
+                allow_fallbacks,
+                None,
+                None,
+                None,
+            ),
+            "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+            "metadata": req.metadata,
+        }
+        _append_router_decision(failure_decision, policies=policies)
         raise HTTPException(502, {
             "message": "No provider candidate succeeded",
             "strategy": strategy,
             "candidate_chain": chain,
             "errors": routing_errors,
+            "attempt_trace": attempt_trace,
+            "fallback_summary": failure_decision.get("fallback_summary", {}),
+            "request_id": failure_decision.get("request_id"),
         })
 
     usage_raw = raw.get("usage", {}) if isinstance(raw, dict) else {}
@@ -6174,6 +7174,8 @@ def router_completions(req: RouterCompletionRequest):
         chain,
         effective_defaults=effective_defaults,
         effective_selection=effective_selection,
+        strategy_resolution=strategy_resolution,
+        chain_resolution=chain_resolution,
     )
 
     now_ts = datetime.utcnow().isoformat() + "Z"
@@ -6193,6 +7195,15 @@ def router_completions(req: RouterCompletionRequest):
         "selected_active_local_model": None,
         "outcome": "ok",
         "attempt_errors": routing_errors,
+        "attempt_trace": attempt_trace,
+        "fallback_summary": _build_fallback_summary(
+            chain,
+            attempt_trace,
+            allow_fallbacks,
+            selected_lane,
+            selected_provider,
+            selected_model,
+        ),
         "usage": usage.dict(),
         "metadata": req.metadata,
     }
@@ -6234,38 +7245,99 @@ def router_embed(req: RouterEmbedRequest):
     provider_models = read_provider_models()
     policies = read_provider_policies()
     _maybe_refresh_openrouter_catalog(env)
-    strategy = _resolve_strategy(req, env, policies)
-    chain = _candidate_chain_for_strategy(strategy, req, policies)
+    strategy_resolution = _strategy_resolution_context(req, env, policies)
+    strategy = str(strategy_resolution.get("resolved_strategy", "local_first"))
     effective_defaults = _effective_policy_defaults(req, policies)
     effective_selection = _effective_policy_selection(req, policies)
+    chain_resolution = _candidate_chain_resolution(
+        strategy,
+        req,
+        policies,
+        effective_defaults=effective_defaults,
+        effective_selection=effective_selection,
+    )
+    chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
+    if not chain:
+        chain = ["local"]
     allow_fallbacks = _resolve_bool_pref(
         req.provider_preferences.allow_fallbacks,
         bool(effective_defaults.get("allow_fallbacks", True)),
     )
 
     routing_errors = []
+    attempt_trace = []
     selected_provider = None
     selected_model = None
     selected_lane = None
     attempted_by_lane: dict[str, set[str]] = {}
+    blocked_providers: dict[str, str] = {}
     raw = None
     for idx, lane in enumerate(chain):
         excluded = attempted_by_lane.setdefault(lane, set())
         provider, model_id = _pick_catalog_model(lane, provider_models, req, excluded_models=excluded, policies=policies)
         if model_id in excluded:
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="skipped",
+                reason_code="duplicate_candidate",
+                fallback_action="continue_next_candidate",
+            )
             continue
         excluded.add(model_id)
-        if _is_model_in_cooldown(provider, model_id):
+
+        blocked_reason = blocked_providers.get(str(provider))
+        if blocked_reason:
+            block_error = {
+                "type": "provider_blocked",
+                "message": f"provider blocked for this request after {blocked_reason}",
+                "retryable": False,
+                "blocked_reason": blocked_reason,
+            }
             routing_errors.append({
                 "lane": lane,
                 "provider": provider,
                 "model": model_id,
-                "error": {
-                    "type": "cooldown",
-                    "message": "model is currently in cooldown",
-                    "retryable": True,
-                },
+                "error": block_error,
             })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="skipped",
+                reason_code=f"provider_blocked_{_normalized_reason_fragment(blocked_reason)}",
+                error=block_error,
+                fallback_action="break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate",
+            )
+            if idx == len(chain) - 1:
+                break
+            continue
+
+        if _is_model_in_cooldown(provider, model_id):
+            cooldown_error = {
+                "type": "cooldown",
+                "message": "model is currently in cooldown",
+                "retryable": True,
+            }
+            routing_errors.append({
+                "lane": lane,
+                "provider": provider,
+                "model": model_id,
+                "error": cooldown_error,
+            })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="skipped",
+                reason_code="cooldown_active",
+                error=cooldown_error,
+                fallback_action="break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate",
+            )
             if idx == len(chain) - 1:
                 break
             continue
@@ -6286,6 +7358,20 @@ def router_embed(req: RouterEmbedRequest):
                     "model": model_id,
                     "error": overflow_error,
                 })
+                _append_route_attempt(
+                    attempt_trace,
+                    lane=lane,
+                    provider=provider,
+                    model=model_id,
+                    result="blocked",
+                    reason_code="free_tier_limiter",
+                    error=overflow_error,
+                    fallback_action=(
+                        "break_overflow_policy"
+                        if action == "break"
+                        else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
+                    ),
+                )
                 if action == "break" or idx == len(chain) - 1:
                     break
                 continue
@@ -6309,6 +7395,20 @@ def router_embed(req: RouterEmbedRequest):
                     "retryable": False,
                 },
             })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="blocked",
+                reason_code="budget_guardrail",
+                error={
+                    "type": "budget_blocked",
+                    "message": str(e.detail),
+                    "retryable": False,
+                },
+                fallback_action="break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate",
+            )
             if idx == len(chain) - 1:
                 break
             continue
@@ -6319,25 +7419,95 @@ def router_embed(req: RouterEmbedRequest):
             selected_model = model_id
             selected_lane = lane
             _mark_provider_success(provider, model_id)
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="selected",
+                reason_code="selected",
+                fallback_action="selected",
+            )
             break
         except Exception as e:
             normalized = _normalize_provider_error(provider, e)
             _mark_provider_failure(provider, model_id, normalized)
+            block_reason = _provider_block_reason(provider, normalized)
+            if block_reason:
+                blocked_providers[str(provider)] = block_reason
             routing_errors.append({
                 "lane": lane,
                 "provider": provider,
                 "model": model_id,
                 "error": normalized,
             })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="error",
+                reason_code=_dispatch_reason_code(normalized),
+                error=normalized,
+                fallback_action=(
+                    "break_fallback_disabled"
+                    if not allow_fallbacks
+                    else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
+                ),
+            )
             if not allow_fallbacks or idx == len(chain) - 1:
                 break
 
     if raw is None or selected_provider is None or selected_model is None:
+        now_ts = datetime.utcnow().isoformat() + "Z"
+        failure_policy_context = _build_route_policy_context(
+            req,
+            env,
+            policies,
+            strategy,
+            chain,
+            effective_defaults=effective_defaults,
+            effective_selection=effective_selection,
+            strategy_resolution=strategy_resolution,
+            chain_resolution=chain_resolution,
+        )
+        failure_decision = {
+            "request_id": uuid.uuid4().hex[:12],
+            "ts": now_ts,
+            "task_type": _normalize_task_type(getattr(req, "task_type", "embed")),
+            "project_id": _resolve_project_id(req),
+            "strategy": strategy,
+            "strategy_source": failure_policy_context.get("strategy_source"),
+            "policy_context": failure_policy_context,
+            "candidate_chain": chain,
+            "selected_lane": None,
+            "selected_provider": None,
+            "selected_model": None,
+            "selected_backend": None,
+            "selected_active_local_model": None,
+            "outcome": "error",
+            "attempt_errors": routing_errors,
+            "attempt_trace": attempt_trace,
+            "fallback_summary": _build_fallback_summary(
+                chain,
+                attempt_trace,
+                allow_fallbacks,
+                None,
+                None,
+                None,
+            ),
+            "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+            "metadata": req.metadata,
+        }
+        _append_router_decision(failure_decision, policies=policies)
         raise HTTPException(502, {
             "message": "No provider candidate succeeded",
             "strategy": strategy,
             "candidate_chain": chain,
             "errors": routing_errors,
+            "attempt_trace": attempt_trace,
+            "fallback_summary": failure_decision.get("fallback_summary", {}),
+            "request_id": failure_decision.get("request_id"),
         })
 
     usage_raw = raw.get("usage", {}) if isinstance(raw, dict) else {}
@@ -6364,6 +7534,8 @@ def router_embed(req: RouterEmbedRequest):
         chain,
         effective_defaults=effective_defaults,
         effective_selection=effective_selection,
+        strategy_resolution=strategy_resolution,
+        chain_resolution=chain_resolution,
     )
 
     now_ts = datetime.utcnow().isoformat() + "Z"
@@ -6383,6 +7555,15 @@ def router_embed(req: RouterEmbedRequest):
         "selected_active_local_model": None,
         "outcome": "ok",
         "attempt_errors": routing_errors,
+        "attempt_trace": attempt_trace,
+        "fallback_summary": _build_fallback_summary(
+            chain,
+            attempt_trace,
+            allow_fallbacks,
+            selected_lane,
+            selected_provider,
+            selected_model,
+        ),
         "usage": usage.dict(),
         "metadata": req.metadata,
     }
@@ -6458,6 +7639,7 @@ def router_last_decisions(limit: int = Query(20, ge=1, le=200)):
 
 def _compact_router_decision(decision: dict) -> dict:
     attempt_errors = decision.get("attempt_errors", []) if isinstance(decision.get("attempt_errors"), list) else []
+    attempt_trace = decision.get("attempt_trace", []) if isinstance(decision.get("attempt_trace"), list) else []
     error_types = []
     for row in attempt_errors:
         if not isinstance(row, dict):
@@ -6467,8 +7649,17 @@ def _compact_router_decision(decision: dict) -> dict:
         if err_type not in error_types:
             error_types.append(err_type)
 
+    attempt_reason_codes = []
+    for row in attempt_trace:
+        if not isinstance(row, dict):
+            continue
+        reason_code = str(row.get("reason_code", "") or "")
+        if reason_code and reason_code not in attempt_reason_codes:
+            attempt_reason_codes.append(reason_code)
+
     policy_context = decision.get("policy_context", {}) if isinstance(decision.get("policy_context"), dict) else {}
     effective_defaults = policy_context.get("effective_defaults", {}) if isinstance(policy_context.get("effective_defaults"), dict) else {}
+    fallback_summary = decision.get("fallback_summary", {}) if isinstance(decision.get("fallback_summary"), dict) else {}
 
     return {
         "request_id": decision.get("request_id"),
@@ -6485,9 +7676,21 @@ def _compact_router_decision(decision: dict) -> dict:
         "candidate_chain": decision.get("candidate_chain", []),
         "attempt_error_count": len(attempt_errors),
         "attempt_error_types": error_types,
+        "attempt_trace_count": len(attempt_trace),
+        "attempt_reason_codes": attempt_reason_codes,
+        "fallback_summary": fallback_summary,
         "estimated_cost_usd": decision.get("estimated_cost_usd"),
         "usage": decision.get("usage", {}),
         "policy_context": {
+            "requested_strategy": policy_context.get("requested_strategy"),
+            "resolved_strategy": policy_context.get("resolved_strategy"),
+            "strategy_valid": policy_context.get("strategy_valid"),
+            "strategy_fallback_applied": policy_context.get("strategy_fallback_applied"),
+            "strategy_fallback_reason": policy_context.get("strategy_fallback_reason"),
+            "candidate_chain_source": policy_context.get("candidate_chain_source"),
+            "service_tier": policy_context.get("service_tier"),
+            "service_tier_source": policy_context.get("service_tier_source"),
+            "strict_provider_target": policy_context.get("strict_provider_target"),
             "project_override_applied": bool(policy_context.get("project_override_applied", False)),
             "global_task_override_applied": bool(policy_context.get("global_task_override_applied", False)),
             "project_task_override_applied": bool(policy_context.get("project_task_override_applied", False)),
@@ -6518,6 +7721,8 @@ def router_decision_traces(
     by_provider = {}
     by_strategy = {}
     by_error_type = {}
+    by_reason_code = {}
+    with_selected_fallback = 0
     for row in recent:
         if not isinstance(row, dict):
             continue
@@ -6530,6 +7735,10 @@ def router_decision_traces(
         by_provider[provider] = by_provider.get(provider, 0) + 1
         by_strategy[strategy] = by_strategy.get(strategy, 0) + 1
 
+        fallback_summary = row.get("fallback_summary", {}) if isinstance(row.get("fallback_summary"), dict) else {}
+        if bool(fallback_summary.get("used_fallback", False)):
+            with_selected_fallback += 1
+
         attempt_errors = row.get("attempt_errors", []) if isinstance(row.get("attempt_errors"), list) else []
         for attempt in attempt_errors:
             if not isinstance(attempt, dict):
@@ -6537,6 +7746,14 @@ def router_decision_traces(
             err = attempt.get("error", {}) if isinstance(attempt.get("error"), dict) else {}
             err_type = str(err.get("type", "unknown") or "unknown")
             by_error_type[err_type] = by_error_type.get(err_type, 0) + 1
+
+        attempt_trace = row.get("attempt_trace", []) if isinstance(row.get("attempt_trace"), list) else []
+        for attempt in attempt_trace:
+            if not isinstance(attempt, dict):
+                continue
+            reason_code = str(attempt.get("reason_code", "") or "")
+            if reason_code:
+                by_reason_code[reason_code] = by_reason_code.get(reason_code, 0) + 1
 
     traces = [_compact_router_decision(row) for row in recent if isinstance(row, dict)] if compact else recent
     return {
@@ -6549,6 +7766,8 @@ def router_decision_traces(
             "by_provider": by_provider,
             "by_strategy": by_strategy,
             "by_error_type": by_error_type,
+            "by_reason_code": by_reason_code,
+            "with_selected_fallback": with_selected_fallback,
         },
         "traces": traces,
     }
@@ -6615,7 +7834,9 @@ def router_fallback_stats(limit: int = Query(500, ge=1, le=5000)):
     total = len(recent)
     with_fallback_attempts = 0
     with_attempt_errors = 0
+    with_selected_fallback = 0
     by_error_type = {}
+    by_reason_code = {}
     by_provider = {}
 
     for d in recent:
@@ -6623,24 +7844,36 @@ def router_fallback_stats(limit: int = Query(500, ge=1, le=5000)):
             continue
         chain = d.get("candidate_chain", [])
         attempts = d.get("attempt_errors", [])
+        attempt_trace = d.get("attempt_trace", []) if isinstance(d.get("attempt_trace"), list) else []
+        fallback_summary = d.get("fallback_summary", {}) if isinstance(d.get("fallback_summary"), dict) else {}
         provider = d.get("selected_provider", "unknown")
         by_provider[provider] = by_provider.get(provider, 0) + 1
 
         if isinstance(chain, list) and len(chain) > 1:
             with_fallback_attempts += 1
+        if bool(fallback_summary.get("used_fallback", False)):
+            with_selected_fallback += 1
         if isinstance(attempts, list) and attempts:
             with_attempt_errors += 1
             for a in attempts:
                 err = a.get("error", {}) if isinstance(a, dict) else {}
                 et = err.get("type", "unknown") if isinstance(err, dict) else "unknown"
                 by_error_type[et] = by_error_type.get(et, 0) + 1
+        for attempt in attempt_trace:
+            if not isinstance(attempt, dict):
+                continue
+            reason_code = str(attempt.get("reason_code", "") or "")
+            if reason_code:
+                by_reason_code[reason_code] = by_reason_code.get(reason_code, 0) + 1
 
     return {
         "time": datetime.utcnow().isoformat() + "Z",
         "window_count": total,
         "with_fallback_chain": with_fallback_attempts,
+        "with_selected_fallback": with_selected_fallback,
         "with_attempt_errors": with_attempt_errors,
         "by_error_type": by_error_type,
+        "by_reason_code": by_reason_code,
         "by_selected_provider": by_provider,
     }
 

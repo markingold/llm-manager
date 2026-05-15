@@ -45,11 +45,11 @@ WebUI overhaul status:
 - [ ] Add an EXL3 conversion path once the ExLlamaV3 toolchain is installed and validated on the host. - _source: docs/plans/EXLLAMA_CONVERSION_PLAN.md_
 - [ ] Decide whether TabbyAPI switching should remain symlink-based or gain backend-native load and unload operations. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
 - [x] Refresh upstream OpenRouter metadata and intersect it with the curated free allowlist. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
-- [x] Normalize OpenRouter errors into actionable routing states. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
+- [x] Normalize OpenRouter errors into actionable routing states. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (status/body-aware classification with provider code/type metadata)
 - [x] Persist cooldowns, degraded states, and manual-review flags for provider models. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
-- [x] Auto-cycle across curated free models before failing a request. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
+- [x] Auto-cycle across curated free models before failing a request. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (with capability-aware smoke checks for tools and structured outputs)
 - [x] Persist richer OpenRouter discovery ranking fields and lifecycle/smoke evidence surfacing for candidate inspection (`top_weekly_rank`, `category_ranks`, transition/smoke evidence). - _source: docs/plans/OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md, docs/plans/NEXT_PUSH.md_
-- [x] Support cross-provider strategies such as local_first, free_first, paid_first, best_available, and strict_provider. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
+- [x] Support cross-provider strategies such as local_first, free_first, paid_first, best_available, and strict_provider. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (service-tier-aware chain resolution, strict-provider lane targeting, typed fallback reason codes)
 
 ## Phase 4: Evaluation, Admin UX, And Observability (Future)
 - [x] Add evaluation suite schemas, storage, and execution runner. - _source: docs/plans/EVALUATION_PLAN.md_ (initial local evaluation pipeline implemented)
