@@ -15,6 +15,7 @@ purpose:
 - CLI runbook now includes an incident workflow for curated quick-admin changes + decision trace triage
 - retired source plans moved under `docs/plans/retired/` (`EVALUATION_PLAN.md`, `OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md`) and consolidated source references were updated
 - retired source plans now also include `PROVIDER_ROUTER_PLAN.md`, with its remaining dynamic-ranking gap moved into this active backlog
+- backend-aware frontend operation gating is now complete in Operations UI (slot backend/model/recommendation surfacing + capability-aware test gating)
 
 ## Implementation update (2026-05-14)
 
@@ -63,9 +64,13 @@ Completed items from the locked queue:
   - `/switch` now auto-applies recommended backend for vLLM/Tabby-oriented model kinds when backend is omitted, while preserving explicit backend requests
   - `/models`, `/engines/status`, `/health`, and `/test-*` now expose/use backend-aware slot endpoint resolution
   - route-test execution diagnostics now include resolved local backend and local slot mode
+- item 9: backend-aware frontend operation gating is now completed
+  - Operations engine cards now surface slot backend, active model format (`kind`), and inspector backend recommendation/fallback context
+  - slot test actions are now gated by backend/model compatibility and resolved endpoint availability with explicit reason hints
+  - quick prompt test controls now mirror slot-level capability gating and disable unsupported test paths
 
 Next queued item:
-- backend-aware frontend operation gating
+- recovery runbook hardening
 
 ## Implementation update (2026-05-09)
 
@@ -92,10 +97,10 @@ Previously completed in this sequence:
 ## Completion status snapshot
 
 Checklist baseline from `docs/plans/CHECKLIST.md`:
-- total tracked tasks: 54
-- complete: 40
-- pending: 14
-- completion: 74.1%
+- total tracked tasks: 56
+- complete: 43
+- pending: 13
+- completion: 76.8%
 
 Interpretation:
 - Core broker and operator capabilities are now established.
@@ -125,28 +130,24 @@ Interpretation:
 
 ## Biggest remaining value gaps
 
-1. Backend-aware frontend operation gating
-- Disable unsupported backend operations by active slot/backend capabilities to reduce operator error paths.
-
-2. EXL3 conversion path (Phase 2)
+1. EXL3 conversion path (Phase 2)
 - Extend managed conversion model from EXL2 to EXL3 with matching metadata discipline.
 
-3. Canonical layout ops doc package
+2. Canonical layout ops doc package
 - Finalize `/srv/2bananas/engines` structure/runbook docs and migration checks.
 
-4. TabbyAPI lane lifecycle decision
+3. TabbyAPI lane lifecycle decision
 - Decide whether TabbyAPI switching remains symlink-based or gains backend-native load/unload operations.
 
-5. Recovery runbook hardening
+4. Recovery runbook hardening
 - Add explicit operator procedures for clearing quarantine/manual-review flags and validating recovery traces.
 
-6. Cost-aware dynamic model ranking
+5. Cost-aware dynamic model ranking
 - Add strategy-local ranking heuristics (quality/cost/availability weighted) so lane selection is not limited to fixed order.
 
 ## Suggested immediate execution package (next 1-2 pushes)
 
 Push 1:
-- backend-aware UI operation disabling by active backend capabilities
 - recovery runbook refinements for quarantine/manual-review scenarios
 - canonical `/srv/2bananas/engines` layout doc + migration checklist
 

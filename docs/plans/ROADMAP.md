@@ -67,7 +67,7 @@ Source-plan status update (2026-05-15):
 - [x] Document routed inference usage and evaluation-suite submission for external projects. - _source: docs/plans/retired/EVALUATION_PLAN.md, docs/plans/retired/PROVIDER_ROUTER_PLAN.md, docs/TODO/README.md_ (`docs/guides/EXTERNAL_INTEGRATION.md` added)
 - [x] Add router health, decision logs, fallback stats, queue state, and evaluation summary endpoints. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md, docs/plans/retired/EVALUATION_PLAN.md_ (evaluation summary slice implemented)
 - [x] Expand route decision traces with task-policy context and backend/task mix summaries for operator triage. - _source: docs/plans/NEXT_PUSH.md_ (`GET /router/decision-traces` + enriched decision metadata)
-- [ ] Show slot backend, model format, backend recommendation, provider health, and fallback chains in the UI. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md, docs/plans/retired/PROVIDER_ROUTER_PLAN.md_
+- [x] Show slot backend, model format, backend recommendation, provider health, and fallback chains in the UI. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md, docs/plans/retired/PROVIDER_ROUTER_PLAN.md_ (Operations cards now surface backend/model/recommendation context and backend-aware test gating; Router Ops already surfaces provider health and fallback chains)
 - [x] Add a lightweight dashboard evaluation operations panel for queue and report visibility. - _source: docs/plans/retired/EVALUATION_PLAN.md_ (initial Evaluation Ops panel in `web/`)
 - [x] Add admin controls for enabling, disabling, prioritizing, and testing curated provider models. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_ (curated summary/update APIs + dashboard quick-admin grid)
 
