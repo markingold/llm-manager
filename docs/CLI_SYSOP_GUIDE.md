@@ -39,6 +39,10 @@ API equivalents:
 - `curl -X POST http://localhost:8101/engines/solo/chat`
 - `curl "http://localhost:8101/engines/chat/logs?lines=100" | python3 -m json.tool`
 
+Dashboard behavior note:
+- Engine cards now show slot backend, active model format, and inspector recommendation/fallback context.
+- Slot test actions are now backend-aware and can be disabled when the current backend/model pair is incompatible or a slot endpoint is unavailable.
+
 Standalone TGW WebUI service (one-off model testing):
 - `curl http://localhost:8101/engines/tgw-webui/status | python3 -m json.tool`
 - `curl -X POST http://localhost:8101/engines/tgw-webui/start`

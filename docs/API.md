@@ -44,6 +44,7 @@ Current deployed unit wiring on this host:
   - Includes per-model metadata from the inspector
   - Includes `converted_artifacts` for managed EXL2 conversion outputs
   - Inspector metadata includes recommended_backend and fallback_backends
+  - Dashboard Operations uses `meta` + `slot_backends` + `slot_endpoints` to gate slot test actions by backend/model compatibility
 
 ### Model Switching
 - POST /switch
@@ -81,6 +82,7 @@ Current deployed unit wiring on this host:
 - GET /engines/status
   - Returns unit info, slot backend, resolved base, base source, port, listening state, and active model path for each slot
   - Includes top-level `tgw_webui` status for the standalone TGW WebUI service
+  - Dashboard Operations uses this payload to surface slot backend context and disable unsupported slot tests when capability checks fail
 - POST /engines/{mode}/{action}
   - action is start, stop, or restart
 - GET /engines/tgw-webui/status

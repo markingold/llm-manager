@@ -67,6 +67,7 @@ python api/server.py
 - By default it binds to `127.0.0.1:8101`
 - Apache is expected to reverse-proxy `/llm-manager-api` to that local API
 - The dashboard is the static UI in `web/index.html` with domain modules under `web/js/domains/`
+- Operations UI now surfaces per-slot backend, model format (`kind`), and inspector recommendation/fallback context, and disables unsupported slot test actions with explicit reason hints
 - Runtime serving stays in `text-generation-webui`; the API manages it rather than serving models itself
 - The deployed systemd engine units launch through `run/engine_launcher.py`
 
