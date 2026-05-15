@@ -14,6 +14,7 @@ purpose:
 - managed EXL2 milestones are now marked complete for HF + merged-local source scope, including tokenizer/chat-template preservation checks
 - CLI runbook now includes an incident workflow for curated quick-admin changes + decision trace triage
 - retired source plans moved under `docs/plans/retired/` (`EVALUATION_PLAN.md`, `OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md`) and consolidated source references were updated
+- retired source plans now also include `PROVIDER_ROUTER_PLAN.md`, with its remaining dynamic-ranking gap moved into this active backlog
 
 ## Implementation update (2026-05-14)
 
@@ -139,6 +140,9 @@ Interpretation:
 5. Recovery runbook hardening
 - Add explicit operator procedures for clearing quarantine/manual-review flags and validating recovery traces.
 
+6. Cost-aware dynamic model ranking
+- Add strategy-local ranking heuristics (quality/cost/availability weighted) so lane selection is not limited to fixed order.
+
 ## Suggested immediate execution package (next 1-2 pushes)
 
 Push 1:
@@ -149,5 +153,6 @@ Push 1:
 Push 2:
 - EXL3 conversion path bootstrap + metadata parity checks
 - optional TabbyAPI backend-native model load/unload decision and prototype
+- cost-aware dynamic model ranking prototype and operator tuning knobs
 
 If both pushes land cleanly, broker maturity and operator confidence increase significantly while setting up Phase-3 backend goals.

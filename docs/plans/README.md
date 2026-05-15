@@ -15,7 +15,6 @@ These are the maintainable source plans that replace the old single-file engine 
 
 - `BACKEND_ARCHITECTURE_PLAN.md` - local backend architecture, engine inventory, and backend integration strategy
 - `EXLLAMA_CONVERSION_PLAN.md` - EXL2 and EXL3 research, conversion workflows, and ExLlama-lane decisions
-- `PROVIDER_ROUTER_PLAN.md` - provider abstraction, routing policy, OpenRouter and OpenAI integration, rate limiting, queueing, and governance
 
 ## Historical (retired)
 
@@ -24,6 +23,7 @@ These are the maintainable source plans that replace the old single-file engine 
 - `retired/WEBUI_OVERHAUL_CLOSEOUT.md` - final closeout decision and validation evidence
 - `retired/OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md` - retired source plan; implemented scope folded into router and observability plans, with follow-on gaps tracked in consolidated docs
 - `retired/EVALUATION_PLAN.md` - retired source plan; implemented scope folded into roadmap and checklist tracking
+- `retired/PROVIDER_ROUTER_PLAN.md` - retired source plan; delivered broker and governance scope is complete and the remaining dynamic-ranking gap is tracked in active backlog docs
 
 ## Maintenance rule
 

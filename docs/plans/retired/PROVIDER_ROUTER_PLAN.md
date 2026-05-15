@@ -1,6 +1,9 @@
 # LLM Manager - Provider Router Plan
 
 > Split from former `docs/engine-ideas.md` on 2026-03-29
+> Retired to `docs/plans/retired/` on 2026-05-14 after provider-router closeout.
+> Active tracking now lives in `docs/plans/CHECKLIST.md`, `docs/plans/ROADMAP.md`, and `docs/plans/NEXT_PUSH.md`.
+> Remaining gap moved to active backlog: cost-aware dynamic model ranking within strategy.
 
 ## New goal: llm-manager as the universal LLM entry point
 
@@ -530,9 +533,9 @@ As of 2026-05-14:
 - Phase 4 (cross-provider fallback): complete for strategy-chain routing and inspection endpoints.
 - Phase 5 (cost/quota/governance): mostly complete for current scope; usage/spend/budget guardrails, per-project and per-task-type overrides, retention/audit controls, managed EXL2 conversion metadata, lane-sufficiency reporting, and curated admin/operator controls are live.
 
-## Remaining high-impact gaps
+## Remaining high-impact gaps (moved to active backlog)
 
-- Add cost-aware dynamic model ranking within a strategy (beyond fixed lane order).
+- Add cost-aware dynamic model ranking within a strategy (beyond fixed lane order), now tracked in `docs/plans/NEXT_PUSH.md`, `docs/plans/ROADMAP.md`, and `docs/plans/CHECKLIST.md`.
 
 ## Phase 0: shape the config and data model
 
