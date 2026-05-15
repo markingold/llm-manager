@@ -13,11 +13,110 @@ import {
 import { refreshEvalPanel } from "./evaluation.js";
 import { refreshRouterPanel } from "./router.js";
 
-const UI_BUILD = "phase-a-ops-v4";
+const UI_BUILD = "phase-a-ops-v5";
 const MAX_CONVERSION_ROWS = 30;
 
 let MODEL_CACHE = null;
 let ENGINE_STATUS_CACHE = null;
+
+const SLOT_UI = {
+  chat: {
+    prefix: "chat",
+    testButtonId: "chatTest",
+    quickTestButtonId: "btnTestChat",
+    backendPillId: "chatBackendPill",
+    modelPillId: "chatModelPill",
+    recommendationPillId: "chatRecPill",
+    gateHintId: "chatGateHint",
+  },
+  intent: {
+    prefix: "intent",
+    testButtonId: "intentTest",
+    quickTestButtonId: "btnTestIntent",
+    backendPillId: "intentBackendPill",
+    modelPillId: "intentModelPill",
+    recommendationPillId: "intentRecPill",
+    gateHintId: "intentGateHint",
+  },
+  small: {
+    prefix: "small",
+    testButtonId: "smallTest",
+    quickTestButtonId: "btnTestUtil",
+    backendPillId: "smallBackendPill",
+    modelPillId: "smallModelPill",
+    recommendationPillId: "smallRecPill",
+    gateHintId: "smallGateHint",
+  },
+};
+
+const BACKEND_CAPABILITIES = {
+  tgw: {
+    supportsSlotTest: true,
+    supportsNoThinking: true,
+  },
+  vllm: {
+    supportsSlotTest: true,
+    supportsNoThinking: false,
+  },
+  tabbyapi: {
+    supportsSlotTest: true,
+    supportsNoThinking: false,
+  },
+};
+
+
+function normalizeBackendName(raw) {
+  const name = String(raw || "").trim().toLowerCase();
+  return name || "unknown";
+}
+
+
+function setButtonAvailability(buttonId, enabled, reason = "") {
+  const button = $(buttonId);
+  if (!button) return;
+  button.disabled = !enabled;
+  button.title = !enabled && reason ? reason : "";
+}
+
+
+function applyOptionalDisable(buttonId, shouldDisable, reason = "") {
+  const button = $(buttonId);
+  if (!button) return;
+  if (shouldDisable) {
+    button.disabled = true;
+    button.title = reason;
+    return;
+  }
+  if (!button.disabled) {
+    button.title = "";
+  }
+}
+
+
+function modelBackendCompatibility(backend, meta) {
+  if (!meta || typeof meta !== "object") {
+    return { compatible: true, reason: "" };
+  }
+
+  const recommended = normalizeBackendName(meta.recommended_backend || "");
+  const fallbackBackends = Array.isArray(meta.fallback_backends)
+    ? meta.fallback_backends.map((item) => normalizeBackendName(item)).filter(Boolean)
+    : [];
+
+  if (!recommended || recommended === "unknown") {
+    return { compatible: true, reason: "" };
+  }
+
+  if (backend === recommended || fallbackBackends.includes(backend)) {
+    return { compatible: true, reason: "" };
+  }
+
+  const fallbackLabel = fallbackBackends.length ? ` (fallback: ${fallbackBackends.join(", ")})` : "";
+  return {
+    compatible: false,
+    reason: `Active model prefers ${recommended}${fallbackLabel}.`,
+  };
+}
 
 
 function escapeHtml(value) {
@@ -65,6 +164,125 @@ function setPill(el, text, tone = "warn", title = "") {
   el.textContent = text;
   el.className = `pill ${tone}`;
   el.title = title;
+}
+
+
+function applySlotOperationGating(slotMode, models, engines) {
+  const ui = SLOT_UI[slotMode];
+  if (!ui) {
+    return { slotEnabled: false, canTest: false, supportsNoThinking: false };
+  }
+
+  const engine = engines?.[slotMode] || {};
+  const backend = normalizeBackendName(engine.backend || models?.slot_backends?.[slotMode]);
+  const backendCaps = BACKEND_CAPABILITIES[backend] || null;
+  const slotEnabled = Boolean(models?.slots_enabled?.[slotMode]);
+  const baseReady = Boolean(String(engine.base || "").trim());
+
+  const activeModelName = basename(models?.active?.[slotMode]);
+  const meta = activeModelName ? (models?.meta?.[activeModelName] || null) : null;
+  const modelKind = String(meta?.kind || "unknown");
+  const recommended = normalizeBackendName(meta?.recommended_backend || "");
+  const fallbackBackends = Array.isArray(meta?.fallback_backends)
+    ? meta.fallback_backends.map((item) => normalizeBackendName(item)).filter(Boolean)
+    : [];
+  const compatibility = modelBackendCompatibility(backend, meta);
+
+  const backendTone = backendCaps ? "ok" : "warn";
+  const backendSource = String(engine.base_source || "").trim();
+  setPill(
+    $(ui.backendPillId),
+    `backend: ${backend}${backendSource ? ` (${backendSource})` : ""}`,
+    backendTone,
+    backendCaps ? "" : `Unsupported backend '${backend}' for slot test operations.`
+  );
+
+  const modelTone = activeModelName && modelKind !== "unknown" ? "ok" : "warn";
+  setPill(
+    $(ui.modelPillId),
+    `model: ${activeModelName || "(none)"} / ${modelKind}`,
+    modelTone,
+    activeModelName ? "" : "No active model linked for this slot."
+  );
+
+  let recommendationLabel = `recommendation: ${recommended || "n/a"}`;
+  if (fallbackBackends.length) {
+    recommendationLabel += ` | fallback: ${fallbackBackends.join(",")}`;
+  }
+  setPill(
+    $(ui.recommendationPillId),
+    recommendationLabel,
+    compatibility.compatible ? "ok" : "warn",
+    compatibility.reason
+  );
+
+  let canTest = true;
+  let gateReason = "";
+  if (!slotEnabled) {
+    canTest = false;
+    gateReason = "Slot disabled by ENABLE_* setting.";
+  } else if (!backendCaps) {
+    canTest = false;
+    gateReason = `Unsupported backend '${backend}' for slot test operations.`;
+  } else if (!backendCaps.supportsSlotTest) {
+    canTest = false;
+    gateReason = `Backend '${backend}' does not support slot test operations.`;
+  } else if (!baseReady) {
+    canTest = false;
+    gateReason = "No API base resolved for this slot.";
+  } else if (!compatibility.compatible) {
+    canTest = false;
+    gateReason = compatibility.reason || "Backend/model capability mismatch.";
+  }
+
+  setButtonAvailability(ui.testButtonId, canTest, gateReason);
+  setButtonAvailability(ui.quickTestButtonId, canTest, gateReason);
+
+  const canSwitch = slotEnabled;
+  setButtonAvailability(`${ui.prefix}Switch`, canSwitch, "Slot disabled by ENABLE_* setting.");
+
+  const disableMutations = !slotEnabled;
+  const disableReason = "Slot disabled by ENABLE_* setting.";
+  applyOptionalDisable(`${ui.prefix}Start`, disableMutations, disableReason);
+  applyOptionalDisable(`${ui.prefix}Stop`, disableMutations, disableReason);
+  applyOptionalDisable(`${ui.prefix}Restart`, disableMutations, disableReason);
+  applyOptionalDisable(`${ui.prefix}Solo`, disableMutations, disableReason);
+  applyOptionalDisable(`${ui.prefix}Logs`, disableMutations, disableReason);
+
+  const hint = $(ui.gateHintId);
+  if (hint) {
+    hint.textContent = canTest
+      ? `ops: test path is enabled for ${backend} with current model compatibility.`
+      : `ops: test path disabled — ${gateReason}`;
+  }
+
+  return {
+    slotEnabled,
+    canTest,
+    supportsNoThinking: canTest && Boolean(backendCaps?.supportsNoThinking),
+  };
+}
+
+
+function applyBackendAwareOperationGating(models, engines) {
+  const results = [
+    applySlotOperationGating("chat", models, engines),
+    applySlotOperationGating("intent", models, engines),
+    applySlotOperationGating("small", models, engines),
+  ];
+
+  const noThinking = $("noThinking");
+  if (!noThinking) return;
+
+  const activeTestSlots = results.filter((row) => row.slotEnabled && row.canTest);
+  const noThinkingEnabled = activeTestSlots.length > 0 && activeTestSlots.every((row) => row.supportsNoThinking);
+  noThinking.disabled = !noThinkingEnabled;
+  if (!noThinkingEnabled) {
+    noThinking.checked = false;
+    noThinking.title = "No thinking toggle is currently available only on TGW-backed test paths.";
+  } else {
+    noThinking.title = "";
+  }
 }
 
 function setConversionDetail(payload) {
@@ -401,6 +619,7 @@ export async function refreshAll() {
     setEngineButtonStates("chat", s.chat.systemd?.ActiveState);
     setEngineButtonStates("intent", s.intent.systemd?.ActiveState);
     setEngineButtonStates("small", s.small.systemd?.ActiveState);
+    applyBackendAwareOperationGating(MODEL_CACHE, ENGINE_STATUS_CACHE);
 
     try {
       const v = await api("/vram");
