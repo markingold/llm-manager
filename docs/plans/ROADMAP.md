@@ -27,7 +27,7 @@ Source-plan status update (2026-05-15):
 - [x] Implement a unified broker entrypoint for routed chat requests. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_ (`POST /router/chat` adapter-dispatch slice)
 - [x] Add secret configuration for provider API keys and default routing policy. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_
 - [x] Add persistent runtime state for provider health, cooldowns, rate limits, queues, and evaluation artifacts. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md, docs/plans/retired/EVALUATION_PLAN.md_ (evaluation_suites/runs/reports state now persisted)
-- [ ] Add an operator recovery runbook for GPU-driver wedges and uninterruptible TGW processes, including reboot criteria and sequential post-reboot validation when only one local slot is expected to run at a time. - _source: local runtime troubleshooting (2026-04-28)_
+- [x] Add an operator recovery runbook for GPU-driver wedges and uninterruptible TGW processes, including reboot criteria and sequential post-reboot validation when only one local slot is expected to run at a time. - _source: local runtime troubleshooting (2026-04-28)_ (documented in `docs/CLI_SYSOP_GUIDE.md` with manual-review/quarantine recovery and sequential lane bring-up)
 
 ## Phase 2: Local Backends And Remote Providers (Near-term)
 - [x] Add vLLM slot launching and unit support. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_ (launcher wrapper plus backend-aware slot base resolution are now wired into routing and engine status surfaces)

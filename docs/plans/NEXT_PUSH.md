@@ -1,7 +1,7 @@
 <!--
 id: PLAN-NEXT-PUSH
-version: 1.9
-last_updated: 2026-05-15
+version: 2.0
+last_updated: 2026-05-14
 title: Next Push Recommendations
 purpose:
   Fresh status scan, near-term priorities, and TGW WebUI direction for the next implementation push.
@@ -16,6 +16,7 @@ purpose:
 - retired source plans moved under `docs/plans/retired/` (`EVALUATION_PLAN.md`, `OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md`) and consolidated source references were updated
 - retired source plans now also include `PROVIDER_ROUTER_PLAN.md`, with its remaining dynamic-ranking gap moved into this active backlog
 - backend-aware frontend operation gating is now complete in Operations UI (slot backend/model/recommendation surfacing + capability-aware test gating)
+- recovery runbook hardening is now complete in `docs/CLI_SYSOP_GUIDE.md` with explicit manual-review/quarantine recovery and GPU/TGW wedge reboot criteria
 
 ## Implementation update (2026-05-14)
 
@@ -68,9 +69,12 @@ Completed items from the locked queue:
   - Operations engine cards now surface slot backend, active model format (`kind`), and inspector backend recommendation/fallback context
   - slot test actions are now gated by backend/model compatibility and resolved endpoint availability with explicit reason hints
   - quick prompt test controls now mirror slot-level capability gating and disable unsupported test paths
+- item 10: recovery runbook hardening is now completed
+  - CLI runbook now documents explicit procedures for clearing provider `manual_review` and `quarantined` states via provider-model flag and curated-entry APIs
+  - runbook now defines GPU-driver wedge and uninterruptible TGW process reboot criteria plus sequential single-lane post-reboot validation probes
 
 Next queued item:
-- recovery runbook hardening
+- canonical layout ops doc package
 
 ## Implementation update (2026-05-09)
 
@@ -98,9 +102,9 @@ Previously completed in this sequence:
 
 Checklist baseline from `docs/plans/CHECKLIST.md`:
 - total tracked tasks: 56
-- complete: 43
-- pending: 13
-- completion: 76.8%
+- complete: 44
+- pending: 12
+- completion: 78.6%
 
 Interpretation:
 - Core broker and operator capabilities are now established.
@@ -139,16 +143,12 @@ Interpretation:
 3. TabbyAPI lane lifecycle decision
 - Decide whether TabbyAPI switching remains symlink-based or gains backend-native load/unload operations.
 
-4. Recovery runbook hardening
-- Add explicit operator procedures for clearing quarantine/manual-review flags and validating recovery traces.
-
-5. Cost-aware dynamic model ranking
+4. Cost-aware dynamic model ranking
 - Add strategy-local ranking heuristics (quality/cost/availability weighted) so lane selection is not limited to fixed order.
 
 ## Suggested immediate execution package (next 1-2 pushes)
 
 Push 1:
-- recovery runbook refinements for quarantine/manual-review scenarios
 - canonical `/srv/2bananas/engines` layout doc + migration checklist
 
 Push 2:

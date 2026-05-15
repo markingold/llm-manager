@@ -119,6 +119,8 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
 - POST /providers/state/provider-model-flags
   - Updates provider-model flags for manual review and free-rotation control
   - Body: { model_key, disabled_until_manual_review?, exclude_from_free_rotation?, reason, actor }
+  - model_key format is `provider:model_id` (example: `openrouter:meta-llama/llama-3.3-8b-instruct:free`)
+  - Common incident-recovery flow: clear runtime flags here, then optionally re-enable curated rows with `POST /providers/models/curated-entry`
 - GET /providers/models/curated-summary
   - Returns flattened curated model rows across `local.slots`, `local.converted_models`, `openrouter.free`, `openrouter.paid`, and `openai.allowed`
   - Supports optional filtering by `provider`, `bucket`, `enabled_only`, and `search`

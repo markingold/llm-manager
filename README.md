@@ -5,7 +5,7 @@ Manages **text-generation-webui** instances via systemd, with model switching, f
 
 Additional local docs:
 - `docs/API.md`
-- `docs/CLI_SYSOP_GUIDE.md` (historical filename; this is the llm-manager CLI operations guide, not a sysop integration guide)
+- `docs/CLI_SYSOP_GUIDE.md` (historical filename; this is the llm-manager CLI operations guide, including recovery procedures for manual-review/quarantine flags and GPU/TGW wedges)
 - `docs/guides/EXTERNAL_INTEGRATION.md`
 
 Baseline quality reports:

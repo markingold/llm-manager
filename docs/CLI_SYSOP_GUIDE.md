@@ -394,7 +394,103 @@ Expected stabilization signals:
 
 ---
 
-## 9. Dashboard
+## 9. Recovery Runbook: Manual Review + GPU/TGW Wedges
+
+Use this when provider models are stuck in `manual_review` or `quarantined`, or when TGW engine processes are uninterruptible and local lanes cannot recover with normal restarts.
+
+A) Clear manual-review or quarantine flags for provider models:
+
+1) Inspect flagged rows and determine affected model IDs:
+
+    curl "http://localhost:8101/providers/models/curated-summary?provider=openrouter&limit=400" | python3 -m json.tool
+    curl "http://localhost:8101/providers/state" | python3 -m json.tool
+
+`model_key` format for runtime flag updates is `provider:model_id`, for example:
+- `openrouter:meta-llama/llama-3.3-8b-instruct:free`
+
+2) Clear manual flags on the runtime row:
+
+    curl -X POST http://localhost:8101/providers/state/provider-model-flags \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "model_key":"openrouter:meta-llama/llama-3.3-8b-instruct:free",
+        "disabled_until_manual_review":false,
+        "exclude_from_free_rotation":false,
+        "actor":"ops-oncall",
+        "reason":"recovery: cleared after provider/auth/path fix"
+      }' | python3 -m json.tool
+
+3) If the curated catalog row was intentionally disabled during mitigation, re-enable it:
+
+    curl -X POST http://localhost:8101/providers/models/curated-entry \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "provider":"openrouter",
+        "bucket":"free",
+        "model_id":"meta-llama/llama-3.3-8b-instruct:free",
+        "enabled":true,
+        "actor":"ops-oncall",
+        "reason":"recovery: re-enable after successful verification"
+      }' | python3 -m json.tool
+
+4) Re-verify policy and routing behavior:
+
+    curl -X POST http://localhost:8101/providers/policies/test \
+      -H 'Content-Type: application/json' \
+      -d '{"task_type":"chat","provider_preferences":{"strategy":"free_first"}}' | python3 -m json.tool
+
+    curl -X POST http://localhost:8101/router/route-test \
+      -H 'Content-Type: application/json' \
+      -d '{"task_type":"chat","prompt":"recovery verification probe"}' | python3 -m json.tool
+
+    curl "http://localhost:8101/router/decision-traces?limit=40&compact=true" | python3 -m json.tool
+
+Look for improving signals: fewer failure reason codes, lower fallback ratio, and no repeated auth/manual-review quarantines for the recovered model.
+
+B) Recover from GPU-driver wedges or uninterruptible TGW processes:
+
+1) Confirm wedge indicators:
+
+    sudo systemctl status llm-a llm-b llm-c llm-manager-api
+    nvidia-smi
+    ps -eo pid,ppid,stat,comm,args | rg 'llm-a|llm-b|llm-c|text-generation-webui|server.py'
+    ps -eo pid,stat,comm,args | awk '$2 ~ /^D/ {print}'
+
+2) Attempt non-reboot recovery first:
+
+    sudo systemctl stop llm-a llm-b llm-c
+    sudo systemctl restart llm-manager-api
+
+If residual TGW processes are not in `D` state, terminate them explicitly and re-check process table.
+
+3) Bring lanes back one at a time (sequential validation):
+
+    sudo systemctl start llm-a
+    curl http://localhost:8101/engines/status | python3 -m json.tool
+    curl "http://localhost:8101/test-chat?q=recovery-check" | python3 -m json.tool
+
+    sudo systemctl start llm-b
+    curl "http://localhost:8101/test-intent?q=recovery-check" | python3 -m json.tool
+
+    sudo systemctl start llm-c
+    curl "http://localhost:8101/test-util?q=recovery-check" | python3 -m json.tool
+
+4) Reboot criteria (perform controlled reboot if any are true):
+- one or more TGW processes remain in `D` state after stop attempts
+- `nvidia-smi` is hung or repeatedly fails with driver communication errors
+- systemd start or stop actions repeatedly time out due to uninterruptible TGW processes
+
+Controlled reboot sequence:
+
+    sudo systemctl stop llm-a llm-b llm-c llm-manager-api
+    sudo sync
+    sudo reboot
+
+Post-reboot validation must remain single-lane until each lane passes its probe. Do not restart all three lanes in parallel during recovery.
+
+---
+
+## 10. Dashboard
 
 The web dashboard lives in `web/` and talks to the API through Apache at `/llm-manager-api`.
 
@@ -418,7 +514,7 @@ One-click rollback and restore guidance:
 
 ---
 
-## 10. Strict Baseline Reports
+## 11. Strict Baseline Reports
 
 Use the strict baseline harness to generate reproducible quality and promotion artifacts:
 
@@ -434,7 +530,7 @@ Generated under `docs/reports/`:
 
 ---
 
-## 10. Testing
+## 12. Testing
 
 ```bash
 # Test chat engine
@@ -459,7 +555,7 @@ python validate_training_data.py
 
 ---
 
-## 11. File Locations
+## 13. File Locations
 
 | What | Path |
 |------|------|

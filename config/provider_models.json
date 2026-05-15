@@ -50,7 +50,10 @@
         "supports_reasoning": true,
         "supports_tools": true,
         "supports_vision": true,
-        "tags": ["starter", "budget"]
+        "tags": [
+          "starter",
+          "budget"
+        ]
       },
       {
         "enabled": true,
@@ -67,7 +70,11 @@
         "supports_reasoning": true,
         "supports_tools": true,
         "supports_vision": true,
-        "tags": ["high", "gpt", "long_context"]
+        "tags": [
+          "high",
+          "gpt",
+          "long_context"
+        ]
       },
       {
         "enabled": true,
@@ -84,7 +91,12 @@
         "supports_reasoning": true,
         "supports_tools": true,
         "supports_vision": true,
-        "tags": ["high", "gpt", "flagship", "long_context"]
+        "tags": [
+          "high",
+          "gpt",
+          "flagship",
+          "long_context"
+        ]
       }
     ]
   },
@@ -282,7 +294,10 @@
         "supports_reasoning": true,
         "supports_tools": true,
         "supports_vision": true,
-        "tags": ["starter", "budget"],
+        "tags": [
+          "starter",
+          "budget"
+        ],
         "tier": "paid"
       },
       {
@@ -300,14 +315,19 @@
         "supports_reasoning": true,
         "supports_tools": true,
         "supports_vision": false,
-        "tags": ["medium", "reasoning", "coding", "long_context"],
+        "tags": [
+          "medium",
+          "reasoning",
+          "coding",
+          "long_context"
+        ],
         "tier": "paid"
       },
       {
         "enabled": true,
         "family": "qwen",
         "id": "qwen/qwen3-235b-a22b-2507",
-        "input_cost_usd_per_1k": 0.000071,
+        "input_cost_usd_per_1k": 7.1e-05,
         "label": "Qwen3 235B A22B Instruct 2507",
         "max_context": 262144,
         "notes": "Very low-cost large MoE instruct model via OpenRouter",
@@ -318,7 +338,12 @@
         "supports_reasoning": true,
         "supports_tools": true,
         "supports_vision": false,
-        "tags": ["medium", "budget", "multilingual", "long_context"],
+        "tags": [
+          "medium",
+          "budget",
+          "multilingual",
+          "long_context"
+        ],
         "tier": "paid"
       },
       {
@@ -336,7 +361,11 @@
         "supports_reasoning": true,
         "supports_tools": true,
         "supports_vision": false,
-        "tags": ["medium", "budget", "coding"],
+        "tags": [
+          "medium",
+          "budget",
+          "coding"
+        ],
         "tier": "paid"
       },
       {
@@ -354,7 +383,11 @@
         "supports_reasoning": true,
         "supports_tools": true,
         "supports_vision": true,
-        "tags": ["high", "gpt", "long_context"],
+        "tags": [
+          "high",
+          "gpt",
+          "long_context"
+        ],
         "tier": "paid"
       },
       {
@@ -372,7 +405,12 @@
         "supports_reasoning": true,
         "supports_tools": true,
         "supports_vision": true,
-        "tags": ["high", "gpt", "flagship", "long_context"],
+        "tags": [
+          "high",
+          "gpt",
+          "flagship",
+          "long_context"
+        ],
         "tier": "paid"
       }
     ]

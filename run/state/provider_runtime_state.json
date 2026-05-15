@@ -1,9 +1,23 @@
 {
   "budget_state": {
-    "daily": {},
-    "last_spend_ts": null,
-    "lifetime_total_usd": 0.0,
-    "monthly": {}
+    "daily": {
+      "2026-05-15": {
+        "by_provider": {
+          "openai": 0.0092448
+        },
+        "total_usd": 0.0092448
+      }
+    },
+    "last_spend_ts": "2026-05-15T04:00:38.225840Z",
+    "lifetime_total_usd": 0.0092448,
+    "monthly": {
+      "2026-05": {
+        "by_provider": {
+          "openai": 0.0092448
+        },
+        "total_usd": 0.0092448
+      }
+    }
   },
   "conversion_artifacts": {},
   "conversion_runs": {},
@@ -78,6 +92,73 @@
       "reason": "flags smoke",
       "resource": "provider_model_state",
       "ts": "2026-05-08T02:54:31.375110Z"
+    },
+    {
+      "action": "validate",
+      "actor": "smoke",
+      "after_version": "1e6db19f689f6ff3",
+      "before_version": "1e6db19f689f6ff3",
+      "changed_keys": [],
+      "expected_version": "1e6db19f689f6ff3",
+      "outcome": "validated",
+      "reason": "validate policies smoke",
+      "resource": "policies",
+      "ts": "2026-05-15T04:29:29.268961Z"
+    },
+    {
+      "action": "validate",
+      "actor": "smoke",
+      "after_version": "1bdba95effc15e12",
+      "before_version": "39d72832a4b220a2",
+      "changed_keys": [
+        "__gov_smoke_marker"
+      ],
+      "expected_version": "39d72832a4b220a2",
+      "outcome": "validated",
+      "reason": "validate smoke",
+      "resource": "models",
+      "ts": "2026-05-15T04:29:29.327300Z"
+    },
+    {
+      "action": "apply",
+      "actor": "smoke",
+      "after_version": "1bdba95effc15e12",
+      "before_version": "39d72832a4b220a2",
+      "changed_keys": [
+        "__gov_smoke_marker"
+      ],
+      "expected_version": "39d72832a4b220a2",
+      "outcome": "applied",
+      "reason": "apply smoke",
+      "resource": "models",
+      "ts": "2026-05-15T04:29:29.370096Z"
+    },
+    {
+      "action": "rollback",
+      "actor": "smoke",
+      "after_version": "39d72832a4b220a2",
+      "before_version": "1bdba95effc15e12",
+      "changed_keys": [
+        "__gov_smoke_marker"
+      ],
+      "expected_version": "1bdba95effc15e12",
+      "outcome": "rolled_back",
+      "reason": "rollback smoke",
+      "resource": "models",
+      "ts": "2026-05-15T04:29:29.404462Z"
+    },
+    {
+      "action": "flags_update",
+      "actor": "smoke",
+      "changed_keys": [
+        "disabled_until_manual_review",
+        "exclude_from_free_rotation"
+      ],
+      "model_key": "openrouter:test-model",
+      "outcome": "applied",
+      "reason": "flags smoke",
+      "resource": "provider_model_state",
+      "ts": "2026-05-15T04:29:29.500355Z"
     }
   ],
   "governance_last_good": {
@@ -133,7 +214,54 @@
               "supports_json_schema": true,
               "supports_reasoning": true,
               "supports_tools": true,
-              "supports_vision": true
+              "supports_vision": true,
+              "tags": [
+                "starter",
+                "budget"
+              ]
+            },
+            {
+              "enabled": true,
+              "family": "gpt",
+              "id": "gpt-4.1-mini",
+              "input_cost_usd_per_1k": 0.0004,
+              "label": "GPT-4.1 Mini",
+              "max_context": 1000000,
+              "notes": "Higher-quality direct OpenAI option with moderate cost",
+              "output_cost_usd_per_1k": 0.0016,
+              "priority": 20,
+              "routing_tier": "high",
+              "supports_json_schema": true,
+              "supports_reasoning": true,
+              "supports_tools": true,
+              "supports_vision": true,
+              "tags": [
+                "high",
+                "gpt",
+                "long_context"
+              ]
+            },
+            {
+              "enabled": true,
+              "family": "gpt",
+              "id": "gpt-4.1",
+              "input_cost_usd_per_1k": 0.002,
+              "label": "GPT-4.1",
+              "max_context": 1000000,
+              "notes": "Flagship direct OpenAI option for higher-quality comparisons",
+              "output_cost_usd_per_1k": 0.008,
+              "priority": 30,
+              "routing_tier": "high",
+              "supports_json_schema": true,
+              "supports_reasoning": true,
+              "supports_tools": true,
+              "supports_vision": true,
+              "tags": [
+                "high",
+                "gpt",
+                "flagship",
+                "long_context"
+              ]
             }
           ]
         },
@@ -331,19 +459,136 @@
               "supports_reasoning": true,
               "supports_tools": true,
               "supports_vision": true,
+              "tags": [
+                "starter",
+                "budget"
+              ],
+              "tier": "paid"
+            },
+            {
+              "enabled": true,
+              "family": "deepseek",
+              "id": "deepseek/deepseek-v4-pro",
+              "input_cost_usd_per_1k": 0.000435,
+              "label": "DeepSeek V4 Pro",
+              "max_context": 1000000,
+              "notes": "Budget-conscious reasoning and coding candidate via OpenRouter",
+              "output_cost_usd_per_1k": 0.00087,
+              "priority": 20,
+              "routing_tier": "medium",
+              "supports_json_schema": true,
+              "supports_reasoning": true,
+              "supports_tools": true,
+              "supports_vision": false,
+              "tags": [
+                "medium",
+                "reasoning",
+                "coding",
+                "long_context"
+              ],
+              "tier": "paid"
+            },
+            {
+              "enabled": true,
+              "family": "qwen",
+              "id": "qwen/qwen3-235b-a22b-2507",
+              "input_cost_usd_per_1k": 7.1e-05,
+              "label": "Qwen3 235B A22B Instruct 2507",
+              "max_context": 262144,
+              "notes": "Very low-cost large MoE instruct model via OpenRouter",
+              "output_cost_usd_per_1k": 0.0001,
+              "priority": 24,
+              "routing_tier": "medium",
+              "supports_json_schema": true,
+              "supports_reasoning": true,
+              "supports_tools": true,
+              "supports_vision": false,
+              "tags": [
+                "medium",
+                "budget",
+                "multilingual",
+                "long_context"
+              ],
+              "tier": "paid"
+            },
+            {
+              "enabled": true,
+              "family": "deepseek",
+              "id": "deepseek/deepseek-chat-v3-0324",
+              "input_cost_usd_per_1k": 0.0002,
+              "label": "DeepSeek V3 0324",
+              "max_context": 163840,
+              "notes": "Low-cost general-purpose DeepSeek chat and coding baseline",
+              "output_cost_usd_per_1k": 0.00077,
+              "priority": 26,
+              "routing_tier": "medium",
+              "supports_json_schema": true,
+              "supports_reasoning": true,
+              "supports_tools": true,
+              "supports_vision": false,
+              "tags": [
+                "medium",
+                "budget",
+                "coding"
+              ],
+              "tier": "paid"
+            },
+            {
+              "enabled": true,
+              "family": "gpt",
+              "id": "openai/gpt-4.1-mini",
+              "input_cost_usd_per_1k": 0.0004,
+              "label": "GPT-4.1 Mini via OpenRouter",
+              "max_context": 1000000,
+              "notes": "Higher-tier OpenRouter GPT option with strong quality-per-dollar",
+              "output_cost_usd_per_1k": 0.0016,
+              "priority": 30,
+              "routing_tier": "high",
+              "supports_json_schema": true,
+              "supports_reasoning": true,
+              "supports_tools": true,
+              "supports_vision": true,
+              "tags": [
+                "high",
+                "gpt",
+                "long_context"
+              ],
+              "tier": "paid"
+            },
+            {
+              "enabled": true,
+              "family": "gpt",
+              "id": "openai/gpt-4.1",
+              "input_cost_usd_per_1k": 0.002,
+              "label": "GPT-4.1 via OpenRouter",
+              "max_context": 1000000,
+              "notes": "Flagship OpenRouter GPT option for premium-quality comparisons",
+              "output_cost_usd_per_1k": 0.008,
+              "priority": 40,
+              "routing_tier": "high",
+              "supports_json_schema": true,
+              "supports_reasoning": true,
+              "supports_tools": true,
+              "supports_vision": true,
+              "tags": [
+                "high",
+                "gpt",
+                "flagship",
+                "long_context"
+              ],
               "tier": "paid"
             }
           ]
         }
       },
-      "ts": "2026-05-08T02:54:31.352789Z",
-      "version": "34f932ad624e0e23"
+      "ts": "2026-05-15T04:29:29.353419Z",
+      "version": "39d72832a4b220a2"
     }
   },
   "openrouter_catalog_cache": {
     "count": 364,
     "error": null,
-    "fetched_ts": "2026-05-15T03:43:30.065930Z",
+    "fetched_ts": "2026-05-15T04:00:22.056643Z",
     "free_ids": [
       "arcee-ai/trinity-large-thinking:free",
       "baidu/cobuddy:free",
@@ -19245,7 +19490,7 @@
       "last_error_message": "HTTPConnectionPool(host='127.0.0.1', port=8500): Read timed out. (read timeout=45)",
       "last_error_type": null,
       "last_failure_ts": "2026-05-14T15:53:57.428137Z",
-      "last_success_ts": "2026-05-14T23:24:02.535183Z",
+      "last_success_ts": "2026-05-15T03:55:30.956777Z",
       "promotion_state": "retired",
       "promotion_state_reason": "failure_window_7d",
       "promotion_state_updated_ts": "2026-05-14T15:53:57.428137Z",
@@ -19279,6 +19524,17 @@
           "ts": "2026-05-14T15:53:57.428137Z"
         }
       ]
+    },
+    "openai:gpt-4o-mini": {
+      "cooldown_until": 0,
+      "disabled_until_manual_review": false,
+      "exclude_from_free_rotation": false,
+      "failure_count": 0,
+      "failure_count_24h": 0,
+      "failure_count_7d": 0,
+      "failure_events": [],
+      "last_error_type": null,
+      "last_success_ts": "2026-05-15T04:00:38.202287Z"
     },
     "openrouter:ai21/jamba-large-1.7": {
       "failure_count_24h": 0,
@@ -24618,7 +24874,7 @@
       "exclude_from_free_rotation": true,
       "promotion_state": "quarantined",
       "promotion_state_reason": "manual_flag_update",
-      "promotion_state_updated_ts": "2026-05-08T02:54:31.373817Z",
+      "promotion_state_updated_ts": "2026-05-15T04:29:29.483135Z",
       "promotion_transitions": [
         {
           "actor": "smoke",
@@ -24628,7 +24884,7 @@
           "ts": "2026-05-08T02:54:31.373817Z"
         }
       ],
-      "updated_ts": "2026-05-08T02:54:31.373823Z"
+      "updated_ts": "2026-05-15T04:29:29.483140Z"
     },
     "openrouter:thedrummer/cydonia-24b-v4.1": {
       "failure_count_24h": 0,
@@ -24873,440 +25129,6 @@
   },
   "provider_request_queue": [],
   "request_logs": [
-    {
-      "attempt_errors": [],
-      "candidate_chain": [
-        "openrouter.free",
-        "openrouter.paid"
-      ],
-      "estimated_cost_usd": 0.0,
-      "metadata": {
-        "book_id": "dcc-1",
-        "bundle_chunk_count": 1,
-        "project": "book-analysis",
-        "prompt_version": "book1-extract-v1",
-        "use_case": "extract",
-        "workflow": "automated"
-      },
-      "outcome": "ok",
-      "project_id": "book-analysis",
-      "request_id": "508540b5a857",
-      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
-      "selected_backend": "remote",
-      "selected_lane": "openrouter.free",
-      "selected_model": "openai/gpt-oss-120b:free",
-      "selected_provider": "openrouter",
-      "strategy": "strict_provider",
-      "ts": "2026-05-12T22:15:46.018669Z",
-      "usage": {
-        "completion_tokens": 1276,
-        "prompt_tokens": 3146,
-        "total_tokens": 4422
-      }
-    },
-    {
-      "attempt_errors": [],
-      "candidate_chain": [
-        "openrouter.free",
-        "openrouter.paid"
-      ],
-      "estimated_cost_usd": 0.0,
-      "metadata": {
-        "book_id": "dcc-1",
-        "bundle_chunk_count": 1,
-        "project": "book-analysis",
-        "prompt_version": "book1-extract-v1",
-        "use_case": "extract",
-        "workflow": "automated"
-      },
-      "outcome": "ok",
-      "project_id": "book-analysis",
-      "request_id": "346aaf951602",
-      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
-      "selected_backend": "remote",
-      "selected_lane": "openrouter.free",
-      "selected_model": "openai/gpt-oss-120b:free",
-      "selected_provider": "openrouter",
-      "strategy": "strict_provider",
-      "ts": "2026-05-12T22:16:57.464917Z",
-      "usage": {
-        "completion_tokens": 2142,
-        "prompt_tokens": 2849,
-        "total_tokens": 4991
-      }
-    },
-    {
-      "attempt_errors": [],
-      "candidate_chain": [
-        "openrouter.free",
-        "openrouter.paid"
-      ],
-      "estimated_cost_usd": 0.0,
-      "metadata": {
-        "book_id": "dcc-1",
-        "bundle_chunk_count": 1,
-        "project": "book-analysis",
-        "prompt_version": "book1-extract-v1",
-        "use_case": "extract",
-        "workflow": "automated"
-      },
-      "outcome": "ok",
-      "project_id": "book-analysis",
-      "request_id": "f2f0966851d2",
-      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
-      "selected_backend": "remote",
-      "selected_lane": "openrouter.free",
-      "selected_model": "openai/gpt-oss-120b:free",
-      "selected_provider": "openrouter",
-      "strategy": "strict_provider",
-      "ts": "2026-05-12T22:18:07.547993Z",
-      "usage": {
-        "completion_tokens": 1367,
-        "prompt_tokens": 3106,
-        "total_tokens": 4473
-      }
-    },
-    {
-      "attempt_errors": [],
-      "candidate_chain": [
-        "openrouter.free",
-        "openrouter.paid"
-      ],
-      "estimated_cost_usd": 0.0,
-      "metadata": {
-        "book_id": "dcc-1",
-        "bundle_chunk_count": 1,
-        "project": "book-analysis",
-        "prompt_version": "book1-extract-v1",
-        "use_case": "extract",
-        "workflow": "automated"
-      },
-      "outcome": "ok",
-      "project_id": "book-analysis",
-      "request_id": "0f7d46ea4022",
-      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
-      "selected_backend": "remote",
-      "selected_lane": "openrouter.free",
-      "selected_model": "openai/gpt-oss-120b:free",
-      "selected_provider": "openrouter",
-      "strategy": "strict_provider",
-      "ts": "2026-05-12T22:18:43.248525Z",
-      "usage": {
-        "completion_tokens": 787,
-        "prompt_tokens": 2881,
-        "total_tokens": 3668
-      }
-    },
-    {
-      "attempt_errors": [],
-      "candidate_chain": [
-        "openrouter.free",
-        "openrouter.paid"
-      ],
-      "estimated_cost_usd": 0.0,
-      "metadata": {
-        "book_id": "dcc-1",
-        "bundle_chunk_count": 1,
-        "project": "book-analysis",
-        "prompt_version": "book1-extract-v1",
-        "use_case": "extract",
-        "workflow": "automated"
-      },
-      "outcome": "ok",
-      "project_id": "book-analysis",
-      "request_id": "07d8e596b8e6",
-      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
-      "selected_backend": "remote",
-      "selected_lane": "openrouter.free",
-      "selected_model": "openai/gpt-oss-120b:free",
-      "selected_provider": "openrouter",
-      "strategy": "strict_provider",
-      "ts": "2026-05-12T22:19:40.924207Z",
-      "usage": {
-        "completion_tokens": 1541,
-        "prompt_tokens": 3164,
-        "total_tokens": 4705
-      }
-    },
-    {
-      "attempt_errors": [],
-      "candidate_chain": [
-        "openrouter.free",
-        "openrouter.paid"
-      ],
-      "estimated_cost_usd": 0.0,
-      "metadata": {
-        "book_id": "dcc-1",
-        "bundle_chunk_count": 1,
-        "project": "book-analysis",
-        "prompt_version": "book1-extract-v1",
-        "use_case": "extract",
-        "workflow": "automated"
-      },
-      "outcome": "ok",
-      "project_id": "book-analysis",
-      "request_id": "b61cfaa91def",
-      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
-      "selected_backend": "remote",
-      "selected_lane": "openrouter.free",
-      "selected_model": "openai/gpt-oss-120b:free",
-      "selected_provider": "openrouter",
-      "strategy": "strict_provider",
-      "ts": "2026-05-12T22:20:41.739046Z",
-      "usage": {
-        "completion_tokens": 1776,
-        "prompt_tokens": 2932,
-        "total_tokens": 4708
-      }
-    },
-    {
-      "attempt_errors": [],
-      "candidate_chain": [
-        "openrouter.free",
-        "openrouter.paid"
-      ],
-      "estimated_cost_usd": 0.0,
-      "metadata": {
-        "book_id": "dcc-1",
-        "bundle_chunk_count": 1,
-        "project": "book-analysis",
-        "prompt_version": "book1-extract-v1",
-        "use_case": "extract",
-        "workflow": "automated"
-      },
-      "outcome": "ok",
-      "project_id": "book-analysis",
-      "request_id": "450b3f65fa53",
-      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
-      "selected_backend": "remote",
-      "selected_lane": "openrouter.free",
-      "selected_model": "openai/gpt-oss-120b:free",
-      "selected_provider": "openrouter",
-      "strategy": "strict_provider",
-      "ts": "2026-05-12T22:22:20.852583Z",
-      "usage": {
-        "completion_tokens": 832,
-        "prompt_tokens": 2881,
-        "total_tokens": 3713
-      }
-    },
-    {
-      "attempt_errors": [],
-      "candidate_chain": [
-        "openrouter.free",
-        "openrouter.paid"
-      ],
-      "estimated_cost_usd": 0.0,
-      "metadata": {
-        "book_id": "dcc-1",
-        "bundle_chunk_count": 1,
-        "project": "book-analysis",
-        "prompt_version": "book1-extract-v1",
-        "use_case": "extract",
-        "workflow": "automated"
-      },
-      "outcome": "ok",
-      "project_id": "book-analysis",
-      "request_id": "251bfc59b4b3",
-      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
-      "selected_backend": "remote",
-      "selected_lane": "openrouter.free",
-      "selected_model": "openai/gpt-oss-120b:free",
-      "selected_provider": "openrouter",
-      "strategy": "strict_provider",
-      "ts": "2026-05-12T22:23:13.776234Z",
-      "usage": {
-        "completion_tokens": 1200,
-        "prompt_tokens": 2844,
-        "total_tokens": 4044
-      }
-    },
-    {
-      "attempt_errors": [],
-      "candidate_chain": [
-        "openrouter.free",
-        "openrouter.paid"
-      ],
-      "estimated_cost_usd": 0.0,
-      "metadata": {
-        "book_id": "dcc-1",
-        "bundle_chunk_count": 1,
-        "project": "book-analysis",
-        "prompt_version": "book1-extract-v1",
-        "use_case": "extract",
-        "workflow": "automated"
-      },
-      "outcome": "ok",
-      "project_id": "book-analysis",
-      "request_id": "302a4d15359d",
-      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
-      "selected_backend": "remote",
-      "selected_lane": "openrouter.free",
-      "selected_model": "openai/gpt-oss-120b:free",
-      "selected_provider": "openrouter",
-      "strategy": "strict_provider",
-      "ts": "2026-05-12T22:23:46.112743Z",
-      "usage": {
-        "completion_tokens": 1011,
-        "prompt_tokens": 3223,
-        "total_tokens": 4234
-      }
-    },
-    {
-      "attempt_errors": [],
-      "candidate_chain": [
-        "openrouter.free",
-        "openrouter.paid"
-      ],
-      "estimated_cost_usd": 0.0,
-      "metadata": {
-        "book_id": "dcc-1",
-        "bundle_chunk_count": 1,
-        "project": "book-analysis",
-        "prompt_version": "book1-extract-v1",
-        "use_case": "extract",
-        "workflow": "automated"
-      },
-      "outcome": "ok",
-      "project_id": "book-analysis",
-      "request_id": "696054ccda36",
-      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
-      "selected_backend": "remote",
-      "selected_lane": "openrouter.free",
-      "selected_model": "openai/gpt-oss-120b:free",
-      "selected_provider": "openrouter",
-      "strategy": "strict_provider",
-      "ts": "2026-05-12T22:24:23.979622Z",
-      "usage": {
-        "completion_tokens": 902,
-        "prompt_tokens": 2871,
-        "total_tokens": 3773
-      }
-    },
-    {
-      "attempt_errors": [],
-      "candidate_chain": [
-        "openrouter.free",
-        "openrouter.paid"
-      ],
-      "estimated_cost_usd": 0.0,
-      "metadata": {
-        "book_id": "dcc-1",
-        "bundle_chunk_count": 1,
-        "project": "book-analysis",
-        "prompt_version": "book1-extract-v1",
-        "use_case": "extract",
-        "workflow": "automated"
-      },
-      "outcome": "ok",
-      "project_id": "book-analysis",
-      "request_id": "b6bc578f5257",
-      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
-      "selected_backend": "remote",
-      "selected_lane": "openrouter.free",
-      "selected_model": "openai/gpt-oss-120b:free",
-      "selected_provider": "openrouter",
-      "strategy": "strict_provider",
-      "ts": "2026-05-12T22:25:37.458730Z",
-      "usage": {
-        "completion_tokens": 2158,
-        "prompt_tokens": 2855,
-        "total_tokens": 5013
-      }
-    },
-    {
-      "attempt_errors": [],
-      "candidate_chain": [
-        "openrouter.free",
-        "openrouter.paid"
-      ],
-      "estimated_cost_usd": 0.0,
-      "metadata": {
-        "book_id": "dcc-1",
-        "bundle_chunk_count": 1,
-        "project": "book-analysis",
-        "prompt_version": "book1-extract-v1",
-        "use_case": "extract",
-        "workflow": "automated"
-      },
-      "outcome": "ok",
-      "project_id": "book-analysis",
-      "request_id": "57587e49e735",
-      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
-      "selected_backend": "remote",
-      "selected_lane": "openrouter.free",
-      "selected_model": "openai/gpt-oss-120b:free",
-      "selected_provider": "openrouter",
-      "strategy": "strict_provider",
-      "ts": "2026-05-12T22:26:45.344551Z",
-      "usage": {
-        "completion_tokens": 1923,
-        "prompt_tokens": 2883,
-        "total_tokens": 4806
-      }
-    },
-    {
-      "attempt_errors": [],
-      "candidate_chain": [
-        "openrouter.free",
-        "openrouter.paid"
-      ],
-      "estimated_cost_usd": 0.0,
-      "metadata": {
-        "book_id": "dcc-1",
-        "bundle_chunk_count": 1,
-        "project": "book-analysis",
-        "prompt_version": "book1-extract-v1",
-        "use_case": "extract",
-        "workflow": "automated"
-      },
-      "outcome": "ok",
-      "project_id": "book-analysis",
-      "request_id": "30c495650e2b",
-      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
-      "selected_backend": "remote",
-      "selected_lane": "openrouter.free",
-      "selected_model": "openai/gpt-oss-120b:free",
-      "selected_provider": "openrouter",
-      "strategy": "strict_provider",
-      "ts": "2026-05-12T22:27:56.007017Z",
-      "usage": {
-        "completion_tokens": 1348,
-        "prompt_tokens": 2852,
-        "total_tokens": 4200
-      }
-    },
-    {
-      "attempt_errors": [],
-      "candidate_chain": [
-        "openrouter.free",
-        "openrouter.paid"
-      ],
-      "estimated_cost_usd": 0.0,
-      "metadata": {
-        "book_id": "dcc-1",
-        "bundle_chunk_count": 1,
-        "project": "book-analysis",
-        "prompt_version": "book1-extract-v1",
-        "use_case": "extract",
-        "workflow": "automated"
-      },
-      "outcome": "ok",
-      "project_id": "book-analysis",
-      "request_id": "9752f3f99176",
-      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
-      "selected_backend": "remote",
-      "selected_lane": "openrouter.free",
-      "selected_model": "openai/gpt-oss-120b:free",
-      "selected_provider": "openrouter",
-      "strategy": "strict_provider",
-      "ts": "2026-05-12T22:28:41.828469Z",
-      "usage": {
-        "completion_tokens": 1155,
-        "prompt_tokens": 3164,
-        "total_tokens": 4319
-      }
-    },
     {
       "attempt_errors": [],
       "candidate_chain": [
@@ -31363,10 +31185,567 @@
         "prompt_tokens": 4727,
         "total_tokens": 7124
       }
+    },
+    {
+      "attempt_errors": [],
+      "candidate_chain": [
+        "local",
+        "openrouter.free",
+        "openrouter.paid",
+        "openai"
+      ],
+      "estimated_cost_usd": 0.0,
+      "metadata": {
+        "book_id": "dcc-1",
+        "bundle_chunk_count": 3,
+        "candidate_recipe_id": null,
+        "extraction_profile": "default",
+        "project": "book-analysis",
+        "prompt_version": "book1-extract-v1",
+        "use_case": "extract",
+        "workflow": "automated"
+      },
+      "outcome": "ok",
+      "project_id": "book-analysis",
+      "request_id": "eb8777858073",
+      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
+      "selected_backend": "tgw",
+      "selected_lane": "local",
+      "selected_model": "chat_active_model",
+      "selected_provider": "local",
+      "strategy": "local_first",
+      "ts": "2026-05-15T03:54:00.431385Z",
+      "usage": {
+        "completion_tokens": 1200,
+        "prompt_tokens": 4868,
+        "total_tokens": 6068
+      }
+    },
+    {
+      "attempt_errors": [],
+      "candidate_chain": [
+        "local",
+        "openrouter.free",
+        "openrouter.paid",
+        "openai"
+      ],
+      "estimated_cost_usd": 0.0,
+      "metadata": {
+        "book_id": "dcc-1",
+        "bundle_chunk_count": 3,
+        "candidate_recipe_id": null,
+        "extraction_profile": "default",
+        "project": "book-analysis",
+        "prompt_version": "book1-extract-v1",
+        "use_case": "extract",
+        "workflow": "automated"
+      },
+      "outcome": "ok",
+      "project_id": "book-analysis",
+      "request_id": "8c69030634f9",
+      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
+      "selected_backend": "tgw",
+      "selected_lane": "local",
+      "selected_model": "chat_active_model",
+      "selected_provider": "local",
+      "strategy": "local_first",
+      "ts": "2026-05-15T03:55:12.693296Z",
+      "usage": {
+        "completion_tokens": 1200,
+        "prompt_tokens": 4868,
+        "total_tokens": 6068
+      }
+    },
+    {
+      "attempt_errors": [],
+      "candidate_chain": [
+        "local",
+        "openrouter.free",
+        "openrouter.paid",
+        "openai"
+      ],
+      "estimated_cost_usd": 0.0,
+      "metadata": {
+        "book_id": "dcc-1",
+        "bundle_chunk_count": 3,
+        "candidate_recipe_id": null,
+        "extraction_profile": "default",
+        "project": "book-analysis",
+        "prompt_version": "book1-extract-v1",
+        "use_case": "extract",
+        "workflow": "automated"
+      },
+      "outcome": "ok",
+      "project_id": "book-analysis",
+      "request_id": "e41bd5b33ef0",
+      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
+      "selected_backend": "tgw",
+      "selected_lane": "local",
+      "selected_model": "chat_active_model",
+      "selected_provider": "local",
+      "strategy": "local_first",
+      "ts": "2026-05-15T03:55:30.978953Z",
+      "usage": {
+        "completion_tokens": 1200,
+        "prompt_tokens": 4868,
+        "total_tokens": 6068
+      }
+    },
+    {
+      "attempt_errors": [],
+      "candidate_chain": [
+        "openai"
+      ],
+      "estimated_cost_usd": 0.0011007,
+      "metadata": {
+        "book_id": "dcc-1",
+        "bundle_chunk_count": 3,
+        "candidate_recipe_id": null,
+        "extraction_profile": "default",
+        "project": "book-analysis",
+        "prompt_version": "book1-extract-v1",
+        "use_case": "extract",
+        "workflow": "automated"
+      },
+      "outcome": "ok",
+      "project_id": "book-analysis",
+      "request_id": "888be02d6efc",
+      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
+      "selected_backend": "remote",
+      "selected_lane": "openai",
+      "selected_model": "gpt-4o-mini",
+      "selected_provider": "openai",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:56:52.818699Z",
+      "usage": {
+        "completion_tokens": 698,
+        "prompt_tokens": 4546,
+        "total_tokens": 5244
+      }
+    },
+    {
+      "attempt_errors": [],
+      "candidate_chain": [
+        "openai"
+      ],
+      "estimated_cost_usd": 0.0011247,
+      "metadata": {
+        "book_id": "dcc-1",
+        "bundle_chunk_count": 3,
+        "candidate_recipe_id": null,
+        "extraction_profile": "default",
+        "project": "book-analysis",
+        "prompt_version": "book1-extract-v1",
+        "use_case": "extract",
+        "workflow": "automated"
+      },
+      "outcome": "ok",
+      "project_id": "book-analysis",
+      "request_id": "46cc0d33e4f8",
+      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
+      "selected_backend": "remote",
+      "selected_lane": "openai",
+      "selected_model": "gpt-4o-mini",
+      "selected_provider": "openai",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:57:22.585322Z",
+      "usage": {
+        "completion_tokens": 738,
+        "prompt_tokens": 4546,
+        "total_tokens": 5284
+      }
+    },
+    {
+      "attempt_errors": [],
+      "candidate_chain": [
+        "openai"
+      ],
+      "estimated_cost_usd": 0.0008091,
+      "metadata": {
+        "book_id": "dcc-1",
+        "bundle_chunk_count": 1,
+        "candidate_recipe_id": null,
+        "extraction_profile": "default",
+        "project": "book-analysis",
+        "prompt_version": "book1-extract-v1",
+        "use_case": "extract",
+        "workflow": "automated"
+      },
+      "outcome": "ok",
+      "project_id": "book-analysis",
+      "request_id": "cb99a0da713d",
+      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
+      "selected_backend": "remote",
+      "selected_lane": "openai",
+      "selected_model": "gpt-4o-mini",
+      "selected_provider": "openai",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:58:04.649176Z",
+      "usage": {
+        "completion_tokens": 563,
+        "prompt_tokens": 3142,
+        "total_tokens": 3705
+      }
+    },
+    {
+      "attempt_errors": [],
+      "candidate_chain": [
+        "openai"
+      ],
+      "estimated_cost_usd": 0.00079515,
+      "metadata": {
+        "book_id": "dcc-1",
+        "bundle_chunk_count": 1,
+        "candidate_recipe_id": null,
+        "extraction_profile": "default",
+        "project": "book-analysis",
+        "prompt_version": "book1-extract-v1",
+        "use_case": "extract",
+        "workflow": "automated"
+      },
+      "outcome": "ok",
+      "project_id": "book-analysis",
+      "request_id": "4bb5544e304c",
+      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
+      "selected_backend": "remote",
+      "selected_lane": "openai",
+      "selected_model": "gpt-4o-mini",
+      "selected_provider": "openai",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:58:18.624473Z",
+      "usage": {
+        "completion_tokens": 536,
+        "prompt_tokens": 3157,
+        "total_tokens": 3693
+      }
+    },
+    {
+      "attempt_errors": [],
+      "candidate_chain": [
+        "openai"
+      ],
+      "estimated_cost_usd": 0.000741,
+      "metadata": {
+        "book_id": "dcc-1",
+        "bundle_chunk_count": 1,
+        "candidate_recipe_id": null,
+        "extraction_profile": "default",
+        "project": "book-analysis",
+        "prompt_version": "book1-extract-v1",
+        "use_case": "extract",
+        "workflow": "automated"
+      },
+      "outcome": "ok",
+      "project_id": "book-analysis",
+      "request_id": "991535122eea",
+      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
+      "selected_backend": "remote",
+      "selected_lane": "openai",
+      "selected_model": "gpt-4o-mini",
+      "selected_provider": "openai",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:58:30.637472Z",
+      "usage": {
+        "completion_tokens": 459,
+        "prompt_tokens": 3104,
+        "total_tokens": 3563
+      }
+    },
+    {
+      "attempt_errors": [],
+      "candidate_chain": [
+        "openai"
+      ],
+      "estimated_cost_usd": 0.00072915,
+      "metadata": {
+        "book_id": "dcc-1",
+        "bundle_chunk_count": 1,
+        "candidate_recipe_id": null,
+        "extraction_profile": "default",
+        "project": "book-analysis",
+        "prompt_version": "book1-extract-v1",
+        "use_case": "extract",
+        "workflow": "automated"
+      },
+      "outcome": "ok",
+      "project_id": "book-analysis",
+      "request_id": "45dab276dc1b",
+      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
+      "selected_backend": "remote",
+      "selected_lane": "openai",
+      "selected_model": "gpt-4o-mini",
+      "selected_provider": "openai",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:59:19.383758Z",
+      "usage": {
+        "completion_tokens": 431,
+        "prompt_tokens": 3137,
+        "total_tokens": 3568
+      }
+    },
+    {
+      "attempt_errors": [],
+      "candidate_chain": [
+        "openai"
+      ],
+      "estimated_cost_usd": 0.00076575,
+      "metadata": {
+        "book_id": "dcc-1",
+        "bundle_chunk_count": 1,
+        "candidate_recipe_id": null,
+        "extraction_profile": "default",
+        "project": "book-analysis",
+        "prompt_version": "book1-extract-v1",
+        "use_case": "extract",
+        "workflow": "automated"
+      },
+      "outcome": "ok",
+      "project_id": "book-analysis",
+      "request_id": "a6348e4aced1",
+      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
+      "selected_backend": "remote",
+      "selected_lane": "openai",
+      "selected_model": "gpt-4o-mini",
+      "selected_provider": "openai",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:59:33.329550Z",
+      "usage": {
+        "completion_tokens": 551,
+        "prompt_tokens": 2901,
+        "total_tokens": 3452
+      }
+    },
+    {
+      "attempt_errors": [],
+      "candidate_chain": [
+        "openai"
+      ],
+      "estimated_cost_usd": 0.0007617,
+      "metadata": {
+        "book_id": "dcc-1",
+        "bundle_chunk_count": 1,
+        "candidate_recipe_id": null,
+        "extraction_profile": "default",
+        "project": "book-analysis",
+        "prompt_version": "book1-extract-v1",
+        "use_case": "extract",
+        "workflow": "automated"
+      },
+      "outcome": "ok",
+      "project_id": "book-analysis",
+      "request_id": "d14962c54e95",
+      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
+      "selected_backend": "remote",
+      "selected_lane": "openai",
+      "selected_model": "gpt-4o-mini",
+      "selected_provider": "openai",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:59:47.867637Z",
+      "usage": {
+        "completion_tokens": 499,
+        "prompt_tokens": 3082,
+        "total_tokens": 3581
+      }
+    },
+    {
+      "attempt_errors": [],
+      "candidate_chain": [
+        "openai"
+      ],
+      "estimated_cost_usd": 0.0008316,
+      "metadata": {
+        "book_id": "dcc-1",
+        "bundle_chunk_count": 1,
+        "candidate_recipe_id": null,
+        "extraction_profile": "default",
+        "project": "book-analysis",
+        "prompt_version": "book1-extract-v1",
+        "use_case": "extract",
+        "workflow": "automated"
+      },
+      "outcome": "ok",
+      "project_id": "book-analysis",
+      "request_id": "17f4bad6ad96",
+      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
+      "selected_backend": "remote",
+      "selected_lane": "openai",
+      "selected_model": "gpt-4o-mini",
+      "selected_provider": "openai",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T04:00:02.826675Z",
+      "usage": {
+        "completion_tokens": 600,
+        "prompt_tokens": 3144,
+        "total_tokens": 3744
+      }
+    },
+    {
+      "attempt_errors": [],
+      "candidate_chain": [
+        "openai"
+      ],
+      "estimated_cost_usd": 0.0007614,
+      "metadata": {
+        "book_id": "dcc-1",
+        "bundle_chunk_count": 1,
+        "candidate_recipe_id": null,
+        "extraction_profile": "default",
+        "project": "book-analysis",
+        "prompt_version": "book1-extract-v1",
+        "use_case": "extract",
+        "workflow": "automated"
+      },
+      "outcome": "ok",
+      "project_id": "book-analysis",
+      "request_id": "fcfcefb62cc7",
+      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
+      "selected_backend": "remote",
+      "selected_lane": "openai",
+      "selected_model": "gpt-4o-mini",
+      "selected_provider": "openai",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T04:00:21.978809Z",
+      "usage": {
+        "completion_tokens": 474,
+        "prompt_tokens": 3180,
+        "total_tokens": 3654
+      }
+    },
+    {
+      "attempt_errors": [],
+      "candidate_chain": [
+        "openai"
+      ],
+      "estimated_cost_usd": 0.00082455,
+      "metadata": {
+        "book_id": "dcc-1",
+        "bundle_chunk_count": 1,
+        "candidate_recipe_id": null,
+        "extraction_profile": "default",
+        "project": "book-analysis",
+        "prompt_version": "book1-extract-v1",
+        "use_case": "extract",
+        "workflow": "automated"
+      },
+      "outcome": "ok",
+      "project_id": "book-analysis",
+      "request_id": "ef4cdae8d3cf",
+      "selected_active_local_model": "Qwen3.5-9B-Q4_K_M",
+      "selected_backend": "remote",
+      "selected_lane": "openai",
+      "selected_model": "gpt-4o-mini",
+      "selected_provider": "openai",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T04:00:38.221987Z",
+      "usage": {
+        "completion_tokens": 595,
+        "prompt_tokens": 3117,
+        "total_tokens": 3712
+      }
     }
   ],
-  "spend_logs": [],
-  "updated_ts": "2026-05-15T03:43:31.387336Z",
+  "spend_logs": [
+    {
+      "amount_usd": 0.0011007,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "provider": "openai",
+      "request_id": "888be02d6efc",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:56:52.821231Z"
+    },
+    {
+      "amount_usd": 0.0011247,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "provider": "openai",
+      "request_id": "46cc0d33e4f8",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:57:22.588222Z"
+    },
+    {
+      "amount_usd": 0.0008091,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "provider": "openai",
+      "request_id": "cb99a0da713d",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:58:04.652456Z"
+    },
+    {
+      "amount_usd": 0.00079515,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "provider": "openai",
+      "request_id": "4bb5544e304c",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:58:18.629963Z"
+    },
+    {
+      "amount_usd": 0.000741,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "provider": "openai",
+      "request_id": "991535122eea",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:58:30.640576Z"
+    },
+    {
+      "amount_usd": 0.00072915,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "provider": "openai",
+      "request_id": "45dab276dc1b",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:59:19.388788Z"
+    },
+    {
+      "amount_usd": 0.00076575,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "provider": "openai",
+      "request_id": "a6348e4aced1",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:59:33.332840Z"
+    },
+    {
+      "amount_usd": 0.0007617,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "provider": "openai",
+      "request_id": "d14962c54e95",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T03:59:47.871774Z"
+    },
+    {
+      "amount_usd": 0.0008316,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "provider": "openai",
+      "request_id": "17f4bad6ad96",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T04:00:02.830994Z"
+    },
+    {
+      "amount_usd": 0.0007614,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "provider": "openai",
+      "request_id": "fcfcefb62cc7",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T04:00:21.982431Z"
+    },
+    {
+      "amount_usd": 0.00082455,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "provider": "openai",
+      "request_id": "ef4cdae8d3cf",
+      "strategy": "strict_provider",
+      "ts": "2026-05-15T04:00:38.225840Z"
+    }
+  ],
+  "updated_ts": "2026-05-15T04:29:29.502821Z",
   "usage_logs": [
     {
       "completion_tokens": 1683,
@@ -33611,6 +33990,160 @@
       "strategy": "strict_provider",
       "total_tokens": 7124,
       "ts": "2026-05-15T03:27:50.465190Z"
+    },
+    {
+      "completion_tokens": 1200,
+      "estimated_cost_usd": 0.0,
+      "lane": "local",
+      "model": "chat_active_model",
+      "prompt_tokens": 4868,
+      "provider": "local",
+      "strategy": "local_first",
+      "total_tokens": 6068,
+      "ts": "2026-05-15T03:54:00.431385Z"
+    },
+    {
+      "completion_tokens": 1200,
+      "estimated_cost_usd": 0.0,
+      "lane": "local",
+      "model": "chat_active_model",
+      "prompt_tokens": 4868,
+      "provider": "local",
+      "strategy": "local_first",
+      "total_tokens": 6068,
+      "ts": "2026-05-15T03:55:12.693296Z"
+    },
+    {
+      "completion_tokens": 1200,
+      "estimated_cost_usd": 0.0,
+      "lane": "local",
+      "model": "chat_active_model",
+      "prompt_tokens": 4868,
+      "provider": "local",
+      "strategy": "local_first",
+      "total_tokens": 6068,
+      "ts": "2026-05-15T03:55:30.978953Z"
+    },
+    {
+      "completion_tokens": 698,
+      "estimated_cost_usd": 0.0011007,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 4546,
+      "provider": "openai",
+      "strategy": "strict_provider",
+      "total_tokens": 5244,
+      "ts": "2026-05-15T03:56:52.818699Z"
+    },
+    {
+      "completion_tokens": 738,
+      "estimated_cost_usd": 0.0011247,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 4546,
+      "provider": "openai",
+      "strategy": "strict_provider",
+      "total_tokens": 5284,
+      "ts": "2026-05-15T03:57:22.585322Z"
+    },
+    {
+      "completion_tokens": 563,
+      "estimated_cost_usd": 0.0008091,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 3142,
+      "provider": "openai",
+      "strategy": "strict_provider",
+      "total_tokens": 3705,
+      "ts": "2026-05-15T03:58:04.649176Z"
+    },
+    {
+      "completion_tokens": 536,
+      "estimated_cost_usd": 0.00079515,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 3157,
+      "provider": "openai",
+      "strategy": "strict_provider",
+      "total_tokens": 3693,
+      "ts": "2026-05-15T03:58:18.624473Z"
+    },
+    {
+      "completion_tokens": 459,
+      "estimated_cost_usd": 0.000741,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 3104,
+      "provider": "openai",
+      "strategy": "strict_provider",
+      "total_tokens": 3563,
+      "ts": "2026-05-15T03:58:30.637472Z"
+    },
+    {
+      "completion_tokens": 431,
+      "estimated_cost_usd": 0.00072915,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 3137,
+      "provider": "openai",
+      "strategy": "strict_provider",
+      "total_tokens": 3568,
+      "ts": "2026-05-15T03:59:19.383758Z"
+    },
+    {
+      "completion_tokens": 551,
+      "estimated_cost_usd": 0.00076575,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 2901,
+      "provider": "openai",
+      "strategy": "strict_provider",
+      "total_tokens": 3452,
+      "ts": "2026-05-15T03:59:33.329550Z"
+    },
+    {
+      "completion_tokens": 499,
+      "estimated_cost_usd": 0.0007617,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 3082,
+      "provider": "openai",
+      "strategy": "strict_provider",
+      "total_tokens": 3581,
+      "ts": "2026-05-15T03:59:47.867637Z"
+    },
+    {
+      "completion_tokens": 600,
+      "estimated_cost_usd": 0.0008316,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 3144,
+      "provider": "openai",
+      "strategy": "strict_provider",
+      "total_tokens": 3744,
+      "ts": "2026-05-15T04:00:02.826675Z"
+    },
+    {
+      "completion_tokens": 474,
+      "estimated_cost_usd": 0.0007614,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 3180,
+      "provider": "openai",
+      "strategy": "strict_provider",
+      "total_tokens": 3654,
+      "ts": "2026-05-15T04:00:21.978809Z"
+    },
+    {
+      "completion_tokens": 595,
+      "estimated_cost_usd": 0.00082455,
+      "lane": "openai",
+      "model": "gpt-4o-mini",
+      "prompt_tokens": 3117,
+      "provider": "openai",
+      "strategy": "strict_provider",
+      "total_tokens": 3712,
+      "ts": "2026-05-15T04:00:38.221987Z"
     }
   ]
 }
