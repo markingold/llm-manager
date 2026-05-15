@@ -26,9 +26,9 @@ Current deployed unit wiring on this host:
 ### Health
 - GET /health
   - Lightweight status payload
-  - Includes active symlink targets and configured API bases
+  - Includes active symlink targets and backend-aware resolved API bases for chat/intent/small slots
   - Includes slot_backends
-  - Performs quick connectivity checks for chat and small
+  - Performs quick connectivity checks for chat, intent, and small
 
 ### System
 - GET /system
@@ -39,6 +39,7 @@ Current deployed unit wiring on this host:
   - Returns available model lists for chat, intent, and small
   - Includes active symlink targets
   - Includes slot_backends
+  - Includes `slot_endpoints` with resolved local slot mode/backend/base/port/base source metadata
   - Includes slots_enabled
   - Includes per-model metadata from the inspector
   - Includes `converted_artifacts` for managed EXL2 conversion outputs
@@ -51,12 +52,15 @@ Current deployed unit wiring on this host:
   - backend can be tgw, vllm, or tabbyapi
   - Updates the active symlink, then optionally bounces the target engine
   - If backend is provided, updates per-slot backend preference state
+  - If backend is omitted and the model inspector recommends `vllm` or `tabbyapi`, switch auto-applies that backend
+  - Response includes backend recommendation context (`backend_source`, `auto_backend_applied`, `model_kind`, fallback list)
 
 ### Knobs
 - GET /knobs
 - POST /knobs
   - Reads merged runtime values (local + global-preferred merge)
   - Writes project-local `secrets/.env` only
+  - Supports optional per-backend slot base overrides: `LLM_*_API_BASE_TGW|VLLM|TABBYAPI`
   - GET response redacts sensitive keys containing KEY, TOKEN, SECRET, or PASSWORD
 
 ### Bounce
@@ -75,7 +79,7 @@ Current deployed unit wiring on this host:
 ## Engine Control
 
 - GET /engines/status
-  - Returns unit info, slot backend, port, listening state, and active model path for each slot
+  - Returns unit info, slot backend, resolved base, base source, port, listening state, and active model path for each slot
   - Includes top-level `tgw_webui` status for the standalone TGW WebUI service
 - POST /engines/{mode}/{action}
   - action is start, stop, or restart
@@ -162,6 +166,7 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
   - Optional request field `no_thinking` disables thinking for local provider dispatch (`enable_thinking=false`)
   - Request and response models are defined in api/router/contracts.py
   - Dispatches via provider adapters in api/providers for local, OpenRouter, and OpenAI
+  - Local dispatch now resolves slot mode from selected local model alias and uses backend-aware slot base resolution (not chat-base only)
   - Uses policy candidate chains with fallback when allowed, including service-tier-aware chain selection when configured
   - Logs routing decisions and usage into provider runtime state
   - Decision records include deterministic `attempt_trace` and `fallback_summary` fields for incident triage
@@ -172,17 +177,20 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
   - Applies `task_overrides.completion` and `project_overrides.<project>.task_overrides.completion` when configured
   - Optional request field `no_thinking` disables thinking for local provider dispatch (`enable_thinking=false`)
   - Uses the same policy-chain dispatch and fallback model
+  - Local dispatch resolves selected slot mode/backend from local model alias before selecting the target base
   - Decision records include deterministic `attempt_trace` and `fallback_summary` fields for incident triage, plus typed dispatch reason codes
 - POST /router/embed
   - Accepts normalized broker request shape for embeddings
   - Supports `project_id` for project-specific policy overrides
   - Applies `task_overrides.embed` and `project_overrides.<project>.task_overrides.embed` when configured
   - Uses the same policy-chain dispatch and fallback model
+  - Local dispatch resolves selected slot mode/backend from local model alias before selecting the target base
   - Decision records include deterministic `attempt_trace` and `fallback_summary` fields for incident triage, plus typed dispatch reason codes
 - POST /router/route-test
   - Dry-run route resolution utility that returns strategy, candidate chain, selected models per lane, and cooldown/lifecycle hints
   - Includes `strategy_resolution`, `chain_resolution`, and `policy_context` for deterministic strategy-source, chain-source, strict-provider task-constraint, and service-tier inspection
   - Optional `execute_first=true` runs a lightweight execution against the first eligible candidate for validation
+  - Execution diagnostics now include resolved local backend and local slot mode when local lane is selected
 - GET /router/health
   - Router config load status plus recent decision-log signal
   - Includes cached OpenRouter catalog, rankings freshness, and manual free-candidate counts

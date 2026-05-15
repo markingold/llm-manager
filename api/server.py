@@ -491,6 +491,168 @@ def set_slot_backend(mode: str, backend: str):
     write_slot_backends(current)
 
 
+def _normalize_slot_mode(mode: str | None, default: str = "chat") -> str:
+    raw = str(mode or "").strip().lower()
+    if raw == "util":
+        raw = "small"
+    if raw in {"chat", "intent", "small"}:
+        return raw
+    return default
+
+
+def _slot_alias_for_mode(mode: str) -> str:
+    mode_key = _normalize_slot_mode(mode)
+    return {
+        "chat": "chat_active_model",
+        "intent": "intent_active_model",
+        "small": "small_active_model",
+    }.get(mode_key, "chat_active_model")
+
+
+def _active_model_name_for_mode(mode: str) -> str | None:
+    mode_key = _normalize_slot_mode(mode)
+    active_path = str(current_links().get(mode_key, "") or "")
+    if not active_path:
+        return None
+    return os.path.basename(active_path.rstrip("/")) if active_path else None
+
+
+def _slot_mode_from_local_model(model_id: str, fallback_mode: str = "chat") -> str:
+    fallback = _normalize_slot_mode(fallback_mode)
+    model = str(model_id or "").strip()
+    if not model:
+        return fallback
+
+    alias_map = {
+        "chat_active_model": "chat",
+        "intent_active_model": "intent",
+        "small_active_model": "small",
+    }
+    if model in alias_map:
+        return alias_map[model]
+
+    local_ref = model
+    if local_ref.startswith("local:"):
+        local_ref = local_ref.split(":", 1)[1].strip()
+
+    if local_ref in {"chat", "intent", "small"}:
+        return local_ref
+    if ":" in local_ref:
+        left = local_ref.split(":", 1)[0].strip().lower()
+        if left in {"chat", "intent", "small"}:
+            return left
+
+    active = current_links()
+    for mode in ("chat", "intent", "small"):
+        active_path = str(active.get(mode, "") or "")
+        active_name = os.path.basename(active_path.rstrip("/")) if active_path else ""
+        if model == active_name:
+            return mode
+
+    return fallback
+
+
+def _local_base_env_key(mode: str) -> str:
+    mode_key = _normalize_slot_mode(mode)
+    return {
+        "chat": "LLM_CHAT_API_BASE",
+        "intent": "LLM_INTENT_API_BASE",
+        "small": "LLM_SMALL_API_BASE",
+    }.get(mode_key, "LLM_CHAT_API_BASE")
+
+
+def _local_backend_base_env_key(mode: str, backend: str | None) -> str:
+    backend_key = str(backend or "").strip().upper()
+    if not backend_key:
+        return ""
+    return f"{_local_base_env_key(mode)}_{backend_key}"
+
+
+def _local_slot_catalog_row(mode: str, provider_models: dict | None = None) -> dict:
+    mode_key = _normalize_slot_mode(mode)
+    doc = provider_models if isinstance(provider_models, dict) else read_provider_models()
+    local = doc.get("local", {}) if isinstance(doc.get("local", {}), dict) else {}
+    slots = local.get("slots", []) if isinstance(local.get("slots", []), list) else []
+    for row in slots:
+        if not isinstance(row, dict):
+            continue
+        slot_id = _normalize_slot_mode(row.get("id"), default="")
+        if slot_id == mode_key:
+            return row
+    return {}
+
+
+def _local_base_for_mode(
+    mode: str,
+    env: dict,
+    backend: str | None = None,
+    provider_models: dict | None = None,
+) -> tuple[str, str]:
+    mode_key = _normalize_slot_mode(mode)
+    backend_key = _local_backend_base_env_key(mode_key, backend)
+    if backend_key:
+        backend_base = str(env.get(backend_key, "") or "").strip()
+        if backend_base:
+            return backend_base, backend_key
+
+    slot_row = _local_slot_catalog_row(mode_key, provider_models=provider_models)
+    backend_base_envs = slot_row.get("base_env_by_backend", {}) if isinstance(slot_row.get("base_env_by_backend", {}), dict) else {}
+    backend_label = str(backend or "").strip().lower()
+    mapped_env_key = str(backend_base_envs.get(backend_label, "") or "").strip()
+    if mapped_env_key:
+        mapped_base = str(env.get(mapped_env_key, "") or "").strip()
+        if mapped_base:
+            return mapped_base, mapped_env_key
+
+    base_env_key = str(slot_row.get("base_env", "") or "").strip()
+    if base_env_key:
+        base_from_slot = str(env.get(base_env_key, "") or "").strip()
+        if base_from_slot:
+            return base_from_slot, base_env_key
+
+    generic_env_key = _local_base_env_key(mode_key)
+    generic_base = str(env.get(generic_env_key, "") or "").strip()
+    if generic_base:
+        return generic_base, generic_env_key
+
+    default_port = int(SLOT_DEFAULT_PORTS.get(mode_key, 8500))
+    return f"http://127.0.0.1:{default_port}", "default"
+
+
+def _port_from_base(base: str, mode: str) -> int:
+    fallback = int(SLOT_DEFAULT_PORTS.get(_normalize_slot_mode(mode), 0))
+    try:
+        parsed = urlparse(str(base or "").strip())
+        if parsed.port is not None:
+            return int(parsed.port)
+    except Exception:
+        pass
+    return fallback
+
+
+def _local_endpoint_for_model(
+    model_id: str,
+    env: dict,
+    provider_models: dict | None = None,
+    fallback_mode: str = "chat",
+) -> dict:
+    mode = _slot_mode_from_local_model(model_id, fallback_mode=fallback_mode)
+    slot_backends = read_slot_backends()
+    backend = str(slot_backends.get(mode, DEFAULT_SLOT_BACKENDS.get(mode, "tgw")) or "tgw").strip().lower()
+    if backend not in SUPPORTED_BACKENDS:
+        backend = DEFAULT_SLOT_BACKENDS.get(mode, "tgw")
+    base, base_source = _local_base_for_mode(mode, env, backend=backend, provider_models=provider_models)
+    active_model = _active_model_name_for_mode(mode)
+    return {
+        "mode": mode,
+        "backend": backend,
+        "base": str(base).rstrip("/"),
+        "base_source": base_source,
+        "active_model": active_model,
+        "port": _port_from_base(base, mode),
+    }
+
+
 def _load_json(path: Path, default_obj: dict) -> dict:
     if not path.exists():
         return json.loads(json.dumps(default_obj))
@@ -2470,7 +2632,102 @@ def _pick_catalog_model(
         return "local", preferred
 
     if lane == "local":
-        return "local", "chat_active_model"
+        local_cfg = provider_models.get("local", {}) if isinstance(provider_models.get("local", {}), dict) else {}
+        slot_rows = local_cfg.get("slots", []) if isinstance(local_cfg.get("slots", []), list) else []
+
+        preferred_tags: list[str] = []
+        model_prefs = getattr(req, "model_preferences", None)
+        if model_prefs is not None and isinstance(getattr(model_prefs, "preferred_model_tags", None), list):
+            preferred_tags = [str(tag).strip().lower() for tag in model_prefs.preferred_model_tags if str(tag).strip()]
+
+        task_type = _normalize_task_type(getattr(req, "task_type", "chat"))
+        required_capability = {
+            "chat": "chat",
+            "completion": "chat",
+            "embed": "embeddings",
+        }.get(task_type, "chat")
+
+        slot_backends = read_slot_backends()
+        candidates: list[dict] = []
+        for row in slot_rows:
+            if not isinstance(row, dict):
+                continue
+            slot_mode = _normalize_slot_mode(row.get("id"), default="")
+            if slot_mode not in {"chat", "intent", "small"}:
+                continue
+            if not bool(row.get("enabled", True)):
+                continue
+
+            capabilities_raw = row.get("capabilities", []) if isinstance(row.get("capabilities", []), list) else []
+            capabilities = {str(cap).strip().lower() for cap in capabilities_raw if str(cap).strip()}
+            alias = _slot_alias_for_mode(slot_mode)
+            if not alias or alias in excluded_models:
+                continue
+
+            runtime_backend = str(slot_backends.get(slot_mode, row.get("backend") or DEFAULT_SLOT_BACKENDS.get(slot_mode, "tgw")) or "").strip().lower()
+            if runtime_backend not in SUPPORTED_BACKENDS:
+                runtime_backend = DEFAULT_SLOT_BACKENDS.get(slot_mode, "tgw")
+
+            try:
+                priority = int(row.get("priority", 9999) or 9999)
+            except Exception:
+                priority = 9999
+
+            candidates.append({
+                "slot_mode": slot_mode,
+                "alias": alias,
+                "backend": runtime_backend,
+                "capabilities": capabilities,
+                "priority": priority,
+            })
+
+        if candidates:
+            capability_filtered = [
+                c for c in candidates
+                if not c["capabilities"] or required_capability in c["capabilities"]
+            ]
+            pool = capability_filtered if capability_filtered else candidates
+
+            backend_hints = [tag for tag in preferred_tags if tag in SUPPORTED_BACKENDS]
+            if backend_hints:
+                backend_filtered = [c for c in pool if c["backend"] in backend_hints]
+                if backend_filtered:
+                    pool = backend_filtered
+
+            mode_hints: list[str] = []
+            for tag in preferred_tags:
+                if tag in {"chat", "intent", "small"}:
+                    mode_hints.append(tag)
+                elif tag in {"util"}:
+                    mode_hints.append("small")
+                elif tag in {"classification", "classify"}:
+                    mode_hints.append("intent")
+                elif tag in {"embed", "embedding", "embeddings", "vector"}:
+                    mode_hints.append("small")
+
+            mode_order: dict[str, int] = {}
+            for idx, mode_hint in enumerate(mode_hints):
+                if mode_hint not in mode_order:
+                    mode_order[mode_hint] = idx
+            if task_type == "embed":
+                default_mode_rank = {"small": 0, "chat": 1, "intent": 2}
+            else:
+                default_mode_rank = {"chat": 0, "intent": 1, "small": 2}
+
+            pool.sort(key=lambda c: (
+                0 if c["slot_mode"] in mode_order else 1,
+                mode_order.get(c["slot_mode"], default_mode_rank.get(c["slot_mode"], 99)),
+                int(c["priority"]),
+                str(c["alias"]),
+            ))
+            return "local", str(pool[0]["alias"])
+
+        fallback_mode = {
+            "chat": "chat",
+            "completion": "chat",
+            "embed": "small",
+        }.get(task_type, "chat")
+        return "local", _slot_alias_for_mode(fallback_mode)
 
     if lane == "openrouter.free":
         items = provider_models.get("openrouter", {}).get("free", [])
@@ -2583,10 +2840,16 @@ def _build_embed_payload(req: RouterEmbedRequest, selected_model: str) -> dict:
     }
 
 
-def _dispatch_provider_chat(provider: str, env: dict, payload: dict) -> dict:
+def _dispatch_provider_chat(provider: str, env: dict, payload: dict, provider_models: dict | None = None) -> dict:
     if provider == "local":
         adapter = LocalProviderAdapter()
-        return adapter.chat({"base": env.get("LLM_CHAT_API_BASE", "http://127.0.0.1:8500"), "payload": payload})
+        local_endpoint = _local_endpoint_for_model(
+            str(payload.get("model", "") or ""),
+            env,
+            provider_models=provider_models,
+            fallback_mode="chat",
+        )
+        return adapter.chat({"base": local_endpoint["base"], "payload": payload})
     if provider == "openrouter":
         adapter = OpenRouterProviderAdapter()
         return adapter.chat({
@@ -2606,10 +2869,16 @@ def _dispatch_provider_chat(provider: str, env: dict, payload: dict) -> dict:
     raise RuntimeError(f"Unsupported provider: {provider}")
 
 
-def _dispatch_provider_completions(provider: str, env: dict, payload: dict) -> dict:
+def _dispatch_provider_completions(provider: str, env: dict, payload: dict, provider_models: dict | None = None) -> dict:
     if provider == "local":
         adapter = LocalProviderAdapter()
-        return adapter.completions({"base": env.get("LLM_CHAT_API_BASE", "http://127.0.0.1:8500"), "payload": payload})
+        local_endpoint = _local_endpoint_for_model(
+            str(payload.get("model", "") or ""),
+            env,
+            provider_models=provider_models,
+            fallback_mode="chat",
+        )
+        return adapter.completions({"base": local_endpoint["base"], "payload": payload})
     if provider == "openrouter":
         adapter = OpenRouterProviderAdapter()
         return adapter.completions({
@@ -2629,10 +2898,16 @@ def _dispatch_provider_completions(provider: str, env: dict, payload: dict) -> d
     raise RuntimeError(f"Unsupported provider: {provider}")
 
 
-def _dispatch_provider_embeddings(provider: str, env: dict, payload: dict) -> dict:
+def _dispatch_provider_embeddings(provider: str, env: dict, payload: dict, provider_models: dict | None = None) -> dict:
     if provider == "local":
         adapter = LocalProviderAdapter()
-        return adapter.embeddings({"base": env.get("LLM_CHAT_API_BASE", "http://127.0.0.1:8500"), "payload": payload})
+        local_endpoint = _local_endpoint_for_model(
+            str(payload.get("model", "") or ""),
+            env,
+            provider_models=provider_models,
+            fallback_mode="small",
+        )
+        return adapter.embeddings({"base": local_endpoint["base"], "payload": payload})
     if provider == "openrouter":
         adapter = OpenRouterProviderAdapter()
         return adapter.embeddings({
@@ -3630,12 +3905,11 @@ def _maybe_refresh_openrouter_catalog(env: dict, max_age_seconds: int = 900) -> 
     return _refresh_openrouter_catalog(env, state=state)
 
 
-def _eval_base_for_mode(mode: str, env: dict) -> str:
-    if mode == "chat":
-        return env.get("LLM_CHAT_API_BASE", "http://127.0.0.1:8500")
-    if mode == "intent":
-        return env.get("LLM_INTENT_API_BASE", "http://127.0.0.1:8501")
-    return env.get("LLM_SMALL_API_BASE", "http://127.0.0.1:8502")
+def _eval_base_for_mode(mode: str, env: dict, provider_models: dict | None = None) -> str:
+    mode_key = _normalize_slot_mode(mode)
+    backend = read_slot_backends().get(mode_key, DEFAULT_SLOT_BACKENDS.get(mode_key, "tgw"))
+    base, _ = _local_base_for_mode(mode_key, env, backend=backend, provider_models=provider_models)
+    return base
 
 
 def _default_eval_models(mode: str) -> list[str]:
@@ -4664,7 +4938,7 @@ def _run_local_evaluation(req: LocalEvalRequest, run_id: str | None = None, queu
         lane = str(candidate.get("lane", "local"))
         model = str(candidate.get("model", "chat_active_model"))
         eval_mode = str(candidate.get("mode", req.target_mode))
-        local_base = _eval_base_for_mode(eval_mode, env).rstrip("/")
+        local_base = _eval_base_for_mode(eval_mode, env, provider_models=provider_models).rstrip("/")
         for variant in variants:
             for case in req.cases:
                 sys_prompt = variant.system if variant.system is not None else case.system
@@ -4724,7 +4998,7 @@ def _run_local_evaluation(req: LocalEvalRequest, run_id: str | None = None, queu
                         r.raise_for_status()
                         raw = r.json()
                     else:
-                        raw = _dispatch_provider_chat(provider, env, payload)
+                        raw = _dispatch_provider_chat(provider, env, payload, provider_models=provider_models)
                     elapsed_ms = round((time.time() - start) * 1000, 2)
                     row["latency_ms"] = elapsed_ms
                     text = _extract_chat_text(raw)
@@ -4974,15 +5248,34 @@ def switch_model(mode: str, model_dir: str, bounce: bool, backend: str | None = 
     if not target.exists():
         raise HTTPException(404, f"model dir not found: {target}")
 
+    inspection = inspect_one(model_dir)
+    model_kind = str(inspection.get("kind", "unknown") or "unknown")
+    recommended_backend = str(inspection.get("recommended_backend", "") or "").strip().lower()
+    fallback_backends = [
+        str(b).strip().lower()
+        for b in (inspection.get("fallback_backends", []) if isinstance(inspection.get("fallback_backends", []), list) else [])
+        if str(b).strip()
+    ]
+
     link = {
         "chat":   MODELS_DIR / "chat_active_model",
         "intent": MODELS_DIR / "intent_active_model",
         "small":  MODELS_DIR / "small_active_model",
     }[mode]
 
+    slot_backends_before = read_slot_backends()
+    previous_backend = str(slot_backends_before.get(mode, DEFAULT_SLOT_BACKENDS.get(mode, "tgw")) or "tgw")
+    chosen_backend = backend
+    backend_source = "request" if backend is not None else "existing"
+    auto_backend_applied = False
+    if chosen_backend is None and recommended_backend in {"vllm", "tabbyapi"} and recommended_backend != previous_backend:
+        chosen_backend = recommended_backend
+        backend_source = "auto_recommended"
+        auto_backend_applied = True
+
     _make_symlink(link, target)
-    if backend is not None:
-        set_slot_backend(mode, backend)
+    if chosen_backend is not None:
+        set_slot_backend(mode, chosen_backend)
     if bounce:
         _bounce_engine(mode)
 
@@ -4993,6 +5286,12 @@ def switch_model(mode: str, model_dir: str, bounce: bool, backend: str | None = 
         "target": str(target),
         "mode": mode,
         "backend": slot_backend,
+        "backend_source": backend_source,
+        "auto_backend_applied": auto_backend_applied,
+        "previous_backend": previous_backend,
+        "model_kind": model_kind,
+        "recommended_backend": recommended_backend if recommended_backend in SUPPORTED_BACKENDS else None,
+        "fallback_backends": fallback_backends,
     }
 
 # -----------------------------------------------------------------------------
@@ -5526,8 +5825,17 @@ class SwitchReq(BaseModel):
 class Knobs(BaseModel):
     model_config = {"protected_namespaces": ()}
     LLM_CHAT_API_BASE: str | None = None
+    LLM_CHAT_API_BASE_TGW: str | None = None
+    LLM_CHAT_API_BASE_VLLM: str | None = None
+    LLM_CHAT_API_BASE_TABBYAPI: str | None = None
     LLM_INTENT_API_BASE: str | None = None
+    LLM_INTENT_API_BASE_TGW: str | None = None
+    LLM_INTENT_API_BASE_VLLM: str | None = None
+    LLM_INTENT_API_BASE_TABBYAPI: str | None = None
     LLM_SMALL_API_BASE: str | None = None
+    LLM_SMALL_API_BASE_TGW: str | None = None
+    LLM_SMALL_API_BASE_VLLM: str | None = None
+    LLM_SMALL_API_BASE_TABBYAPI: str | None = None
     SMART_ASSISTANT_URL: str | None = None
     CUDA_VISIBLE_DEVICES: str | None = None
     PM2_CHAT: str | None = None
@@ -5683,6 +5991,9 @@ def health():
     env = read_env()
     provider_models = read_provider_models()
     provider_policies = read_provider_policies()
+    chat_engine = _engine_def("chat", env=env, provider_models=provider_models)
+    intent_engine = _engine_def("intent", env=env, provider_models=provider_models)
+    small_engine = _engine_def("small", env=env, provider_models=provider_models)
     info = {
         "ok": True,
         "time": datetime.utcnow().isoformat() + "Z",
@@ -5693,16 +6004,21 @@ def health():
             "policies_loaded": bool(provider_policies),
         },
         "pm2": {"chat": env.get("PM2_CHAT"), "intent": env.get("PM2_INTENT"), "small": env.get("PM2_SMALL")},
-        "api_bases": {"chat": env.get("LLM_CHAT_API_BASE"), "intent": env.get("LLM_INTENT_API_BASE"), "small": env.get("LLM_SMALL_API_BASE")},
+        "api_bases": {"chat": chat_engine.get("base"), "intent": intent_engine.get("base"), "small": small_engine.get("base")},
     }
     # quick non-fatal pings (TGW exposes /v1/models, not /health)
     try:
-        r = requests.get(env["LLM_CHAT_API_BASE"].rstrip("/") + "/v1/models", timeout=2)
+        r = requests.get(str(chat_engine.get("base", "")).rstrip("/") + "/v1/models", timeout=2)
         info["chat_up"] = (r.status_code == 200)
     except Exception:
         info["chat_up"] = False
     try:
-        r = requests.get(env["LLM_SMALL_API_BASE"].rstrip("/") + "/v1/models", timeout=2)
+        r = requests.get(str(intent_engine.get("base", "")).rstrip("/") + "/v1/models", timeout=2)
+        info["intent_up"] = (r.status_code == 200)
+    except Exception:
+        info["intent_up"] = False
+    try:
+        r = requests.get(str(small_engine.get("base", "")).rstrip("/") + "/v1/models", timeout=2)
         info["small_up"] = (r.status_code == 200)
     except Exception:
         info["small_up"] = False
@@ -5740,6 +6056,7 @@ def models():
     small_list = list_non_intent_models()
     active = current_links()
     env = read_env()
+    provider_models = read_provider_models()
 
     # Slot visibility (honour ENABLE_* from .env)
     slots_enabled = {
@@ -5751,6 +6068,15 @@ def models():
     # Per-model metadata (kind, loader, bpw)
     all_names = sorted(set(chat_list + intent_list + small_list))
     meta = inspect_batch(all_names)
+    slot_endpoints = {
+        mode: _local_endpoint_for_model(
+            _slot_alias_for_mode(mode),
+            env,
+            provider_models=provider_models,
+            fallback_mode=mode,
+        )
+        for mode in ("chat", "intent", "small")
+    }
 
     return {
         "chat": chat_list,
@@ -5758,6 +6084,7 @@ def models():
         "small": small_list,
         "active": active,
         "slot_backends": read_slot_backends(),
+        "slot_endpoints": slot_endpoints,
         "slots_enabled": slots_enabled,
         "meta": meta,
         "converted_artifacts": _conversion_artifact_rows(format_filter="exl2")[:120],
@@ -6486,6 +6813,12 @@ def router_route_test(req: RouterRouteTestReq):
         provider = str(first.get("provider", "local"))
         model = str(first.get("model", ""))
         lane = str(first.get("lane", "local"))
+        local_fallback_mode = "small" if task_type == "embed" else "chat"
+        local_selection = (
+            _local_endpoint_for_model(model, env, provider_models=provider_models, fallback_mode=local_fallback_mode)
+            if provider == "local"
+            else None
+        )
         try:
             if task_type == "completion":
                 completion_req = probe if isinstance(probe, RouterCompletionRequest) else RouterCompletionRequest(
@@ -6497,7 +6830,7 @@ def router_route_test(req: RouterRouteTestReq):
                     metadata=req.metadata,
                 )
                 payload = _build_completion_payload(completion_req, model, provider)
-                raw = _dispatch_provider_completions(provider, env, payload)
+                raw = _dispatch_provider_completions(provider, env, payload, provider_models=provider_models)
                 preview = ""
                 if isinstance(raw, dict) and isinstance(raw.get("choices"), list) and raw.get("choices"):
                     first_choice = raw.get("choices", [])[0]
@@ -6512,7 +6845,7 @@ def router_route_test(req: RouterRouteTestReq):
                     metadata=req.metadata,
                 )
                 payload = _build_embed_payload(embed_req, model)
-                raw = _dispatch_provider_embeddings(provider, env, payload)
+                raw = _dispatch_provider_embeddings(provider, env, payload, provider_models=provider_models)
                 count = len(raw.get("data", []) if isinstance(raw, dict) and isinstance(raw.get("data"), list) else [])
                 preview = f"embedding_items={count}"
             else:
@@ -6526,7 +6859,7 @@ def router_route_test(req: RouterRouteTestReq):
                     metadata=req.metadata,
                 )
                 payload = _build_chat_payload(chat_req, model, provider)
-                raw = _dispatch_provider_chat(provider, env, payload)
+                raw = _dispatch_provider_chat(provider, env, payload, provider_models=provider_models)
                 preview = _extract_chat_text(raw)[:200]
             execution = {
                 "ok": True,
@@ -6534,6 +6867,8 @@ def router_route_test(req: RouterRouteTestReq):
                 "lane": lane,
                 "provider": provider,
                 "model": model,
+                "backend": local_selection.get("backend") if isinstance(local_selection, dict) else provider,
+                "local_mode": local_selection.get("mode") if isinstance(local_selection, dict) else None,
                 "preview": preview,
             }
         except Exception as e:
@@ -6543,6 +6878,8 @@ def router_route_test(req: RouterRouteTestReq):
                 "lane": lane,
                 "provider": provider,
                 "model": model,
+                "backend": local_selection.get("backend") if isinstance(local_selection, dict) else provider,
+                "local_mode": local_selection.get("mode") if isinstance(local_selection, dict) else None,
                 "error": _normalize_provider_error(provider, e),
             }
 
@@ -6736,7 +7073,7 @@ def router_chat(req: RouterChatRequest):
             continue
         payload = _build_chat_payload(req, model_id, provider)
         try:
-            raw = _dispatch_provider_chat(provider, env, payload)
+            raw = _dispatch_provider_chat(provider, env, payload, provider_models=provider_models)
             selected_provider = provider
             selected_model = model_id
             selected_lane = lane
@@ -6841,9 +7178,13 @@ def router_chat(req: RouterChatRequest):
         total_tokens=int(usage_raw.get("total_tokens", 0) or 0),
     )
 
-    selected_backend = read_slot_backends().get("chat", "tgw") if selected_provider == "local" else selected_provider
-    active_chat = current_links().get("chat")
-    selected_active = os.path.basename(active_chat.rstrip("/")) if active_chat else None
+    selected_local = (
+        _local_endpoint_for_model(selected_model, env, provider_models=provider_models, fallback_mode="chat")
+        if selected_provider == "local"
+        else None
+    )
+    selected_backend = selected_local.get("backend") if isinstance(selected_local, dict) else selected_provider
+    selected_active = selected_local.get("active_model") if isinstance(selected_local, dict) else None
     policy_context = _build_route_policy_context(
         req,
         env,
@@ -7105,7 +7446,7 @@ def router_completions(req: RouterCompletionRequest):
             continue
         payload = _build_completion_payload(req, model_id, provider)
         try:
-            raw = _dispatch_provider_completions(provider, env, payload)
+            raw = _dispatch_provider_completions(provider, env, payload, provider_models=provider_models)
             selected_provider = provider
             selected_model = model_id
             selected_lane = lane
@@ -7220,7 +7561,13 @@ def router_completions(req: RouterCompletionRequest):
     if not choices:
         choices = [RouterCompletionChoice(index=0, text="", finish_reason="stop")]
 
-    selected_backend = read_slot_backends().get("chat", "tgw") if selected_provider == "local" else selected_provider
+    selected_local = (
+        _local_endpoint_for_model(selected_model, env, provider_models=provider_models, fallback_mode="chat")
+        if selected_provider == "local"
+        else None
+    )
+    selected_backend = selected_local.get("backend") if isinstance(selected_local, dict) else selected_provider
+    selected_active = selected_local.get("active_model") if isinstance(selected_local, dict) else None
     policy_context = _build_route_policy_context(
         req,
         env,
@@ -7247,7 +7594,7 @@ def router_completions(req: RouterCompletionRequest):
         "selected_provider": selected_provider,
         "selected_model": selected_model,
         "selected_backend": selected_backend,
-        "selected_active_local_model": None,
+        "selected_active_local_model": selected_active,
         "outcome": "ok",
         "attempt_errors": routing_errors,
         "attempt_trace": attempt_trace,
@@ -7469,7 +7816,7 @@ def router_embed(req: RouterEmbedRequest):
             continue
         payload = _build_embed_payload(req, model_id)
         try:
-            raw = _dispatch_provider_embeddings(provider, env, payload)
+            raw = _dispatch_provider_embeddings(provider, env, payload, provider_models=provider_models)
             selected_provider = provider
             selected_model = model_id
             selected_lane = lane
@@ -7580,7 +7927,13 @@ def router_embed(req: RouterEmbedRequest):
     if not data:
         data = [RouterEmbedDatum(index=0, embedding=[])]
 
-    selected_backend = read_slot_backends().get("chat", "tgw") if selected_provider == "local" else selected_provider
+    selected_local = (
+        _local_endpoint_for_model(selected_model, env, provider_models=provider_models, fallback_mode="small")
+        if selected_provider == "local"
+        else None
+    )
+    selected_backend = selected_local.get("backend") if isinstance(selected_local, dict) else selected_provider
+    selected_active = selected_local.get("active_model") if isinstance(selected_local, dict) else None
     policy_context = _build_route_policy_context(
         req,
         env,
@@ -7607,7 +7960,7 @@ def router_embed(req: RouterEmbedRequest):
         "selected_provider": selected_provider,
         "selected_model": selected_model,
         "selected_backend": selected_backend,
-        "selected_active_local_model": None,
+        "selected_active_local_model": selected_active,
         "outcome": "ok",
         "attempt_errors": routing_errors,
         "attempt_trace": attempt_trace,
@@ -8361,24 +8714,30 @@ def _test_openai(base: str, model: str, q: str, max_tokens: int = 32, no_thinkin
 @app.get("/test-chat")
 def test_chat(q: str = "What is the capital of France?", no_thinking: bool = False):
     env = read_env()
+    provider_models = read_provider_models()
+    base = _engine_def("chat", env=env, provider_models=provider_models).get("base")
     try:
-        return _test_openai(env["LLM_CHAT_API_BASE"], "chat_active_model", q, max_tokens=64, no_thinking=no_thinking)
+        return _test_openai(str(base or env["LLM_CHAT_API_BASE"]), "chat_active_model", q, max_tokens=64, no_thinking=no_thinking)
     except Exception as e:
         raise HTTPException(502, f"chat api error: {e}")
 
 @app.get("/test-intent")
 def test_intent(q: str = "Return ONLY the word OK.", no_thinking: bool = False):
     env = read_env()
+    provider_models = read_provider_models()
+    base = _engine_def("intent", env=env, provider_models=provider_models).get("base")
     try:
-        return _test_openai(env["LLM_INTENT_API_BASE"], "intent_active_model", q, max_tokens=32, no_thinking=no_thinking)
+        return _test_openai(str(base or env["LLM_INTENT_API_BASE"]), "intent_active_model", q, max_tokens=32, no_thinking=no_thinking)
     except Exception as e:
         raise HTTPException(502, f"intent api error: {e}")
 
 @app.get("/test-util")
 def test_util(q: str = "Say OK and nothing else.", no_thinking: bool = False):
     env = read_env()
+    provider_models = read_provider_models()
+    base = _engine_def("small", env=env, provider_models=provider_models).get("base")
     try:
-        return _test_openai(env["LLM_SMALL_API_BASE"], "small_active_model", q, max_tokens=32, no_thinking=no_thinking)
+        return _test_openai(str(base or env["LLM_SMALL_API_BASE"]), "small_active_model", q, max_tokens=32, no_thinking=no_thinking)
     except Exception as e:
         raise HTTPException(502, f"small api error: {e}")
 
@@ -8542,33 +8901,51 @@ def conversions_exl2_artifact_detail(artifact_id: str):
 # -----------------------------------------------------------------------------
 # Newer: Engines endpoints for the new Engine Controls UI
 # -----------------------------------------------------------------------------
-def _engine_def(mode: str) -> dict:
-    env = read_env()
-    if mode == "chat":
-        return {"mode": "chat", "unit": os.getenv("SYSTEMD_LLM_A") or "", "base": env["LLM_CHAT_API_BASE"], "port": 8500}
-    if mode == "intent":
-        return {"mode": "intent", "unit": os.getenv("SYSTEMD_LLM_B") or "", "base": env["LLM_INTENT_API_BASE"], "port": 8501}
-    if mode == "small":
-        return {"mode": "small", "unit": os.getenv("SYSTEMD_LLM_C") or "", "base": env["LLM_SMALL_API_BASE"], "port": 8502}
-    raise HTTPException(400, "mode must be chat|intent|small")
+def _engine_def(mode: str, env: dict | None = None, provider_models: dict | None = None) -> dict:
+    mode_key = _normalize_slot_mode(mode, default="")
+    if mode_key not in {"chat", "intent", "small"}:
+        raise HTTPException(400, "mode must be chat|intent|small")
+
+    env_data = env if isinstance(env, dict) else read_env()
+    endpoint = _local_endpoint_for_model(
+        _slot_alias_for_mode(mode_key),
+        env_data,
+        provider_models=provider_models,
+        fallback_mode=mode_key,
+    )
+    unit_map = {
+        "chat": os.getenv("SYSTEMD_LLM_A") or "",
+        "intent": os.getenv("SYSTEMD_LLM_B") or "",
+        "small": os.getenv("SYSTEMD_LLM_C") or "",
+    }
+    return {
+        "mode": mode_key,
+        "unit": unit_map[mode_key],
+        "base": endpoint["base"],
+        "port": int(endpoint["port"]),
+        "backend": endpoint["backend"],
+        "base_source": endpoint["base_source"],
+    }
 
 @app.get("/engines/status")
 def engines_status(request: Request):
     env = read_env()
-    chat = _engine_def("chat")
-    intent = _engine_def("intent")
-    small = _engine_def("small")
-    slot_backends = read_slot_backends()
+    provider_models = read_provider_models()
+    chat = _engine_def("chat", env=env, provider_models=provider_models)
+    intent = _engine_def("intent", env=env, provider_models=provider_models)
+    small = _engine_def("small", env=env, provider_models=provider_models)
 
     def pack(e: dict) -> dict:
         unit = e["unit"]
-        backend = slot_backends.get(e["mode"], "tgw")
+        backend = str(e.get("backend", "tgw") or "tgw")
+        port = int(e.get("port", SLOT_DEFAULT_PORTS.get(str(e.get("mode", "chat")), 8500)))
         payload = {
             "unit": unit or "(not set)",
             "backend": backend,
             "base": e["base"],
-            "port": e["port"],
-            "listening": _is_listening(e["port"]),
+            "base_source": e.get("base_source"),
+            "port": port,
+            "listening": _is_listening(port),
             "systemd": _systemctl_show(unit) if unit else {"error": "SYSTEMD unit not configured"},
             "active": current_links().get(e["mode"]),
         }

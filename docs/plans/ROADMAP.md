@@ -25,8 +25,8 @@ WebUI overhaul status:
 - [ ] Add an operator recovery runbook for GPU-driver wedges and uninterruptible TGW processes, including reboot criteria and sequential post-reboot validation when only one local slot is expected to run at a time. - _source: local runtime troubleshooting (2026-04-28)_
 
 ## Phase 2: Local Backends And Remote Providers (Near-term)
-- [ ] Add vLLM slot launching and unit support. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
-- [ ] Route AWQ and GPTQ models to vLLM by default where supported. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
+- [x] Add vLLM slot launching and unit support. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_ (launcher wrapper plus backend-aware slot base resolution are now wired into routing and engine status surfaces)
+- [x] Route AWQ and GPTQ models to vLLM by default where supported. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_ (`/switch` now auto-applies recommended vLLM backend for compatible model kinds when backend is omitted)
 - [ ] Add optional embeddings and classification-capable slot metadata. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
 - [x] Implement OpenRouter and OpenAI provider adapters. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (chat adapter slice)
 - [ ] Support explicit provider selection and explicit model selection from client projects. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
@@ -40,8 +40,8 @@ WebUI overhaul status:
 - [x] Add admin API support to submit, monitor, and inspect conversion jobs. - _source: docs/plans/EXLLAMA_CONVERSION_PLAN.md_ (`/conversions/exl2/*`)
 
 ## Phase 3: ExLlama Lane And Resilient Routing (Mid-term)
-- [ ] Add a TabbyAPI launcher path. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
-- [ ] Treat EXL2 and EXL3 as first-class backends through the ExLlama lane. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md, docs/plans/EXLLAMA_CONVERSION_PLAN.md_
+- [x] Add a TabbyAPI launcher path. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_ (launcher wrapper shipped and integrated into backend-aware slot lane resolution)
+- [x] Treat EXL2 and EXL3 as first-class backends through the ExLlama lane. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md, docs/plans/EXLLAMA_CONVERSION_PLAN.md_ (local lane dispatch and endpoint selection now honor slot backend and slot model alias instead of chat-only routing)
 - [ ] Add an EXL3 conversion path once the ExLlamaV3 toolchain is installed and validated on the host. - _source: docs/plans/EXLLAMA_CONVERSION_PLAN.md_
 - [ ] Decide whether TabbyAPI switching should remain symlink-based or gain backend-native load and unload operations. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
 - [x] Refresh upstream OpenRouter metadata and intersect it with the curated free allowlist. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_

@@ -1,6 +1,6 @@
 <!--
 id: PLAN-NEXT-PUSH
-version: 1.7
+version: 1.8
 last_updated: 2026-05-15
 title: Next Push Recommendations
 purpose:
@@ -55,9 +55,15 @@ Completed items from the locked queue:
   - runtime failure state now stores `last_error_status_code` and provider codes/types for incident triage
   - OpenRouter cooldown/manual-review thresholds are now policy-configurable (`cooldown_seconds_*`, `auth_error_manual_review_threshold`)
   - smoke checks are now capability-aware for structured outputs and tools (including schema/tool-call validation evidence)
+- item 8: vLLM and TabbyAPI lane first-classization is now completed
+  - local dispatch now resolves slot mode from selected local model alias and routes to backend-aware slot API bases instead of always using the chat slot base
+  - backend-specific slot base env overrides are now supported (`LLM_*_API_BASE_TGW|VLLM|TABBYAPI`) with generic base fallback
+  - `/switch` now auto-applies recommended backend for vLLM/Tabby-oriented model kinds when backend is omitted, while preserving explicit backend requests
+  - `/models`, `/engines/status`, `/health`, and `/test-*` now expose/use backend-aware slot endpoint resolution
+  - route-test execution diagnostics now include resolved local backend and local slot mode
 
 Next queued item:
-- vLLM and TabbyAPI lane first-classization
+- backend-aware frontend operation gating
 
 ## Implementation update (2026-05-09)
 
@@ -85,9 +91,9 @@ Previously completed in this sequence:
 
 Checklist baseline from `docs/plans/CHECKLIST.md`:
 - total tracked tasks: 54
-- complete: 38
-- pending: 16
-- completion: 70.4%
+- complete: 40
+- pending: 14
+- completion: 74.1%
 
 Interpretation:
 - Core broker and operator capabilities are now established.
@@ -117,8 +123,8 @@ Interpretation:
 
 ## Biggest remaining value gaps
 
-1. vLLM and TabbyAPI lane first-classization
-- Make AWQ/GPTQ prefer vLLM where supported and expose capabilities clearly.
+1. Backend-aware frontend operation gating
+- Disable unsupported backend operations by active slot/backend capabilities to reduce operator error paths.
 
 2. EXL3 conversion path (Phase 2)
 - Extend managed conversion model from EXL2 to EXL3 with matching metadata discipline.
@@ -126,8 +132,8 @@ Interpretation:
 3. Canonical layout ops doc package
 - Finalize `/srv/2bananas/engines` structure/runbook docs and migration checks.
 
-4. Backend-aware frontend operation gating
-- Disable unsupported backend operations by active slot/backend capabilities to reduce operator error paths.
+4. TabbyAPI lane lifecycle decision
+- Decide whether TabbyAPI switching remains symlink-based or gains backend-native load/unload operations.
 
 5. Recovery runbook hardening
 - Add explicit operator procedures for clearing quarantine/manual-review flags and validating recovery traces.
@@ -135,12 +141,12 @@ Interpretation:
 ## Suggested immediate execution package (next 1-2 pushes)
 
 Push 1:
-- vLLM/Tabby lane capability surfacing and fallback policy hardening
 - backend-aware UI operation disabling by active backend capabilities
 - recovery runbook refinements for quarantine/manual-review scenarios
+- canonical `/srv/2bananas/engines` layout doc + migration checklist
 
 Push 2:
 - EXL3 conversion path bootstrap + metadata parity checks
-- canonical `/srv/2bananas/engines` layout doc + migration checklist
+- optional TabbyAPI backend-native model load/unload decision and prototype
 
 If both pushes land cleanly, broker maturity and operator confidence increase significantly while setting up Phase-3 backend goals.

@@ -134,6 +134,7 @@ Notes:
 | `LLM_CHAT_API_BASE` | Chat engine OpenAI API base | `http://127.0.0.1:8500` |
 | `LLM_INTENT_API_BASE` | Intent engine API base | `http://127.0.0.1:8501` |
 | `LLM_SMALL_API_BASE` | Small/utility engine API base | `http://127.0.0.1:8502` |
+| `LLM_*_API_BASE_TGW` / `LLM_*_API_BASE_VLLM` / `LLM_*_API_BASE_TABBYAPI` | Optional per-backend slot API base overrides (chat/intent/small) | (none) |
 | `SMART_ASSISTANT_URL` | Smart Assistant /command endpoint | `http://127.0.0.1:8100/command` |
 | `CUDA_VISIBLE_DEVICES` | GPU(s) for training/conversion | `0` |
 | `PM2_CHAT` / `PM2_INTENT` / `PM2_SMALL` | Legacy PM2 process names | `llm_a_8500` etc. |
@@ -167,8 +168,8 @@ Process/service environment commonly used in deployment:
 |--------|------|-------------|
 | GET | `/health` | Service health + engine pings |
 | GET | `/system` | CPU load, RAM, disk |
-| GET | `/models` | List all models + active links + slot visibility + metadata |
-| POST | `/switch` | Switch model: `{ mode, model_dir, bounce, backend? }` |
+| GET | `/models` | List all models + active links + slot visibility + metadata (`slot_endpoints` includes resolved backend/base/port info) |
+| POST | `/switch` | Switch model: `{ mode, model_dir, bounce, backend? }` (auto-applies recommended vLLM/Tabby backend when omitted for compatible model kinds) |
 | POST | `/bounce/{mode}` | Restart engine (chat/intent/small) |
 | GET/POST | `/knobs` | Read/write .env settings |
 | GET | `/providers/models` | Read provider model catalog config |
@@ -230,7 +231,7 @@ Process/service environment commonly used in deployment:
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/engines/status` | All engines: systemd state, port, active model |
+| GET | `/engines/status` | All engines: systemd state, resolved backend-aware base/port, active model |
 | POST | `/engines/{mode}/{action}` | start/stop/restart a specific engine |
 | GET | `/engines/tgw-webui/status` | Standalone TGW WebUI service status + launch URL |
 | POST | `/engines/tgw-webui/{action}` | Start/stop/restart standalone TGW WebUI service |
@@ -275,8 +276,11 @@ Notes:
 - Managed EXL2 conversion metadata persists in `run/state/provider_runtime_state.json`
 - `/models.meta` includes `recommended_backend` and `fallback_backends`
 - `/models` now includes `converted_artifacts` for managed EXL2 outputs
+- `/models` now includes `slot_endpoints` with backend-aware resolved local base, port, and slot mode metadata
 - `/providers/models` now includes `local_conversion_artifacts` alongside curated catalog data
 - Slot backend preference is stored in `run/state/slot_backends.json` and returned by `/models`, `/health`, and `/engines/status`
+- Local dispatch for `/router/chat`, `/router/completions`, and `/router/embed` now resolves slot mode from selected local model alias and routes to backend-aware slot base endpoints
+- `/switch` now auto-applies model-inspector backend recommendations for vLLM/Tabby-capable model kinds when backend is omitted
 - Provider config files live in `config/provider_models.json` and `config/provider_policies.json`
 - Provider runtime state scaffold is persisted at `run/state/provider_runtime_state.json`
 - Router request and response contract models live in `api/router/contracts.py`

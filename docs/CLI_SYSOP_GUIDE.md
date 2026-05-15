@@ -75,6 +75,7 @@ CLI options:
 Operational note:
 - `/switch` updates `chat_active_model`, `intent_active_model`, or `small_active_model` in the shared models directory and then optionally restarts the engine.
 - When `backend` is provided, llm-manager stores per-slot backend preference in `run/state/slot_backends.json`.
+- When `backend` is omitted, llm-manager can auto-apply inspector recommendations for vLLM/Tabby-capable model kinds; inspect `backend_source` and `auto_backend_applied` in the `/switch` response.
 
 ---
 
@@ -202,7 +203,9 @@ Useful commands:
     curl http://localhost:8101/health | python3 -m json.tool
     curl http://localhost:8101/system | python3 -m json.tool
     curl http://localhost:8101/models | python3 -m json.tool
+    # /models now includes slot_endpoints with resolved local backend/base/port per slot
     curl http://localhost:8101/knobs | python3 -m json.tool
+    # /knobs can include optional LLM_*_API_BASE_TGW|VLLM|TABBYAPI overrides
     curl http://localhost:8101/providers/models | python3 -m json.tool
     curl "http://localhost:8101/providers/models/curated-summary?limit=50" | python3 -m json.tool
     curl http://localhost:8101/providers/policies | python3 -m json.tool
