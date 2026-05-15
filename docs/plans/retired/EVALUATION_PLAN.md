@@ -1,6 +1,8 @@
 # LLM Manager - Evaluation And Model Selection Plan
 
 > Split from former `docs/engine-ideas.md` on 2026-03-29
+> Retired to `docs/plans/retired/` on 2026-05-15 after implementation closeout.
+> Active tracking now lives in `docs/plans/CHECKLIST.md`, `docs/plans/ROADMAP.md`, and `docs/plans/NEXT_PUSH.md`.
 
 ## Evaluation and model-selection pipeline
 

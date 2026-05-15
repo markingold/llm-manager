@@ -8,7 +8,7 @@ purpose:
 -->
 # WebUI Overhaul Execution Checklist
 
-Source plan: [docs/plans/WEBUI_OVERHAUL_PLAN.md](docs/plans/WEBUI_OVERHAUL_PLAN.md)
+Source plan: [docs/plans/retired/WEBUI_OVERHAUL_PLAN.md](docs/plans/retired/WEBUI_OVERHAUL_PLAN.md)
 
 ## How this checklist is used
 - This file is retired and preserved as a historical execution artifact.
@@ -25,13 +25,13 @@ Source plan: [docs/plans/WEBUI_OVERHAUL_PLAN.md](docs/plans/WEBUI_OVERHAUL_PLAN.
 - [x] Overhaul plan retired to historical reference
 - [x] Overhaul checklist retired to historical reference
 - [x] Follow-on improvements moved to [docs/plans/ROADMAP.md](docs/plans/ROADMAP.md)
-- [x] Final closeout notes recorded in [docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md](docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md)
+- [x] Final closeout notes recorded in [docs/plans/retired/WEBUI_OVERHAUL_CLOSEOUT.md](docs/plans/retired/WEBUI_OVERHAUL_CLOSEOUT.md)
 
 ## Evidence links
 - Current dashboard entrypoint: [web/index.html](web/index.html)
 - Current dashboard logic: [web/app.js](web/app.js)
 - API implementation: [api/server.py](api/server.py)
-- Overhaul plan: [docs/plans/WEBUI_OVERHAUL_PLAN.md](docs/plans/WEBUI_OVERHAUL_PLAN.md)
+- Overhaul plan: [docs/plans/retired/WEBUI_OVERHAUL_PLAN.md](docs/plans/retired/WEBUI_OVERHAUL_PLAN.md)
 
 ## Standards alignment gates (must remain green)
 
@@ -259,4 +259,4 @@ Source plan: [docs/plans/WEBUI_OVERHAUL_PLAN.md](docs/plans/WEBUI_OVERHAUL_PLAN.
 - Executed and passed final smoke validations:
   - `python run/webui_smoke.py`
   - `python run/tgw_webui_smoke.py`
-- Updated closeout status and retirement decision in [docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md](docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md).
+- Updated closeout status and retirement decision in [docs/plans/retired/WEBUI_OVERHAUL_CLOSEOUT.md](docs/plans/retired/WEBUI_OVERHAUL_CLOSEOUT.md).

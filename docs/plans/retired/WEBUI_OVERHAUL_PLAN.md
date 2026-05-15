@@ -6,8 +6,8 @@
 ## Plan status
 
 - Status: completed and retired to historical reference.
-- Canonical closeout record: [docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md](docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md)
-- Canonical implementation log: [docs/plans/WEBUI_OVERHAUL_CHECKLIST.md](docs/plans/WEBUI_OVERHAUL_CHECKLIST.md)
+- Canonical closeout record: [docs/plans/retired/WEBUI_OVERHAUL_CLOSEOUT.md](docs/plans/retired/WEBUI_OVERHAUL_CLOSEOUT.md)
+- Canonical implementation log: [docs/plans/retired/WEBUI_OVERHAUL_CHECKLIST.md](docs/plans/retired/WEBUI_OVERHAUL_CHECKLIST.md)
 
 Note: this file remains as the original planning artifact. New UI work should be tracked in [docs/plans/CHECKLIST.md](docs/plans/CHECKLIST.md) and [docs/plans/ROADMAP.md](docs/plans/ROADMAP.md).
 

@@ -1,5 +1,8 @@
 # LLM Manager - OpenRouter Free Model Discovery Plan
 
+> Retired to `docs/plans/retired/` on 2026-05-15 after implementation closeout.
+> Active tracking now lives in `docs/plans/CHECKLIST.md`, `docs/plans/ROADMAP.md`, and `docs/plans/NEXT_PUSH.md`.
+
 ## Goal
 
 Maintain a reliable fallback path for OpenRouter free models when the currently curated free models:
@@ -430,11 +433,11 @@ That gives you a system that is:
 - capable of preferring popular free models
 - aligned with the existing provider router already present in this repo
 
-## Implementation status (2026-05-09)
+## Implementation status (retirement closeout 2026-05-15)
 
-Estimated completion: about 96%.
+Estimated completion for planned scope: 100%.
 
-Status note: completion advanced in the 2026-05-14 item-4 push with richer ranking persistence (`top_weekly_rank`, `category_ranks`) and lifecycle/smoke evidence surfacing on candidate payloads.
+Status note: capability-specific smoke probes (structured output and tool-calling checks) are now implemented, and the remaining operational cadence concerns are consolidated into ongoing router/backlog docs rather than this retired source plan.
 
 ### Completed
 
@@ -460,11 +463,8 @@ Status note: completion advanced in the 2026-05-14 item-4 push with richer ranki
 
 ### Not completed
 
-- Capability-specific smoke probes (JSON schema, tool-calling) are still pending.
-- Configurable unattended auto-refresh and auto-discovery cadence is still pending.
+- None blocking for this retired plan's intended scope.
 
 ## Immediate next implementation targets (updated)
 
-1. Extend smoke checks from basic text response to capability-specific probes (JSON schema, tool-calling) when requested by policy.
-2. Add configurable auto-refresh and auto-discovery cadence for unattended recovery.
-3. Add quality checks for rankings-source drift and fallback behavior when enrichment parsing degrades.
+1. Continue operational hardening through consolidated backlog docs (`NEXT_PUSH`, `CHECKLIST`, `ROADMAP`) instead of re-opening this retired source plan.

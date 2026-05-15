@@ -1,14 +1,18 @@
 # LLM Manager - Roadmap
 
-> Consolidated: 2026-04-29 | Sources: docs/plans/BACKEND_ARCHITECTURE_PLAN.md, docs/plans/EXLLAMA_CONVERSION_PLAN.md, docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/EVALUATION_PLAN.md, docs/TODO/README.md, local runtime troubleshooting (2026-04-28)
+> Consolidated: 2026-05-15 | Sources: docs/plans/BACKEND_ARCHITECTURE_PLAN.md, docs/plans/EXLLAMA_CONVERSION_PLAN.md, docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/retired/EVALUATION_PLAN.md, docs/TODO/README.md, local runtime troubleshooting (2026-04-28)
 
 ## Current Status
 LLM Manager is currently a production control plane for slot-based local serving on dual GPUs, centered on text-generation-webui, systemd-managed engine slots, model switching, inspection, training jobs, and a dashboard. The active plan is to evolve it into a universal LLM broker that can route across local backends, OpenRouter, and OpenAI while adding managed conversion, evaluation, and observability.
 
 WebUI overhaul status:
 - The dedicated overhaul is complete and retired.
-- See [docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md](docs/plans/WEBUI_OVERHAUL_CLOSEOUT.md) for final validation and retirement notes.
+- See [docs/plans/retired/WEBUI_OVERHAUL_CLOSEOUT.md](docs/plans/retired/WEBUI_OVERHAUL_CLOSEOUT.md) for final validation and retirement notes.
 - Future UI work continues in this roadmap and [docs/plans/CHECKLIST.md](docs/plans/CHECKLIST.md).
+
+Source-plan status update (2026-05-15):
+- Evaluation and OpenRouter free-model discovery source plans are now retired under `docs/plans/retired/`.
+- Their delivered scope remains tracked in this roadmap and [docs/plans/CHECKLIST.md](docs/plans/CHECKLIST.md).
 
 ## Phase 1: Foundation And Abstractions (Quick Wins)
 - [x] Extend model inspection from loader recommendation to backend recommendation and fallback backends. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
@@ -21,7 +25,7 @@ WebUI overhaul status:
 - [x] Add request normalization and response normalization for brokered inference. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (chat/completions/embed contract and normalized responses)
 - [x] Implement a unified broker entrypoint for routed chat requests. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (`POST /router/chat` adapter-dispatch slice)
 - [x] Add secret configuration for provider API keys and default routing policy. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
-- [x] Add persistent runtime state for provider health, cooldowns, rate limits, queues, and evaluation artifacts. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/EVALUATION_PLAN.md_ (evaluation_suites/runs/reports state now persisted)
+- [x] Add persistent runtime state for provider health, cooldowns, rate limits, queues, and evaluation artifacts. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/retired/EVALUATION_PLAN.md_ (evaluation_suites/runs/reports state now persisted)
 - [ ] Add an operator recovery runbook for GPU-driver wedges and uninterruptible TGW processes, including reboot criteria and sequential post-reboot validation when only one local slot is expected to run at a time. - _source: local runtime troubleshooting (2026-04-28)_
 
 ## Phase 2: Local Backends And Remote Providers (Near-term)
@@ -48,22 +52,22 @@ WebUI overhaul status:
 - [x] Normalize OpenRouter errors into actionable routing states. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (status/body-aware classification with provider code/type metadata)
 - [x] Persist cooldowns, degraded states, and manual-review flags for provider models. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
 - [x] Auto-cycle across curated free models before failing a request. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (with capability-aware smoke checks for tools and structured outputs)
-- [x] Persist richer OpenRouter discovery ranking fields and lifecycle/smoke evidence surfacing for candidate inspection (`top_weekly_rank`, `category_ranks`, transition/smoke evidence). - _source: docs/plans/OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md, docs/plans/NEXT_PUSH.md_
+- [x] Persist richer OpenRouter discovery ranking fields and lifecycle/smoke evidence surfacing for candidate inspection (`top_weekly_rank`, `category_ranks`, transition/smoke evidence). - _source: docs/plans/retired/OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md, docs/plans/NEXT_PUSH.md_
 - [x] Support cross-provider strategies such as local_first, free_first, paid_first, best_available, and strict_provider. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (service-tier-aware chain resolution, strict-provider lane targeting, typed fallback reason codes)
 
 ## Phase 4: Evaluation, Admin UX, And Observability (Future)
-- [x] Add evaluation suite schemas, storage, and execution runner. - _source: docs/plans/EVALUATION_PLAN.md_ (initial local evaluation pipeline implemented)
-- [x] Add async local evaluation queueing with priority lanes for larger test batches. - _source: docs/plans/EVALUATION_PLAN.md_ (interactive/batch/evaluation queue slice implemented)
-- [x] Add per-priority concurrency caps and multi-worker execution controls for local evaluation queues. - _source: docs/plans/EVALUATION_PLAN.md_ (worker/cap controls implemented)
-- [x] Run evaluation suites across local and remote candidate models. - _source: docs/plans/EVALUATION_PLAN.md_ (mixed local/OpenRouter/OpenAI candidate execution implemented)
-- [x] Generate raw results, summary reports, and compact comparison artifacts for secondary LLM adjudication. - _source: docs/plans/EVALUATION_PLAN.md_ (initial compare-compact endpoint implemented)
-- [x] Allow historical suites to be rerun against newly added models. - _source: docs/plans/EVALUATION_PLAN.md_ (suite rerun endpoint implemented for local pipeline)
-- [x] Add threshold-based pass/fail gating and filtered evaluation-run listing for faster triage loops. - _source: docs/plans/EVALUATION_PLAN.md_ (case/suite thresholds and `/router/evaluations` filters implemented)
-- [x] Document routed inference usage and evaluation-suite submission for external projects. - _source: docs/plans/EVALUATION_PLAN.md, docs/plans/PROVIDER_ROUTER_PLAN.md, docs/TODO/README.md_ (`docs/guides/EXTERNAL_INTEGRATION.md` added)
-- [x] Add router health, decision logs, fallback stats, queue state, and evaluation summary endpoints. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/EVALUATION_PLAN.md_ (evaluation summary slice implemented)
+- [x] Add evaluation suite schemas, storage, and execution runner. - _source: docs/plans/retired/EVALUATION_PLAN.md_ (initial local evaluation pipeline implemented)
+- [x] Add async local evaluation queueing with priority lanes for larger test batches. - _source: docs/plans/retired/EVALUATION_PLAN.md_ (interactive/batch/evaluation queue slice implemented)
+- [x] Add per-priority concurrency caps and multi-worker execution controls for local evaluation queues. - _source: docs/plans/retired/EVALUATION_PLAN.md_ (worker/cap controls implemented)
+- [x] Run evaluation suites across local and remote candidate models. - _source: docs/plans/retired/EVALUATION_PLAN.md_ (mixed local/OpenRouter/OpenAI candidate execution implemented)
+- [x] Generate raw results, summary reports, and compact comparison artifacts for secondary LLM adjudication. - _source: docs/plans/retired/EVALUATION_PLAN.md_ (initial compare-compact endpoint implemented)
+- [x] Allow historical suites to be rerun against newly added models. - _source: docs/plans/retired/EVALUATION_PLAN.md_ (suite rerun endpoint implemented for local pipeline)
+- [x] Add threshold-based pass/fail gating and filtered evaluation-run listing for faster triage loops. - _source: docs/plans/retired/EVALUATION_PLAN.md_ (case/suite thresholds and `/router/evaluations` filters implemented)
+- [x] Document routed inference usage and evaluation-suite submission for external projects. - _source: docs/plans/retired/EVALUATION_PLAN.md, docs/plans/PROVIDER_ROUTER_PLAN.md, docs/TODO/README.md_ (`docs/guides/EXTERNAL_INTEGRATION.md` added)
+- [x] Add router health, decision logs, fallback stats, queue state, and evaluation summary endpoints. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/retired/EVALUATION_PLAN.md_ (evaluation summary slice implemented)
 - [x] Expand route decision traces with task-policy context and backend/task mix summaries for operator triage. - _source: docs/plans/NEXT_PUSH.md_ (`GET /router/decision-traces` + enriched decision metadata)
 - [ ] Show slot backend, model format, backend recommendation, provider health, and fallback chains in the UI. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md, docs/plans/PROVIDER_ROUTER_PLAN.md_
-- [x] Add a lightweight dashboard evaluation operations panel for queue and report visibility. - _source: docs/plans/EVALUATION_PLAN.md_ (initial Evaluation Ops panel in `web/`)
+- [x] Add a lightweight dashboard evaluation operations panel for queue and report visibility. - _source: docs/plans/retired/EVALUATION_PLAN.md_ (initial Evaluation Ops panel in `web/`)
 - [x] Add admin controls for enabling, disabling, prioritizing, and testing curated provider models. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (curated summary/update APIs + dashboard quick-admin grid)
 
 ## Phase 5: Governance, Spend, And Policy Controls (Future)
@@ -73,7 +77,7 @@ WebUI overhaul status:
 - [x] Add per-task-type routing policy overrides for chat, completion, and embed. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (`task_overrides` + `project_overrides.<project>.task_overrides`)
 - [x] Add budget guardrails for paid routing. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_
 - [x] Add longer-horizon retention and audit controls for router/governance/lifecycle history. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md_ (`retention` policy config + `/providers/retention-state`)
-- [x] Report whether a cheaper model lane is already sufficient for a task. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/EVALUATION_PLAN.md_ (`/router/lane-sufficiency-report` + dashboard lane sufficiency panel)
+- [x] Report whether a cheaper model lane is already sufficient for a task. - _source: docs/plans/PROVIDER_ROUTER_PLAN.md, docs/plans/retired/EVALUATION_PLAN.md_ (`/router/lane-sufficiency-report` + dashboard lane sufficiency panel)
 
 ## Parking Lot
 Items not yet prioritized:

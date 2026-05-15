@@ -8,8 +8,8 @@ purpose:
 -->
 # WebUI Overhaul Closeout
 
-Source execution tracker: [docs/plans/WEBUI_OVERHAUL_CHECKLIST.md](docs/plans/WEBUI_OVERHAUL_CHECKLIST.md)
-Source implementation plan: [docs/plans/WEBUI_OVERHAUL_PLAN.md](docs/plans/WEBUI_OVERHAUL_PLAN.md)
+Source execution tracker: [docs/plans/retired/WEBUI_OVERHAUL_CHECKLIST.md](docs/plans/retired/WEBUI_OVERHAUL_CHECKLIST.md)
+Source implementation plan: [docs/plans/retired/WEBUI_OVERHAUL_PLAN.md](docs/plans/retired/WEBUI_OVERHAUL_PLAN.md)
 
 ## Final status
 - Overhaul status: completed

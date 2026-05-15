@@ -1,6 +1,6 @@
 <!--
 id: PLAN-NEXT-PUSH
-version: 1.8
+version: 1.9
 last_updated: 2026-05-15
 title: Next Push Recommendations
 purpose:
@@ -8,11 +8,12 @@ purpose:
 -->
 # LLM Manager - Next Push
 
-## Docs sweep update (2026-05-14)
+## Docs sweep update (2026-05-15)
 
 - stale conversion/catalog checkboxes were updated in `CHECKLIST.md` and `ROADMAP.md`
 - managed EXL2 milestones are now marked complete for HF + merged-local source scope, including tokenizer/chat-template preservation checks
 - CLI runbook now includes an incident workflow for curated quick-admin changes + decision trace triage
+- retired source plans moved under `docs/plans/retired/` (`EVALUATION_PLAN.md`, `OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md`) and consolidated source references were updated
 
 ## Implementation update (2026-05-14)
 
