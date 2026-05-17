@@ -20,13 +20,21 @@ def convert_to_exl2(
     groupsize_override=None,
     source_dir=None,
     output_dir=None,
+    target_format="exl2",
+    convert_script_override=None,
 ):
     config = all_configs[model_key]
 
+    format_name = str(target_format or "exl2").strip().lower()
     source = Path(source_dir) if source_dir else Path(f"output/merged_{model_key}")
-    dest = Path(output_dir) if output_dir else Path(f"output/lora_{model_key}")
-    script_path = Path(config.get("convert_script_path", str(EXLLAMA_ROOT / "convert.py")))
-    bits = bits_override if bits_override is not None else config.get("convert_bits", 6.5)
+    default_dest = f"output/lora_{model_key}" if format_name == "exl2" else f"output/lora_{model_key}_{format_name}"
+    dest = Path(output_dir) if output_dir else Path(default_dest)
+    script_path = Path(convert_script_override) if convert_script_override else Path(config.get("convert_script_path", str(EXLLAMA_ROOT / "convert.py")))
+    if not script_path.exists():
+        print(f"❌ Skipping {model_key}: conversion script not found: {script_path}")
+        return
+    default_bits = 6.5 if format_name == "exl2" else 4.5
+    bits = bits_override if bits_override is not None else config.get("convert_bits", default_bits)
     groupsize = groupsize_override if groupsize_override is not None else config.get("convert_groupsize", 2048)
 
     if not source.exists():
@@ -50,7 +58,7 @@ def convert_to_exl2(
             print(f"⏩ Skipping {model_key}: already converted from this merged model. Use --force to re-convert.")
             return
 
-    print(f"\n🔁 Converting: {model_key}")
+    print(f"\n🔁 Converting {model_key} to {format_name.upper()}")
     dest.mkdir(parents=True, exist_ok=True)
 
     cmd = [
@@ -58,8 +66,9 @@ def convert_to_exl2(
         "-i", str(source),
         "-o", str(dest),
         "-b", str(bits),
-        "-ss", str(groupsize),
     ]
+    if format_name == "exl2" or groupsize_override is not None:
+        cmd += ["-ss", str(groupsize)]
 
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = CUDA_DEVICES
@@ -88,7 +97,7 @@ def convert_to_exl2(
     with open(hash_path, "w") as f:
         f.write(current_hash)
 
-    print(f"✅ Done: EXL2 model saved to {dest}")
+    print(f"✅ Done: {format_name.upper()} model saved to {dest}")
 
 if __name__ == "__main__":
     # --- CLI Args ---
@@ -100,6 +109,8 @@ if __name__ == "__main__":
     parser.add_argument("--groupsize", type=int, help="Override groupsize")
     parser.add_argument("--source_dir", help="Optional explicit merged source directory")
     parser.add_argument("--output_dir", help="Optional explicit output directory")
+    parser.add_argument("--target_format", choices=["exl2", "exl3"], default="exl2", help="Target ExLlama format")
+    parser.add_argument("--convert_script", help="Optional explicit path to convert.py")
     args = parser.parse_args()
 
     # --- Determine which to convert ---
@@ -120,4 +131,6 @@ if __name__ == "__main__":
             groupsize_override=args.groupsize,
             source_dir=args.source_dir,
             output_dir=args.output_dir,
+            target_format=args.target_format,
+            convert_script_override=args.convert_script,
         )

@@ -303,33 +303,38 @@ function setConversionRowsError(message) {
   }
 }
 
-async function conversionJobDetail(jobId) {
+function conversionTargetFormat() {
+  const raw = ($("convTargetFormat")?.value || "exl2").trim().toLowerCase();
+  return raw === "exl3" ? "exl3" : "exl2";
+}
+
+async function conversionJobDetail(jobId, targetFormat = conversionTargetFormat()) {
   if (!jobId) return;
   try {
-    setConversionDetail({ loading: true, run: jobId });
-    const detail = await api(`/conversions/exl2/jobs/${encodeURIComponent(jobId)}?tail=180`);
+    setConversionDetail({ loading: true, run: jobId, target_format: targetFormat });
+    const detail = await api(`/conversions/${targetFormat}/jobs/${encodeURIComponent(jobId)}?tail=180`);
     setConversionDetail(detail);
     setOut(detail);
   } catch (e) {
-    setConversionDetail({ error: e.message, run: jobId });
-    setOut({ error: e.message, run: jobId });
+    setConversionDetail({ error: e.message, run: jobId, target_format: targetFormat });
+    setOut({ error: e.message, run: jobId, target_format: targetFormat });
   }
 }
 
-async function conversionArtifactDetail(artifactId) {
+async function conversionArtifactDetail(artifactId, targetFormat = conversionTargetFormat()) {
   if (!artifactId) return;
   try {
-    setConversionDetail({ loading: true, artifact: artifactId });
-    const detail = await api(`/conversions/exl2/artifacts/${encodeURIComponent(artifactId)}`);
+    setConversionDetail({ loading: true, artifact: artifactId, target_format: targetFormat });
+    const detail = await api(`/conversions/${targetFormat}/artifacts/${encodeURIComponent(artifactId)}`);
     setConversionDetail(detail);
     setOut(detail);
   } catch (e) {
-    setConversionDetail({ error: e.message, artifact: artifactId });
-    setOut({ error: e.message, artifact: artifactId });
+    setConversionDetail({ error: e.message, artifact: artifactId, target_format: targetFormat });
+    setOut({ error: e.message, artifact: artifactId, target_format: targetFormat });
   }
 }
 
-function renderConversionRows(runs, artifacts) {
+function renderConversionRows(runs, artifacts, targetFormat = conversionTargetFormat()) {
   const jobsBody = $("convJobsBody");
   const artifactsBody = $("convArtifactsBody");
   if (jobsBody) {
@@ -339,14 +344,17 @@ function renderConversionRows(runs, artifacts) {
       jobsBody.innerHTML = runs.slice(0, MAX_CONVERSION_ROWS).map((row) => {
         const jobId = String(row.job_id || row.id || "");
         const status = String(row.status || "unknown");
-        const quant = `b${row.bits ?? "?"} / g${row.groupsize ?? "?"}`;
+        const rowFormat = String(row.format || targetFormat || "exl2").toUpperCase();
+        const quant = row.groupsize != null
+          ? `${rowFormat} b${row.bits ?? "?"} / g${row.groupsize ?? "?"}`
+          : `${rowFormat} b${row.bits ?? "?"}`;
         const updated = row.updated_ts || row.completed_ts || row.started_ts || row.created_ts;
         const sourceType = String(row.source_type || "huggingface_repo");
         const sourceLabel = sourceType === "merged_local_model"
           ? (row.model_key || row.source_repo_id || "-")
           : (row.source_repo_id || "-");
         const btn = jobId
-          ? `<button data-conv-job="${escapeHtml(jobId)}">Details</button>`
+          ? `<button data-conv-job="${escapeHtml(jobId)}" data-conv-job-format="${escapeHtml(String(row.format || targetFormat || "exl2"))}">Details</button>`
           : "<button disabled>Details</button>";
         return `
           <tr>
@@ -360,7 +368,10 @@ function renderConversionRows(runs, artifacts) {
         `;
       }).join("");
       jobsBody.querySelectorAll("button[data-conv-job]").forEach((btn) => {
-        btn.addEventListener("click", () => conversionJobDetail(btn.getAttribute("data-conv-job") || ""));
+        btn.addEventListener("click", () => conversionJobDetail(
+          btn.getAttribute("data-conv-job") || "",
+          String(btn.getAttribute("data-conv-job-format") || targetFormat || "exl2").trim().toLowerCase(),
+        ));
       });
     }
   }
@@ -377,7 +388,7 @@ function renderConversionRows(runs, artifacts) {
           ? (row.source_repo_id || "-")
           : (row.source_repo_id || "-");
         const btn = artifactId
-          ? `<button data-conv-artifact="${escapeHtml(artifactId)}">Details</button>`
+          ? `<button data-conv-artifact="${escapeHtml(artifactId)}" data-conv-artifact-format="${escapeHtml(String(row.format || targetFormat || "exl2"))}">Details</button>`
           : "<button disabled>Details</button>";
         return `
           <tr>
@@ -391,21 +402,25 @@ function renderConversionRows(runs, artifacts) {
         `;
       }).join("");
       artifactsBody.querySelectorAll("button[data-conv-artifact]").forEach((btn) => {
-        btn.addEventListener("click", () => conversionArtifactDetail(btn.getAttribute("data-conv-artifact") || ""));
+        btn.addEventListener("click", () => conversionArtifactDetail(
+          btn.getAttribute("data-conv-artifact") || "",
+          String(btn.getAttribute("data-conv-artifact-format") || targetFormat || "exl2").trim().toLowerCase(),
+        ));
       });
     }
   }
 }
 
-function renderConversionStats(runs, artifacts) {
+function renderConversionStats(runs, artifacts, targetFormat = conversionTargetFormat()) {
   const running = runs.filter((row) => String(row.status || "").toLowerCase() === "running").length;
   const completed = runs.filter((row) => String(row.status || "").toLowerCase() === "completed").length;
   const errors = runs.filter((row) => String(row.status || "").toLowerCase() === "error").length;
   const latest = runs[0];
+  const formatLabel = targetFormat.toUpperCase();
 
   setPill(
     $("convSummaryPill"),
-    `conversions: ${runs.length} jobs / ${artifacts.length} artifacts`,
+    `${formatLabel}: ${runs.length} jobs / ${artifacts.length} artifacts`,
     errors > 0 ? "bad" : (running > 0 ? "warn" : "ok"),
     latest ? `latest: ${latest.id || latest.job_id || "unknown"}` : "No conversion runs yet"
   );
@@ -427,6 +442,7 @@ function renderConversionStats(runs, artifacts) {
 
 function buildConversionStartPayload() {
   const sourceType = $("convSourceType")?.value?.trim() || "huggingface_repo";
+  const targetFormat = conversionTargetFormat();
   const repoId = $("convRepoId")?.value?.trim() || "";
   const modelKey = $("convModelKey")?.value?.trim() || "";
   if (sourceType === "huggingface_repo" && !repoId) {
@@ -439,15 +455,20 @@ function buildConversionStartPayload() {
   const bits = Number($("convBits")?.value || "");
   if (!Number.isFinite(bits) || bits <= 0) throw new Error("Bits must be a positive number.");
 
-  const groupsize = Number.parseInt($("convGroupsize")?.value || "", 10);
-  if (!Number.isFinite(groupsize) || groupsize <= 0) throw new Error("Groupsize must be a positive integer.");
+  const groupsizeRaw = $("convGroupsize")?.value || "";
+  const groupsizeTrimmed = groupsizeRaw.trim();
 
   const payload = {
     source_type: sourceType,
+    target_format: targetFormat,
     bits,
-    groupsize,
     force: Boolean($("convForce")?.checked),
   };
+  if (targetFormat === "exl2" || groupsizeTrimmed) {
+    const groupsize = Number.parseInt(groupsizeRaw, 10);
+    if (!Number.isFinite(groupsize) || groupsize <= 0) throw new Error("Groupsize must be a positive integer.");
+    payload.groupsize = groupsize;
+  }
   if (repoId) payload.repo_id = repoId;
   if (modelKey) payload.model_key = modelKey;
 
@@ -473,19 +494,38 @@ function applyConversionSourceTypeUI() {
   if (modelKeyInput) modelKeyInput.disabled = sourceType !== "merged_local_model";
 }
 
+function applyConversionFormatUI() {
+  const targetFormat = conversionTargetFormat();
+  const bitsInput = $("convBits");
+  const groupsizeInput = $("convGroupsize");
+  if (!bitsInput || !groupsizeInput) return;
+
+  if (targetFormat === "exl3") {
+    if (!bitsInput.value || bitsInput.value === "6.5") bitsInput.value = "4.5";
+    groupsizeInput.disabled = true;
+    groupsizeInput.title = "Groupsize is optional for EXL3 conversion bootstrap.";
+  } else {
+    if (!bitsInput.value || bitsInput.value === "4.5") bitsInput.value = "6.5";
+    groupsizeInput.disabled = false;
+    groupsizeInput.title = "";
+    if (!groupsizeInput.value) groupsizeInput.value = "2048";
+  }
+}
+
 async function refreshConversionPanel() {
   const hasPanel = Boolean($("convSummaryPill") || $("convJobsBody") || $("convArtifactsBody"));
   if (!hasPanel) return;
 
   try {
+    const targetFormat = conversionTargetFormat();
     const [jobsRes, artifactsRes] = await Promise.all([
-      api("/conversions/exl2/jobs?limit=200"),
-      api("/conversions/exl2/artifacts?limit=200"),
+      api(`/conversions/${targetFormat}/jobs?limit=200`),
+      api(`/conversions/${targetFormat}/artifacts?limit=200`),
     ]);
     const runs = Array.isArray(jobsRes?.runs) ? jobsRes.runs : [];
     const artifacts = Array.isArray(artifactsRes?.artifacts) ? artifactsRes.artifacts : [];
-    renderConversionStats(runs, artifacts);
-    renderConversionRows(runs, artifacts);
+    renderConversionStats(runs, artifacts, targetFormat);
+    renderConversionRows(runs, artifacts, targetFormat);
   } catch (e) {
     setPill($("convSummaryPill"), "conversions: load error", "bad", e.message || "Unknown error");
     setPill($("convRunningPill"), "running: ?", "bad");
@@ -496,17 +536,18 @@ async function refreshConversionPanel() {
   }
 }
 
-async function startManagedExl2Conversion() {
+async function startManagedConversion() {
   const startBtn = $("convStartBtn");
   if (startBtn) startBtn.disabled = true;
   try {
     const payload = buildConversionStartPayload();
-    setOut({ running: true, action: "conversions_exl2_start", payload });
-    const started = await api("/conversions/exl2", { method: "POST", body: payload });
+    const targetFormat = String(payload.target_format || conversionTargetFormat() || "exl2").trim().toLowerCase();
+    setOut({ running: true, action: `conversions_${targetFormat}_start`, payload });
+    const started = await api(`/conversions/${targetFormat}`, { method: "POST", body: payload });
     setOut(started);
     setConversionDetail(started);
   } catch (e) {
-    setOut({ error: e.message, action: "conversions_exl2_start" });
+    setOut({ error: e.message, action: "conversions_start" });
     setConversionDetail({ error: e.message });
   } finally {
     if (startBtn) startBtn.disabled = false;
@@ -741,23 +782,28 @@ async function doSwitch(mode, selection) {
 
 export function wireOperationsDomain() {
   $("btnRefresh")?.addEventListener("click", refreshAll);
-  $("convStartBtn")?.addEventListener("click", startManagedExl2Conversion);
+  $("convStartBtn")?.addEventListener("click", startManagedConversion);
   $("convRefreshBtn")?.addEventListener("click", refreshConversionPanel);
   $("convSourceType")?.addEventListener("change", applyConversionSourceTypeUI);
+  $("convTargetFormat")?.addEventListener("change", async () => {
+    applyConversionFormatUI();
+    await refreshConversionPanel();
+  });
   $("convRepoId")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      startManagedExl2Conversion();
+      startManagedConversion();
     }
   });
   $("convModelKey")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      startManagedExl2Conversion();
+      startManagedConversion();
     }
   });
 
   applyConversionSourceTypeUI();
+  applyConversionFormatUI();
 
   $("btnTestChat")?.addEventListener("click", () => runTest("chat"));
   $("btnTestIntent")?.addEventListener("click", () => runTest("intent"));

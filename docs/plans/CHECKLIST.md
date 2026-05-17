@@ -63,7 +63,7 @@ Source-plan retirement update (2026-05-15):
 - [x] Add provider and lane filters plus optional estimated-cost rollups for evaluation triage. - effort: medium | source: docs/plans/retired/EVALUATION_PLAN.md, docs/plans/retired/PROVIDER_ROUTER_PLAN.md (provider/lane/suite_pass filters and estimated cost summary fields implemented)
 - [x] Add a lightweight dashboard panel for evaluation queue and report visibility. - effort: small | source: docs/plans/retired/EVALUATION_PLAN.md (initial Evaluation Ops panel implemented)
 - [x] Add priority-aware scheduling for free-tier router queue items with interactive/batch/evaluation classes. - effort: medium | source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md
-- [ ] Add EXL3 conversion once the ExLlamaV3 toolchain is installed and validated on the host. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md
+- [ ] Add EXL3 conversion once the ExLlamaV3 toolchain is installed and validated on the host. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md (guarded `/conversions/exl3` bootstrap + metadata parity landed; host toolchain install/validation and first successful run still pending)
 
 ## Nice To Have
 - [ ] Add optional backend-native model load and unload support for the TabbyAPI lane. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md

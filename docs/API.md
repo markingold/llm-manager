@@ -42,7 +42,7 @@ Current deployed unit wiring on this host:
   - Includes `slot_endpoints` with resolved local slot mode/backend/base/port/base source metadata
   - Includes slots_enabled
   - Includes per-model metadata from the inspector
-  - Includes `converted_artifacts` for managed EXL2 conversion outputs
+  - Includes `converted_artifacts` for managed EXL2/EXL3 conversion outputs
   - Inspector metadata includes recommended_backend and fallback_backends
   - Dashboard Operations uses `meta` + `slot_backends` + `slot_endpoints` to gate slot test actions by backend/model compatibility
 
@@ -332,7 +332,7 @@ Notes:
 - Jobs are launched as local subprocesses rooted at the project directory
 - Generic job process state is kept in memory only
 - Logs are written to run/logs/
-- For managed EXL2 jobs (`convert_hf_exl2`, `convert_merged_exl2`), run and artifact metadata is also persisted in run/state/provider_runtime_state.json
+- For managed conversion jobs (`convert_hf_exl2`, `convert_merged_exl2`, `convert_hf_exl3`, `convert_merged_exl3`), run and artifact metadata is also persisted in run/state/provider_runtime_state.json
 
 ## Managed EXL2 Conversion
 
@@ -351,6 +351,25 @@ Notes:
   - Returns one converted artifact record
 
 Persisted EXL2 metadata fields include source type and source id/hash, bits, groupsize, output directory/model dir, timestamps, detected format/loader, preservation checks (`tokenizer` artifacts + chat-template continuity), and catalog sync result.
+
+## Managed EXL3 Conversion (Guarded Bootstrap)
+
+- POST /conversions/exl3
+  - Starts managed EXL3 conversion from either source type:
+    - `source_type=huggingface_repo` with `repo_id`
+    - `source_type=merged_local_model` with `model_key` (optional `source_model_dir`, `output_dir` overrides)
+  - Body: { source_type, repo_id?, model_key?, source_model_dir?, output_dir?, bits, groupsize?, force?, base_models_dir?, webui_models_dir?, exllama_root?, convert_script? }
+  - Returns `503` with toolchain diagnostics when ExLlamaV3 conversion tooling is not installed or not configured (`EXLLAMA_V3_ROOT` or `EXL3_CONVERT_SCRIPT`)
+- GET /conversions/exl3/jobs
+  - Lists persisted EXL3 conversion runs for both HF and merged-local source types
+- GET /conversions/exl3/jobs/{job_id}
+  - Returns one persisted EXL3 conversion run with log tail
+- GET /conversions/exl3/artifacts
+  - Lists persisted EXL3 conversion artifacts and metadata
+- GET /conversions/exl3/artifacts/{artifact_id}
+  - Returns one converted EXL3 artifact record
+
+Persisted EXL3 metadata follows the same run/artifact discipline as EXL2, including source identity, bits, output path/model dir, timestamps, detected format/loader, preservation checks, and catalog sync result.
 
 ## Test Endpoints
 

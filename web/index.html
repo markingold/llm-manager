@@ -919,9 +919,9 @@
 
     <section data-nav-section="jobs" style="display:none">
       <div class="card" data-surface="mutate">
-        <h2>Managed EXL2 Conversion</h2>
+        <h2>Managed Conversion</h2>
         <div class="muted" style="margin-bottom:10px">
-          Start an EXL2 conversion from either a Hugging Face repo or a merged local source and persist run/artifact metadata.
+          Start an EXL2 or EXL3 conversion from either a Hugging Face repo or a merged local source and persist run/artifact metadata.
         </div>
         <div class="grid3" style="margin-bottom:10px">
           <div>
@@ -929,6 +929,13 @@
             <select id="convSourceType">
               <option value="huggingface_repo">Hugging Face repo</option>
               <option value="merged_local_model">Merged local model</option>
+            </select>
+          </div>
+          <div>
+            <div class="muted" style="margin-bottom:6px">Target Format</div>
+            <select id="convTargetFormat">
+              <option value="exl2">EXL2</option>
+              <option value="exl3">EXL3</option>
             </select>
           </div>
           <div>
@@ -962,14 +969,14 @@
             <input type="checkbox" id="convForce" />
             Force overwrite existing output dir
           </label>
-          <button class="btn ok" id="convStartBtn">Start EXL2 Conversion</button>
+          <button class="btn ok" id="convStartBtn">Start Conversion</button>
           <button id="convRefreshBtn">Refresh Conversion Data</button>
           <span id="convSummaryPill" class="pill">conversions: ...</span>
         </div>
       </div>
 
       <div class="card" data-surface="read">
-        <h2>Managed EXL2 Monitor</h2>
+        <h2>Managed Conversion Monitor</h2>
         <div class="row" style="margin-bottom:10px">
           <span id="convRunningPill" class="pill">running: ...</span>
           <span id="convCompletedPill" class="pill">completed: ...</span>
@@ -1026,7 +1033,7 @@
     </section>
   </main>
 
-  <script type="module" src="app.js?v=20260514_235900"></script>
+  <script type="module" src="app.js?v=20260517_120500"></script>
 </body>
 
 </html>

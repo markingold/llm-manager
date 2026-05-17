@@ -4,13 +4,13 @@ convert_chat_model.py
 ──────────────────────────────────────────────────────────────
 • Pick a Hugging Face repo to download **or** select one you already
   downloaded into ./models/
-• Convert its safetensors weights to ExLlama-V2 (.exl2)
+• Convert its safetensors weights to ExLlama target format (EXL2 or EXL3)
 • Output to:
-      text-generation-webui/user_data/models/<repo>_exl2_b6p5  (or _b8)
+    text-generation-webui/user_data/models/<repo>_<format>_b<bits>
 
 > dependencies:
     pip install huggingface_hub python-dotenv
-    (plus exllamav2/convert.py in this repo)
+    (plus an ExLlama conversion script available on host)
 """
 
 import os, sys, hashlib, argparse, shutil, subprocess, json
@@ -110,8 +110,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo_id", help="HF repo (skips selection menu)")
     parser.add_argument("--bits",    type=float, help="6.5 or 8")
-    parser.add_argument("--force",   action="store_true", help="Overwrite existing exl2 folder")
+    parser.add_argument("--force",   action="store_true", help="Overwrite existing converted folder")
     parser.add_argument("--groupsize", type=int, default=DEFAULT_GROUPSIZE, help="Groupsize (default 2048)")
+    parser.add_argument("--target_format", choices=["exl2", "exl3"], default="exl2", help="Target ExLlama format")
+    parser.add_argument("--convert_script", help="Optional explicit path to convert.py")
     args = parser.parse_args()
 
     # ---- Gather inputs interactively if missing ----
@@ -122,6 +124,12 @@ def main():
         bits = args.bits
     else:
         bits = menu_choose_bits()
+
+    target_format = (args.target_format or "exl2").strip().lower()
+    convert_script = Path(args.convert_script) if args.convert_script else CONVERT_SCRIPT
+    if not convert_script.exists():
+        print(f"❌ Conversion script not found: {convert_script}")
+        sys.exit(1)
 
     safe_name = safe_folder_name(repo_id)
     if raw_dir is None:
@@ -153,26 +161,26 @@ def main():
 
     # ---- Prepare destination ----
     bits_tag   = str(bits).replace(".", "p")      # 6.5 -> 6p5
-    exl2_dir   = WEBUI_MODELS_DIR / f"{safe_name}_exl2_b{bits_tag}"
-    hash_path  = exl2_dir / "source_model_sha256.txt"
+    output_dir = WEBUI_MODELS_DIR / f"{safe_name}_{target_format}_b{bits_tag}"
+    hash_path  = output_dir / "source_model_sha256.txt"
 
-    if exl2_dir.exists() and not args.force:
-        print(f"⏩ {exl2_dir} already exists. Use --force to overwrite.")
+    if output_dir.exists() and not args.force:
+        print(f"⏩ {output_dir} already exists. Use --force to overwrite.")
         sys.exit(0)
 
-    exl2_dir.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # ---- Run conversion ----
     cmd = [
-        "python3", str(CONVERT_SCRIPT),
+        "python3", str(convert_script),
         "-i", str(raw_dir),
-        "-o", str(exl2_dir),
+        "-o", str(output_dir),
         "-b", str(bits),
-        "-ss", str(args.groupsize),
-        "--res"
     ]
-    print(f"\n🔁 Converting to EXL2 ({bits} bpw)…\n{' '.join(cmd)}\n")
-    ret = subprocess.call(" ".join(cmd), shell=True)
+    if target_format == "exl2":
+        cmd += ["-ss", str(args.groupsize), "--res"]
+    print(f"\n🔁 Converting to {target_format.upper()} ({bits} bpw)…\n{' '.join(cmd)}\n")
+    ret = subprocess.call(cmd)
     if ret != 0:
         print("❌ Conversion script failed.")
         sys.exit(1)
@@ -183,10 +191,10 @@ def main():
                   "tokenizer.model", "vocab.json", "merges.txt"]:
         src = raw_dir / fname
         if src.exists():
-            shutil.copy(src, exl2_dir / fname)
+            shutil.copy(src, output_dir / fname)
 
     hash_path.write_text(source_sha)
-    print(f"✅ Done!  Converted model saved to {exl2_dir}")
+        print(f"✅ Done!  Converted model saved to {output_dir}")
     print("   (Original model remains in", raw_dir, ")")
 
 if __name__ == "__main__":

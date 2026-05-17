@@ -26,7 +26,7 @@ Baseline quality reports:
   │  FastAPI  server.py (:8101)                                  │
   │  • /models, /switch, /bounce, /inspect, /vram               │
   │  • /engines/status, /engines/{mode}/{start|stop|restart}     │
-  │  • /jobs + /conversions/exl2 (managed conversion)            │
+  │  • /jobs + /conversions/exl2|exl3 (managed conversion)       │
   │  • /health, /system, /knobs, /test-*                        │
   └───────┬──────────────────────────────────────────────────────┘
           │ systemctl / symlinks
@@ -194,6 +194,11 @@ Process/service environment commonly used in deployment:
 | GET | `/conversions/exl2/jobs/{job_id}` | Get one managed conversion run with log tail |
 | GET | `/conversions/exl2/artifacts` | List persisted EXL2 conversion artifacts |
 | GET | `/conversions/exl2/artifacts/{artifact_id}` | Get one persisted EXL2 conversion artifact |
+| POST | `/conversions/exl3` | Start managed EXL3 conversion from Hugging Face repo or merged local source (guarded until ExLlamaV3 tooling is configured) |
+| GET | `/conversions/exl3/jobs` | List persisted managed EXL3 conversion runs |
+| GET | `/conversions/exl3/jobs/{job_id}` | Get one persisted EXL3 conversion run with log tail |
+| GET | `/conversions/exl3/artifacts` | List persisted EXL3 conversion artifacts |
+| GET | `/conversions/exl3/artifacts/{artifact_id}` | Get one persisted EXL3 conversion artifact |
 | POST | `/router/chat` | Normalized broker chat entrypoint (supports `no_thinking` for local dispatch) |
 | POST | `/router/completions` | Normalized broker completions entrypoint (supports `no_thinking` for local dispatch) |
 | POST | `/router/embed` | Normalized broker embeddings entrypoint |
@@ -276,9 +281,9 @@ Notes:
 - All test endpoints also accept `no_thinking=1`
 - Generic job process state is tracked in memory only and does not survive an API restart
 - Job logs are written to `run/logs/`
-- Managed EXL2 conversion metadata persists in `run/state/provider_runtime_state.json`
+- Managed EXL2/EXL3 conversion metadata persists in `run/state/provider_runtime_state.json`
 - `/models.meta` includes `recommended_backend` and `fallback_backends`
-- `/models` now includes `converted_artifacts` for managed EXL2 outputs
+- `/models` now includes `converted_artifacts` for managed EXL2/EXL3 outputs
 - `/models` now includes `slot_endpoints` with backend-aware resolved local base, port, and slot mode metadata
 - `/providers/models` now includes `local_conversion_artifacts` alongside curated catalog data
 - Slot backend preference is stored in `run/state/slot_backends.json` and returned by `/models`, `/health`, and `/engines/status`
@@ -318,8 +323,8 @@ Notes:
 - Router Ops now includes deterministic fallback reason and selected-fallback ratio pills for incident triage
 - Dashboard now includes a Provider Governance quick-admin grid for curated model enable/priority/backend updates
 - Provider Governance includes one-click `Rollback Last Good`; row-level one-click restore is available through Curated Model Quick Admin `Apply`
-- Dashboard Jobs now includes a Managed EXL2 panel for starting conversions from HF or merged-local sources and monitoring persisted runs/artifacts without direct API calls
-- Managed EXL2 artifacts now include tokenizer and chat-template preservation checks for conversion closeout audits
+- Dashboard Jobs now includes a Managed Conversion panel for starting EXL2/EXL3 conversions from HF or merged-local sources and monitoring persisted runs/artifacts without direct API calls
+- Managed conversion artifacts now include tokenizer and chat-template preservation checks for conversion closeout audits
 - Local evaluation candidate_models now support mixed provider targets (for example `chat_active_model`, `openrouter:model_id`, `openai:model_id`)
 - `/router/evaluations` supports filtering by status, target mode, project, candidate model, provider, lane, suite pass, tag, and since timestamp
 - Evaluation summaries now include by-provider aggregates and estimated-cost totals when provider catalog pricing metadata is available

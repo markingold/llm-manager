@@ -5730,7 +5730,7 @@ def _as_positive_int(value: object, default: int) -> int:
     return parsed if parsed > 0 else default
 
 
-def _conversion_paths_for_hf(repo_id: str, bits: float, args: dict, env: dict) -> tuple[Path, Path]:
+def _conversion_paths_for_hf(repo_id: str, bits: float, args: dict, env: dict, target_format: str = "exl2") -> tuple[Path, Path]:
     base_models_dir = str(args.get("base_models_dir") or env.get("BASE_MODELS_DIR") or "models").strip() or "models"
     webui_models_dir = str(
         args.get("webui_models_dir")
@@ -5739,16 +5739,88 @@ def _conversion_paths_for_hf(repo_id: str, bits: float, args: dict, env: dict) -
     ).strip() or "text-generation-webui/user_data/models"
     safe_name = _safe_repo_folder_name(repo_id)
     bits_tag = str(bits).replace(".", "p")
-    return Path(base_models_dir) / safe_name, Path(webui_models_dir) / f"{safe_name}_exl2_b{bits_tag}"
+    format_name = str(target_format or "exl2").strip().lower() or "exl2"
+    return Path(base_models_dir) / safe_name, Path(webui_models_dir) / f"{safe_name}_{format_name}_b{bits_tag}"
 
 
-def _conversion_paths_for_merged(model_key: str, args: dict) -> tuple[Path, Path]:
+def _conversion_paths_for_merged(model_key: str, args: dict, target_format: str = "exl2") -> tuple[Path, Path]:
     source_model_dir = str(args.get("source_model_dir") or "").strip()
     output_dir = str(args.get("output_dir") or "").strip()
 
     source_path = Path(source_model_dir) if source_model_dir else (ROOT / "output" / f"merged_{model_key}")
-    output_path = Path(output_dir) if output_dir else (ROOT / "output" / f"lora_{model_key}")
+    format_name = str(target_format or "exl2").strip().lower() or "exl2"
+    default_output = f"lora_{model_key}" if format_name == "exl2" else f"lora_{model_key}_{format_name}"
+    output_path = Path(output_dir) if output_dir else (ROOT / "output" / default_output)
     return source_path, output_path
+
+
+def _normalized_conversion_format(value: object, default: str = "exl2") -> str:
+    text = str(value or default).strip().lower()
+    return text if text in {"exl2", "exl3"} else default
+
+
+CONVERSION_KIND_FORMAT = {
+    "convert_hf_exl2": "exl2",
+    "convert_merged_exl2": "exl2",
+    "convert_hf_exl3": "exl3",
+    "convert_merged_exl3": "exl3",
+}
+
+
+def _conversion_kind_format(kind: str) -> str:
+    return CONVERSION_KIND_FORMAT.get(str(kind or "").strip(), "")
+
+
+def _conversion_kind_source_type(kind: str) -> str:
+    kind_text = str(kind or "").strip()
+    if kind_text.startswith("convert_hf_"):
+        return "huggingface_repo"
+    if kind_text.startswith("convert_merged_"):
+        return "merged_local_model"
+    return str(kind_text)
+
+
+def _conversion_kinds_for_format(target_format: str) -> set[str]:
+    normalized = _normalized_conversion_format(target_format, default="exl2")
+    return {kind for kind, fmt in CONVERSION_KIND_FORMAT.items() if fmt == normalized}
+
+
+def _resolve_exl3_convert_script(args: dict, env: dict) -> tuple[Path | None, list[str]]:
+    checked: list[str] = []
+
+    explicit_script = str(args.get("exl3_convert_script") or args.get("convert_script") or "").strip()
+    if explicit_script:
+        path = Path(explicit_script)
+        checked.append(str(path))
+        if path.exists() and path.is_file():
+            return path, checked
+
+    explicit_root = str(args.get("exllama_root") or "").strip()
+    env_root = str(env.get("EXLLAMA_V3_ROOT") or "").strip()
+    default_root = "/srv/2bananas/engines/exllamav3"
+    for root in (explicit_root, env_root, default_root):
+        if not root:
+            continue
+        root_path = Path(root)
+        if root_path.is_file():
+            checked.append(str(root_path))
+            if root_path.exists():
+                return root_path, checked
+            continue
+        for rel_path in ("convert.py", "exllamav3/convert.py"):
+            candidate = root_path / rel_path
+            checked.append(str(candidate))
+            if candidate.exists() and candidate.is_file():
+                return candidate, checked
+
+    env_script = str(env.get("EXL3_CONVERT_SCRIPT") or env.get("EXLLAMA_CONVERT_SCRIPT") or "").strip()
+    if env_script:
+        path = Path(env_script)
+        checked.append(str(path))
+        if path.exists() and path.is_file():
+            return path, checked
+
+    return None, checked
 
 
 def _safe_read_json_file(path: Path) -> dict:
@@ -5855,12 +5927,13 @@ def _upsert_local_converted_catalog_entry(artifact: dict) -> dict:
             rows = []
 
         model_ref = str(artifact.get("model_ref") or artifact.get("output_model_dir") or artifact.get("artifact_id"))
+        target_format = _normalized_conversion_format(artifact.get("format"), default="exl2")
         entry = {
             "id": model_ref,
             "label": str(artifact.get("source_repo_id") or model_ref),
             "enabled": True,
             "backend": str(artifact.get("recommended_backend") or "tabbyapi"),
-            "format": str(artifact.get("format") or "exl2"),
+            "format": target_format,
             "model_dir": str(artifact.get("output_model_dir") or ""),
             "path": str(artifact.get("output_dir") or ""),
             "source_type": str(artifact.get("source_type") or ""),
@@ -5871,7 +5944,7 @@ def _upsert_local_converted_catalog_entry(artifact: dict) -> dict:
             "created_ts": str(artifact.get("created_ts") or ""),
             "artifact_id": str(artifact.get("artifact_id") or ""),
             "job_id": str(artifact.get("job_id") or ""),
-            "notes": "Managed EXL2 conversion artifact",
+            "notes": f"Managed {target_format.upper()} conversion artifact",
         }
 
         updated = False
@@ -5899,14 +5972,17 @@ def _upsert_local_converted_catalog_entry(artifact: dict) -> dict:
         return {"ok": False, "updated": False, "error": str(e)}
 
 
-def _build_exl2_artifact_record(run_row: dict) -> dict:
+def _build_conversion_artifact_record(run_row: dict) -> dict:
     output_dir = Path(str(run_row.get("output_dir") or ""))
     source_model_dir = Path(str(run_row.get("source_model_dir") or ""))
     source_type = str(run_row.get("source_type") or "huggingface_repo")
+    target_format = _normalized_conversion_format(run_row.get("format"), default="exl2")
     output_model_dir = str(run_row.get("output_model_dir") or output_dir.name)
     source_repo_id = str(run_row.get("source_repo_id") or run_row.get("model_key") or "")
-    bits = _as_positive_float(run_row.get("bits"), 6.5)
-    groupsize = _as_positive_int(run_row.get("groupsize"), 2048)
+    default_bits = 6.5 if target_format == "exl2" else 4.5
+    bits = _as_positive_float(run_row.get("bits"), default_bits)
+    groupsize_value = run_row.get("groupsize")
+    groupsize = _as_positive_int(groupsize_value, 2048) if (target_format == "exl2" or groupsize_value not in (None, "")) else None
 
     source_sha = _conversion_source_sha(output_dir)
     preservation_checks = _conversion_preservation_checks(source_model_dir, output_dir)
@@ -5932,7 +6008,7 @@ def _build_exl2_artifact_record(run_row: dict) -> dict:
         except Exception:
             loader = "transformers"
 
-    artifact_key = f"{source_type}-exl2:{source_repo_id}:{bits}:{groupsize}:{output_dir}"
+    artifact_key = f"{source_type}-{target_format}:{source_repo_id}:{bits}:{groupsize or ''}:{output_dir}"
     artifact_id = hashlib.sha256(artifact_key.encode("utf-8")).hexdigest()[:16]
     created_ts = datetime.utcnow().isoformat() + "Z"
     recommended_backend = "tabbyapi" if detected_kind in {"exl2", "exl3"} else "tgw"
@@ -5949,7 +6025,7 @@ def _build_exl2_artifact_record(run_row: dict) -> dict:
         "source_repo_id": source_repo_id,
         "source_model_dir": str(run_row.get("source_model_dir") or ""),
         "source_sha256": source_sha,
-        "format": "exl2",
+        "format": target_format,
         "bits": bits,
         "groupsize": groupsize,
         "output_dir": str(output_dir),
@@ -5966,23 +6042,22 @@ def _build_exl2_artifact_record(run_row: dict) -> dict:
 
 
 def _record_conversion_run_start(job_id: str, kind: str, args: dict, env: dict, log_path: Path, pid: int) -> dict:
-    source_type = str(args.get("source_type") or "").strip().lower()
-    if kind == "convert_hf_exl2":
-        source_type = "huggingface_repo"
-    elif kind == "convert_merged_exl2":
-        source_type = "merged_local_model"
+    source_type = _conversion_kind_source_type(kind) or str(args.get("source_type") or "").strip().lower()
+    target_format = _conversion_kind_format(kind) or _normalized_conversion_format(args.get("target_format"), default="exl2")
 
-    bits = _as_positive_float(args.get("bits"), 6.5)
-    groupsize = _as_positive_int(args.get("groupsize"), 2048)
+    default_bits = 6.5 if target_format == "exl2" else 4.5
+    bits = _as_positive_float(args.get("bits"), default_bits)
+    groupsize_raw = args.get("groupsize")
+    groupsize = _as_positive_int(groupsize_raw, 2048) if (target_format == "exl2" or groupsize_raw not in (None, "")) else None
     source_repo_id = ""
     model_key = ""
     if source_type == "merged_local_model":
         model_key = str(args.get("model_key") or "").strip()
-        source_model_dir, output_dir = _conversion_paths_for_merged(model_key, args)
+        source_model_dir, output_dir = _conversion_paths_for_merged(model_key, args, target_format=target_format)
         source_repo_id = model_key
     else:
         repo_id = str(args.get("repo_id") or "").strip()
-        source_model_dir, output_dir = _conversion_paths_for_hf(repo_id, bits, args, env)
+        source_model_dir, output_dir = _conversion_paths_for_hf(repo_id, bits, args, env, target_format=target_format)
         source_repo_id = repo_id
 
     now_iso = datetime.utcnow().isoformat() + "Z"
@@ -6001,7 +6076,7 @@ def _record_conversion_run_start(job_id: str, kind: str, args: dict, env: dict, 
         "source_repo_id": source_repo_id,
         "model_key": model_key,
         "source_model_dir": str(source_model_dir),
-        "format": "exl2",
+        "format": target_format,
         "bits": bits,
         "groupsize": groupsize,
         "force": bool(args.get("force", False)),
@@ -6042,7 +6117,7 @@ def _record_conversion_run_finish(job_id: str, returncode: int):
             if not bool(checks.get("ok", False)):
                 row["status"] = "completed_with_warnings"
 
-            artifact = _build_exl2_artifact_record(row)
+            artifact = _build_conversion_artifact_record(row)
             artifacts = state.get("conversion_artifacts", {}) if isinstance(state.get("conversion_artifacts"), dict) else {}
             artifacts[str(artifact["artifact_id"])] = artifact
             state["conversion_artifacts"] = artifacts
@@ -6073,11 +6148,12 @@ def _conversion_artifact_rows(format_filter: str | None = None) -> list[dict]:
 def _launch_job(kind: str, args: dict) -> dict:
     job_id = uuid.uuid4().hex[:12]
     log_path = LOGS_DIR / f"{int(time.time())}_{kind}_{job_id}.log"
+    conversion_kinds = set(CONVERSION_KIND_FORMAT.keys())
 
     runtime_env = read_env()
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = runtime_env.get("CUDA_VISIBLE_DEVICES", "0")
-    for env_key in ("BASE_MODELS_DIR", "WEBUI_MODELS_DIR", "EXLLAMA_ROOT", "HF_TOKEN"):
+    for env_key in ("BASE_MODELS_DIR", "WEBUI_MODELS_DIR", "EXLLAMA_ROOT", "EXLLAMA_V3_ROOT", "EXL3_CONVERT_SCRIPT", "HF_TOKEN"):
         value = runtime_env.get(env_key)
         if value:
             env[env_key] = str(value)
@@ -6088,6 +6164,8 @@ def _launch_job(kind: str, args: dict) -> dict:
         "convert": SCRIPTS_DIR / "convert_lora.py",
         "convert_hf_exl2": SCRIPTS_DIR / "download_convert_chat_model.py",
         "convert_merged_exl2": SCRIPTS_DIR / "convert_lora.py",
+        "convert_hf_exl3": SCRIPTS_DIR / "download_convert_chat_model.py",
+        "convert_merged_exl3": SCRIPTS_DIR / "convert_lora.py",
     }
     script = script_map.get(kind)
     if not script or not script.exists():
@@ -6129,24 +6207,44 @@ def _launch_job(kind: str, args: dict) -> dict:
         if args.get("force"):
             cmd.append("--force")
 
-    elif kind == "convert_hf_exl2":
+    elif kind in {"convert_hf_exl2", "convert_hf_exl3"}:
         repo_id = str(args.get("repo_id") or "").strip()
         if not repo_id:
-            raise HTTPException(400, "repo_id required for convert_hf_exl2")
-        bits = _as_positive_float(args.get("bits"), 6.5)
-        groupsize = _as_positive_int(args.get("groupsize"), 2048)
+            raise HTTPException(400, f"repo_id required for {kind}")
+        target_format = _conversion_kind_format(kind) or "exl2"
+        default_bits = 6.5 if target_format == "exl2" else 4.5
+        bits = _as_positive_float(args.get("bits"), default_bits)
+        groupsize_raw = args.get("groupsize")
+        groupsize = _as_positive_int(groupsize_raw, 2048) if (target_format == "exl2" or groupsize_raw not in (None, "")) else None
+
+        if target_format == "exl3":
+            convert_script, checked = _resolve_exl3_convert_script(args, env)
+            if not convert_script:
+                raise HTTPException(
+                    503,
+                    {
+                        "message": "EXL3 conversion toolchain unavailable",
+                        "required": "Set EXLLAMA_V3_ROOT or EXL3_CONVERT_SCRIPT to an ExLlamaV3 convert.py path",
+                        "checked": checked,
+                    },
+                )
+
         cmd = [
             "python3",
             str(script),
             "--repo_id",
             repo_id,
+            "--target_format",
+            target_format,
             "--bits",
             str(bits),
-            "--groupsize",
-            str(groupsize),
         ]
+        if groupsize is not None:
+            cmd += ["--groupsize", str(groupsize)]
         if bool(args.get("force", False)):
             cmd.append("--force")
+        if target_format == "exl3":
+            cmd += ["--convert_script", str(convert_script)]
         for arg_name, env_name in (
             ("base_models_dir", "BASE_MODELS_DIR"),
             ("webui_models_dir", "WEBUI_MODELS_DIR"),
@@ -6155,25 +6253,49 @@ def _launch_job(kind: str, args: dict) -> dict:
             value = str(args.get(arg_name) or "").strip()
             if value:
                 env[env_name] = value
+        if target_format == "exl3":
+            exllama_v3_root = str(args.get("exllama_root") or "").strip()
+            if exllama_v3_root:
+                env["EXLLAMA_V3_ROOT"] = exllama_v3_root
 
-    elif kind == "convert_merged_exl2":
+    elif kind in {"convert_merged_exl2", "convert_merged_exl3"}:
         model_key = str(args.get("model_key") or "").strip()
         if not model_key:
-            raise HTTPException(400, "model_key required for convert_merged_exl2")
-        bits = _as_positive_float(args.get("bits"), 6.5)
-        groupsize = _as_positive_int(args.get("groupsize"), 2048)
+            raise HTTPException(400, f"model_key required for {kind}")
+        target_format = _conversion_kind_format(kind) or "exl2"
+        default_bits = 6.5 if target_format == "exl2" else 4.5
+        bits = _as_positive_float(args.get("bits"), default_bits)
+        groupsize_raw = args.get("groupsize")
+        groupsize = _as_positive_int(groupsize_raw, 2048) if (target_format == "exl2" or groupsize_raw not in (None, "")) else None
+
+        if target_format == "exl3":
+            convert_script, checked = _resolve_exl3_convert_script(args, env)
+            if not convert_script:
+                raise HTTPException(
+                    503,
+                    {
+                        "message": "EXL3 conversion toolchain unavailable",
+                        "required": "Set EXLLAMA_V3_ROOT or EXL3_CONVERT_SCRIPT to an ExLlamaV3 convert.py path",
+                        "checked": checked,
+                    },
+                )
+
         cmd = [
             "python3",
             str(script),
             "--model_key",
             model_key,
+            "--target_format",
+            target_format,
             "--bits",
             str(bits),
-            "--groupsize",
-            str(groupsize),
         ]
+        if groupsize is not None:
+            cmd += ["--groupsize", str(groupsize)]
         if bool(args.get("force", False)):
             cmd.append("--force")
+        if target_format == "exl3":
+            cmd += ["--convert_script", str(convert_script)]
         source_model_dir = str(args.get("source_model_dir") or "").strip()
         output_dir = str(args.get("output_dir") or "").strip()
         if source_model_dir:
@@ -6183,8 +6305,10 @@ def _launch_job(kind: str, args: dict) -> dict:
         exllama_root = str(args.get("exllama_root") or "").strip()
         if exllama_root:
             env["EXLLAMA_ROOT"] = exllama_root
+            if target_format == "exl3":
+                env["EXLLAMA_V3_ROOT"] = exllama_root
     else:
-        raise HTTPException(400, "kind must be train|merge|convert|convert_hf_exl2|convert_merged_exl2")
+        raise HTTPException(400, "kind must be train|merge|convert|convert_hf_exl2|convert_merged_exl2|convert_hf_exl3|convert_merged_exl3")
 
     with open(log_path, "w", buffering=1) as lf:
         lf.write(f"### {kind} job {job_id} @ {datetime.now().isoformat()}\n")
@@ -6197,7 +6321,7 @@ def _launch_job(kind: str, args: dict) -> dict:
         "status": "running", "log": str(log_path),
     }
 
-    if kind in {"convert_hf_exl2", "convert_merged_exl2"}:
+    if kind in conversion_kinds:
         JOBS[job_id]["conversion"] = _record_conversion_run_start(job_id, kind, args, env, log_path, proc.pid)
 
     def _watch():
@@ -6207,7 +6331,7 @@ def _launch_job(kind: str, args: dict) -> dict:
             j["end_ts"] = time.time()
             j["returncode"] = rc
             j["status"] = "ok" if rc == 0 else "error"
-        if kind in {"convert_hf_exl2", "convert_merged_exl2"}:
+        if kind in conversion_kinds:
             _record_conversion_run_finish(job_id, rc)
 
     threading.Thread(target=_watch, daemon=True).start()
@@ -6293,6 +6417,23 @@ class Exl2ConversionStartReq(BaseModel):
     base_models_dir: str | None = None
     webui_models_dir: str | None = None
     exllama_root: str | None = None
+    convert_script: str | None = None
+
+
+class Exl3ConversionStartReq(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    source_type: str = "huggingface_repo"
+    repo_id: str | None = None
+    model_key: str | None = None
+    source_model_dir: str | None = None
+    output_dir: str | None = None
+    bits: float = Field(default=4.5, gt=0)
+    groupsize: int | None = Field(default=None, gt=0)
+    force: bool = False
+    base_models_dir: str | None = None
+    webui_models_dir: str | None = None
+    exllama_root: str | None = None
+    convert_script: str | None = None
 
 
 class GovernanceWriteReq(BaseModel):
@@ -6488,7 +6629,7 @@ def models():
         "slot_endpoints": slot_endpoints,
         "slots_enabled": slots_enabled,
         "meta": meta,
-        "converted_artifacts": _conversion_artifact_rows(format_filter="exl2")[:120],
+        "converted_artifacts": _conversion_artifact_rows()[:120],
     }
 
 @app.post("/switch")
@@ -6634,7 +6775,7 @@ def providers_models():
         "models": doc,
         "version": _doc_version(doc),
         "source": str(PROVIDER_MODELS_PATH),
-        "local_conversion_artifacts": _conversion_artifact_rows(format_filter="exl2")[:200],
+        "local_conversion_artifacts": _conversion_artifact_rows()[:200],
         "time": datetime.utcnow().isoformat() + "Z",
     }
 
@@ -9212,22 +9353,30 @@ def jobs_cancel(job_id: str):
         return {"ok": False, "detail": "process already ended"}
 
 
-@app.post("/conversions/exl2")
-def conversions_exl2_start(req: Exl2ConversionStartReq):
-    payload = req.dict()
-    source_type = str(req.source_type or "huggingface_repo").strip().lower()
+def _conversion_source_type_alias(value: str) -> str:
+    source = str(value or "huggingface_repo").strip().lower()
+    if source in {"huggingface_repo", "hf", "repo"}:
+        return "huggingface_repo"
+    if source in {"merged_local_model", "merged", "local_merged"}:
+        return "merged_local_model"
+    return source
+
+
+def _start_managed_conversion(payload: dict, source_type_value: str, target_format: str) -> dict:
+    source_type = _conversion_source_type_alias(source_type_value)
+    target_format = _normalized_conversion_format(target_format, default="exl2")
     kind = ""
 
-    if source_type in {"huggingface_repo", "hf", "repo"}:
-        repo_id = str(req.repo_id or "").strip()
+    if source_type == "huggingface_repo":
+        repo_id = str(payload.get("repo_id") or "").strip()
         if not repo_id:
             raise HTTPException(422, {"errors": ["repo_id is required when source_type is huggingface_repo"]})
         payload["repo_id"] = repo_id
         payload["source_type"] = "huggingface_repo"
-        kind = "convert_hf_exl2"
-    elif source_type in {"merged_local_model", "merged", "local_merged"}:
-        model_key = str(req.model_key or "").strip()
-        source_model_dir = str(req.source_model_dir or "").strip()
+        kind = f"convert_hf_{target_format}"
+    elif source_type == "merged_local_model":
+        model_key = str(payload.get("model_key") or "").strip()
+        source_model_dir = str(payload.get("source_model_dir") or "").strip()
         if not model_key and source_model_dir:
             source_name = Path(source_model_dir).name
             if source_name.startswith("merged_"):
@@ -9242,31 +9391,65 @@ def conversions_exl2_start(req: Exl2ConversionStartReq):
         payload["model_key"] = model_key
         payload["source_model_dir"] = str(source_path)
         payload["source_type"] = "merged_local_model"
-        kind = "convert_merged_exl2"
+        kind = f"convert_merged_{target_format}"
     else:
         raise HTTPException(422, {"errors": ["source_type must be huggingface_repo or merged_local_model"]})
 
+    payload["target_format"] = target_format
     job = _launch_job(kind, payload)
     return {
         "ok": True,
         "job": job,
         "source_type": payload.get("source_type"),
+        "target_format": target_format,
         "conversion": _conversion_run_by_job_id(str(job.get("id", ""))),
         "time": datetime.utcnow().isoformat() + "Z",
     }
 
 
-@app.get("/conversions/exl2/jobs")
-def conversions_exl2_jobs(limit: int = Query(200, ge=1, le=1000)):
+def _conversion_runs_for_format(target_format: str) -> list[dict]:
     state = read_provider_runtime_state()
     runs = state.get("conversion_runs", {}) if isinstance(state.get("conversion_runs"), dict) else {}
+    kinds = _conversion_kinds_for_format(target_format)
     rows = [
         row
         for row in runs.values()
         if isinstance(row, dict)
-        and str(row.get("kind", "")) in {"convert_hf_exl2", "convert_merged_exl2"}
+        and str(row.get("kind", "")) in kinds
     ]
     rows.sort(key=lambda row: str(row.get("created_ts", "")), reverse=True)
+    return rows
+
+
+def _conversion_run_detail_for_format(job_id: str, target_format: str, tail: int) -> dict:
+    row = _conversion_run_by_job_id(job_id)
+    if not isinstance(row, dict):
+        raise HTTPException(404, "conversion job not found")
+    if str(row.get("kind", "")) not in _conversion_kinds_for_format(target_format):
+        raise HTTPException(404, "conversion job not found")
+
+    payload = dict(row)
+    log_path = Path(str(payload.get("log") or ""))
+    payload["tail"] = _tail(log_path, n=tail) if str(payload.get("log") or "") else []
+    return payload
+
+
+def _conversion_artifact_detail_for_format(artifact_id: str, target_format: str) -> dict:
+    rows = _conversion_artifact_rows(format_filter=target_format)
+    for row in rows:
+        if str(row.get("artifact_id", "")) == artifact_id:
+            return row
+    raise HTTPException(404, "conversion artifact not found")
+
+
+@app.post("/conversions/exl2")
+def conversions_exl2_start(req: Exl2ConversionStartReq):
+    return _start_managed_conversion(req.dict(), req.source_type, target_format="exl2")
+
+
+@app.get("/conversions/exl2/jobs")
+def conversions_exl2_jobs(limit: int = Query(200, ge=1, le=1000)):
+    rows = _conversion_runs_for_format("exl2")
     return {
         "ok": True,
         "time": datetime.utcnow().isoformat() + "Z",
@@ -9277,12 +9460,7 @@ def conversions_exl2_jobs(limit: int = Query(200, ge=1, le=1000)):
 
 @app.get("/conversions/exl2/jobs/{job_id}")
 def conversions_exl2_job_detail(job_id: str, tail: int = Query(120, ge=1, le=1000)):
-    row = _conversion_run_by_job_id(job_id)
-    if not isinstance(row, dict):
-        raise HTTPException(404, "conversion job not found")
-    payload = dict(row)
-    log_path = Path(str(payload.get("log") or ""))
-    payload["tail"] = _tail(log_path, n=tail) if str(payload.get("log") or "") else []
+    payload = _conversion_run_detail_for_format(job_id, "exl2", tail)
     return {
         "ok": True,
         "time": datetime.utcnow().isoformat() + "Z",
@@ -9303,15 +9481,59 @@ def conversions_exl2_artifacts(limit: int = Query(200, ge=1, le=2000)):
 
 @app.get("/conversions/exl2/artifacts/{artifact_id}")
 def conversions_exl2_artifact_detail(artifact_id: str):
-    rows = _conversion_artifact_rows(format_filter="exl2")
-    for row in rows:
-        if str(row.get("artifact_id", "")) == artifact_id:
-            return {
-                "ok": True,
-                "time": datetime.utcnow().isoformat() + "Z",
-                "artifact": row,
-            }
-    raise HTTPException(404, "conversion artifact not found")
+    row = _conversion_artifact_detail_for_format(artifact_id, "exl2")
+    return {
+        "ok": True,
+        "time": datetime.utcnow().isoformat() + "Z",
+        "artifact": row,
+    }
+
+
+@app.post("/conversions/exl3")
+def conversions_exl3_start(req: Exl3ConversionStartReq):
+    return _start_managed_conversion(req.dict(), req.source_type, target_format="exl3")
+
+
+@app.get("/conversions/exl3/jobs")
+def conversions_exl3_jobs(limit: int = Query(200, ge=1, le=1000)):
+    rows = _conversion_runs_for_format("exl3")
+    return {
+        "ok": True,
+        "time": datetime.utcnow().isoformat() + "Z",
+        "count": min(limit, len(rows)),
+        "runs": rows[:limit],
+    }
+
+
+@app.get("/conversions/exl3/jobs/{job_id}")
+def conversions_exl3_job_detail(job_id: str, tail: int = Query(120, ge=1, le=1000)):
+    payload = _conversion_run_detail_for_format(job_id, "exl3", tail)
+    return {
+        "ok": True,
+        "time": datetime.utcnow().isoformat() + "Z",
+        "run": payload,
+    }
+
+
+@app.get("/conversions/exl3/artifacts")
+def conversions_exl3_artifacts(limit: int = Query(200, ge=1, le=2000)):
+    rows = _conversion_artifact_rows(format_filter="exl3")
+    return {
+        "ok": True,
+        "time": datetime.utcnow().isoformat() + "Z",
+        "count": min(limit, len(rows)),
+        "artifacts": rows[:limit],
+    }
+
+
+@app.get("/conversions/exl3/artifacts/{artifact_id}")
+def conversions_exl3_artifact_detail(artifact_id: str):
+    row = _conversion_artifact_detail_for_format(artifact_id, "exl3")
+    return {
+        "ok": True,
+        "time": datetime.utcnow().isoformat() + "Z",
+        "artifact": row,
+    }
 
 # -----------------------------------------------------------------------------
 # Newer: Engines endpoints for the new Engine Controls UI

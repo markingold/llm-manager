@@ -226,6 +226,73 @@
       "reason": "flags smoke",
       "resource": "provider_model_state",
       "ts": "2026-05-17T15:45:06.841181Z"
+    },
+    {
+      "action": "validate",
+      "actor": "smoke",
+      "after_version": "43f7cc978095b3cf",
+      "before_version": "43f7cc978095b3cf",
+      "changed_keys": [],
+      "expected_version": "43f7cc978095b3cf",
+      "outcome": "validated",
+      "reason": "validate policies smoke",
+      "resource": "policies",
+      "ts": "2026-05-17T16:25:25.828706Z"
+    },
+    {
+      "action": "validate",
+      "actor": "smoke",
+      "after_version": "1bdba95effc15e12",
+      "before_version": "39d72832a4b220a2",
+      "changed_keys": [
+        "__gov_smoke_marker"
+      ],
+      "expected_version": "39d72832a4b220a2",
+      "outcome": "validated",
+      "reason": "validate smoke",
+      "resource": "models",
+      "ts": "2026-05-17T16:25:25.897873Z"
+    },
+    {
+      "action": "apply",
+      "actor": "smoke",
+      "after_version": "1bdba95effc15e12",
+      "before_version": "39d72832a4b220a2",
+      "changed_keys": [
+        "__gov_smoke_marker"
+      ],
+      "expected_version": "39d72832a4b220a2",
+      "outcome": "applied",
+      "reason": "apply smoke",
+      "resource": "models",
+      "ts": "2026-05-17T16:25:25.950383Z"
+    },
+    {
+      "action": "rollback",
+      "actor": "smoke",
+      "after_version": "39d72832a4b220a2",
+      "before_version": "1bdba95effc15e12",
+      "changed_keys": [
+        "__gov_smoke_marker"
+      ],
+      "expected_version": "1bdba95effc15e12",
+      "outcome": "rolled_back",
+      "reason": "rollback smoke",
+      "resource": "models",
+      "ts": "2026-05-17T16:25:25.987603Z"
+    },
+    {
+      "action": "flags_update",
+      "actor": "smoke",
+      "changed_keys": [
+        "disabled_until_manual_review",
+        "exclude_from_free_rotation"
+      ],
+      "model_key": "openrouter:test-model",
+      "outcome": "applied",
+      "reason": "flags smoke",
+      "resource": "provider_model_state",
+      "ts": "2026-05-17T16:25:26.099499Z"
     }
   ],
   "governance_last_good": {
@@ -648,7 +715,7 @@
           ]
         }
       },
-      "ts": "2026-05-17T15:45:06.668611Z",
+      "ts": "2026-05-17T16:25:25.930444Z",
       "version": "39d72832a4b220a2"
     }
   },
@@ -24941,7 +25008,7 @@
       "exclude_from_free_rotation": true,
       "promotion_state": "quarantined",
       "promotion_state_reason": "manual_flag_update",
-      "promotion_state_updated_ts": "2026-05-17T15:45:06.820749Z",
+      "promotion_state_updated_ts": "2026-05-17T16:25:26.077950Z",
       "promotion_transitions": [
         {
           "actor": "smoke",
@@ -24951,7 +25018,7 @@
           "ts": "2026-05-08T02:54:31.373817Z"
         }
       ],
-      "updated_ts": "2026-05-17T15:45:06.820762Z"
+      "updated_ts": "2026-05-17T16:25:26.077957Z"
     },
     "openrouter:thedrummer/cydonia-24b-v4.1": {
       "failure_count_24h": 0,
@@ -31812,7 +31879,7 @@
       "ts": "2026-05-15T04:00:38.225840Z"
     }
   ],
-  "updated_ts": "2026-05-17T15:45:06.844944Z",
+  "updated_ts": "2026-05-17T16:25:26.103349Z",
   "usage_logs": [
     {
       "completion_tokens": 1683,

@@ -1,6 +1,6 @@
 <!--
 id: PLAN-NEXT-PUSH
-version: 2.2
+version: 2.3
 last_updated: 2026-05-17
 title: Next Push Recommendations
 purpose:
@@ -19,6 +19,7 @@ purpose:
 - recovery runbook hardening is now complete in `docs/CLI_SYSOP_GUIDE.md` with explicit manual-review/quarantine recovery and GPU/TGW wedge reboot criteria
 - canonical `/srv/2bananas/engines` layout documentation is now complete in `docs/guides/RB-ENGINES-LAYOUT.md` with migration and verification checklists
 - cost-aware dynamic model ranking is now complete with policy-tunable lane scoring and chain-resolution diagnostics
+- managed conversion bootstrap now supports EXL3 API/UI paths with guarded runtime checks when ExLlamaV3 toolchain is absent
 
 ## Implementation update (2026-05-17)
 
@@ -81,9 +82,14 @@ Completed items from the locked queue:
   - policy schema now supports `dynamic_ranking` controls (`enabled`, strategy allowlist, cost/availability/quality weights, token estimate defaults)
   - candidate chain resolution now computes and applies weighted lane ranking (cost + availability + quality) when enabled
   - `POST /providers/policies/test` and `POST /router/route-test` now surface ranking diagnostics in `chain_resolution` and `policy_context`
+- item 13: EXL3 conversion bootstrap is now implemented (guarded)
+  - managed EXL3 endpoints added: `POST /conversions/exl3`, `GET /conversions/exl3/jobs`, `GET /conversions/exl3/jobs/{job_id}`, `GET /conversions/exl3/artifacts`, `GET /conversions/exl3/artifacts/{artifact_id}`
+  - conversion runtime metadata now supports mixed EXL2/EXL3 runs and artifacts with shared preservation/categorization fields
+  - Operations dashboard managed-conversion panel now supports EXL2/EXL3 format selection and format-scoped monitoring
+  - EXL3 start requests now fail fast with explicit `503` diagnostics when ExLlamaV3 conversion tooling is not installed/configured
 
 Next queued item:
-- EXL3 conversion path (Phase 2)
+- EXL3 toolchain install + first validated EXL3 conversion run (Phase 2 closeout)
 
 ## Implementation update (2026-05-09)
 
@@ -144,7 +150,7 @@ Interpretation:
 ## Biggest remaining value gaps
 
 1. EXL3 conversion path (Phase 2)
-- Extend managed conversion model from EXL2 to EXL3 with matching metadata discipline.
+- Install/validate ExLlamaV3 host tooling and execute first successful managed EXL3 conversion run to close the guarded bootstrap gap.
 
 2. TabbyAPI lane lifecycle decision
 - Decide whether TabbyAPI switching remains symlink-based or gains backend-native load/unload operations.
@@ -155,7 +161,7 @@ Interpretation:
 ## Suggested immediate execution package (next 1-2 pushes)
 
 Push 1:
-- EXL3 conversion path bootstrap + metadata parity checks
+- EXL3 toolchain install/validation + first successful managed EXL3 conversion closeout
 
 Push 2:
 - optional TabbyAPI backend-native model load/unload decision and prototype
