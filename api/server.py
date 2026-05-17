@@ -118,6 +118,20 @@ DEFAULT_PROVIDER_POLICIES = {
         "best_available": ["local", "openrouter.paid", "openai", "openrouter.free"],
         "strict_provider": [],
     },
+    "dynamic_ranking": {
+        "enabled": True,
+        "strategies": ["local_first", "free_first", "paid_first", "best_available"],
+        "weights": {
+            "cost": 0.6,
+            "availability": 0.3,
+            "quality": 0.1,
+        },
+        "token_estimate": {
+            "prompt_tokens": 500,
+            "completion_tokens": 256,
+        },
+        "unknown_cost_score": 0.35,
+    },
     "service_tiers": {
         "default": {
             "chain": [],
@@ -841,6 +855,82 @@ def _validate_provider_policies_document(doc: dict):
             errors.append(
                 f"selection.{sname} contains invalid lanes: {', '.join(sorted(set(bad_lanes)))}"
             )
+
+    dynamic_ranking = doc.get("dynamic_ranking", {})
+    if dynamic_ranking is not None and not isinstance(dynamic_ranking, dict):
+        errors.append("dynamic_ranking must be an object when provided")
+    if isinstance(dynamic_ranking, dict):
+        enabled = dynamic_ranking.get("enabled")
+        if enabled is not None and not isinstance(enabled, bool):
+            errors.append("dynamic_ranking.enabled must be a boolean")
+
+        strategies = dynamic_ranking.get("strategies")
+        if strategies is not None:
+            if not isinstance(strategies, list):
+                errors.append("dynamic_ranking.strategies must be a list")
+            else:
+                invalid = [str(strategy) for strategy in strategies if str(strategy) not in ROUTING_STRATEGIES]
+                if invalid:
+                    errors.append(
+                        "dynamic_ranking.strategies contains invalid values: "
+                        + ", ".join(sorted(set(invalid)))
+                    )
+
+        weights = dynamic_ranking.get("weights")
+        parsed_weights = []
+        if weights is not None and not isinstance(weights, dict):
+            errors.append("dynamic_ranking.weights must be an object")
+        if isinstance(weights, dict):
+            for field in ("cost", "availability", "quality"):
+                if field not in weights:
+                    continue
+                raw = weights.get(field)
+                if isinstance(raw, bool):
+                    errors.append(f"dynamic_ranking.weights.{field} must be a non-negative number")
+                    continue
+                try:
+                    value = float(raw)
+                except Exception:
+                    errors.append(f"dynamic_ranking.weights.{field} must be a non-negative number")
+                    continue
+                if value < 0:
+                    errors.append(f"dynamic_ranking.weights.{field} must be >= 0")
+                else:
+                    parsed_weights.append(value)
+            if parsed_weights and sum(parsed_weights) <= 0:
+                errors.append("dynamic_ranking.weights must include at least one value > 0")
+
+        token_estimate = dynamic_ranking.get("token_estimate")
+        if token_estimate is not None and not isinstance(token_estimate, dict):
+            errors.append("dynamic_ranking.token_estimate must be an object")
+        if isinstance(token_estimate, dict):
+            for field, minimum in (("prompt_tokens", 1), ("completion_tokens", 0)):
+                if field not in token_estimate:
+                    continue
+                raw = token_estimate.get(field)
+                if isinstance(raw, bool):
+                    errors.append(f"dynamic_ranking.token_estimate.{field} must be an integer >= {minimum}")
+                    continue
+                try:
+                    value = int(raw)
+                except Exception:
+                    errors.append(f"dynamic_ranking.token_estimate.{field} must be an integer >= {minimum}")
+                    continue
+                if value < minimum:
+                    errors.append(f"dynamic_ranking.token_estimate.{field} must be >= {minimum}")
+
+        if "unknown_cost_score" in dynamic_ranking:
+            raw = dynamic_ranking.get("unknown_cost_score")
+            if isinstance(raw, bool):
+                errors.append("dynamic_ranking.unknown_cost_score must be a number between 0 and 1")
+            else:
+                try:
+                    value = float(raw)
+                except Exception:
+                    errors.append("dynamic_ranking.unknown_cost_score must be a number between 0 and 1")
+                else:
+                    if value < 0 or value > 1:
+                        errors.append("dynamic_ranking.unknown_cost_score must be between 0 and 1")
 
     openrouter_cfg = doc.get("openrouter", {}) if isinstance(doc.get("openrouter"), dict) else {}
     queue_behavior = str(openrouter_cfg.get("queue_behavior", "wait") or "wait").strip().lower()
@@ -2079,10 +2169,20 @@ def _build_route_policy_context(
         "candidate_chain": list(candidate_chain if isinstance(candidate_chain, list) else []),
         "candidate_chain_source": chain_ctx.get("chain_source"),
         "candidate_chain_before_filters": list(chain_ctx.get("normalized_chain", [])),
-        "candidate_chain_after_filters": list(chain_ctx.get("filtered_chain", [])),
+        "candidate_chain_after_filters": list(
+            chain_ctx.get("filtered_chain_pre_ranking", chain_ctx.get("filtered_chain", []))
+        ),
+        "candidate_chain_after_ranking": list(chain_ctx.get("filtered_chain", [])),
         "filter_flags": {
             "free_only": bool(chain_ctx.get("free_only", False)),
             "paid_allowed": bool(chain_ctx.get("paid_allowed", True)),
+        },
+        "dynamic_ranking": {
+            "enabled": bool(chain_ctx.get("dynamic_ranking_enabled", False)),
+            "applied": bool(chain_ctx.get("dynamic_ranking_applied", False)),
+            "reason": chain_ctx.get("dynamic_ranking_reason"),
+            "ranked_chain": list(chain_ctx.get("filtered_chain", [])),
+            "rows": list(chain_ctx.get("dynamic_ranking_rows", [])),
         },
         "strict_provider_target": chain_ctx.get("strict_provider_target"),
         "strict_provider_task_allowed_lanes": list(chain_ctx.get("strict_provider_task_allowed_lanes", [])),
@@ -2141,12 +2241,276 @@ def _service_tier_chain(req, policies: dict, effective_defaults: dict | None = N
     }
 
 
+def _dynamic_ranking_policy(policies: dict) -> dict:
+    defaults = (
+        DEFAULT_PROVIDER_POLICIES.get("dynamic_ranking", {})
+        if isinstance(DEFAULT_PROVIDER_POLICIES.get("dynamic_ranking", {}), dict)
+        else {}
+    )
+    raw = policies.get("dynamic_ranking", {}) if isinstance(policies.get("dynamic_ranking", {}), dict) else {}
+
+    def _to_non_negative_float(value, fallback: float) -> float:
+        if isinstance(value, bool):
+            return fallback
+        try:
+            parsed = float(value)
+        except Exception:
+            return fallback
+        return parsed if parsed >= 0 else fallback
+
+    def _to_int(value, fallback: int, minimum: int) -> int:
+        if isinstance(value, bool):
+            return fallback
+        try:
+            parsed = int(value)
+        except Exception:
+            return fallback
+        return parsed if parsed >= minimum else minimum
+
+    enabled = bool(raw.get("enabled", defaults.get("enabled", True)))
+
+    strategies_raw = raw.get("strategies", defaults.get("strategies", []))
+    if not isinstance(strategies_raw, list):
+        strategies_raw = defaults.get("strategies", [])
+    strategies = [
+        str(strategy)
+        for strategy in strategies_raw
+        if str(strategy) in ROUTING_STRATEGIES
+    ]
+    if not strategies:
+        strategies = [
+            str(strategy)
+            for strategy in (defaults.get("strategies", []) if isinstance(defaults.get("strategies", []), list) else [])
+            if str(strategy) in ROUTING_STRATEGIES
+        ]
+
+    default_weights = defaults.get("weights", {}) if isinstance(defaults.get("weights", {}), dict) else {}
+    weights_raw = raw.get("weights", {}) if isinstance(raw.get("weights", {}), dict) else {}
+    cost_weight = _to_non_negative_float(weights_raw.get("cost", default_weights.get("cost", 0.6)), 0.6)
+    availability_weight = _to_non_negative_float(
+        weights_raw.get("availability", default_weights.get("availability", 0.3)),
+        0.3,
+    )
+    quality_weight = _to_non_negative_float(weights_raw.get("quality", default_weights.get("quality", 0.1)), 0.1)
+    weight_total = cost_weight + availability_weight + quality_weight
+    if weight_total <= 0:
+        cost_weight, availability_weight, quality_weight = 0.6, 0.3, 0.1
+        weight_total = 1.0
+
+    token_defaults = defaults.get("token_estimate", {}) if isinstance(defaults.get("token_estimate", {}), dict) else {}
+    token_raw = raw.get("token_estimate", {}) if isinstance(raw.get("token_estimate", {}), dict) else {}
+    prompt_tokens = _to_int(token_raw.get("prompt_tokens", token_defaults.get("prompt_tokens", 500)), 500, 1)
+    completion_tokens = _to_int(
+        token_raw.get("completion_tokens", token_defaults.get("completion_tokens", 256)),
+        256,
+        0,
+    )
+
+    unknown_cost_score_raw = raw.get("unknown_cost_score", defaults.get("unknown_cost_score", 0.35))
+    if isinstance(unknown_cost_score_raw, bool):
+        unknown_cost_score = 0.35
+    else:
+        try:
+            unknown_cost_score = float(unknown_cost_score_raw)
+        except Exception:
+            unknown_cost_score = 0.35
+    if unknown_cost_score < 0:
+        unknown_cost_score = 0.0
+    if unknown_cost_score > 1:
+        unknown_cost_score = 1.0
+
+    return {
+        "enabled": enabled,
+        "strategies": strategies,
+        "weights": {
+            "cost": cost_weight / weight_total,
+            "availability": availability_weight / weight_total,
+            "quality": quality_weight / weight_total,
+        },
+        "token_estimate": {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+        },
+        "unknown_cost_score": unknown_cost_score,
+    }
+
+
+def _lane_quality_score(lane: str) -> float:
+    lookup = {
+        "openai": 1.0,
+        "openrouter.paid": 0.85,
+        "local": 0.75,
+        "openrouter.free": 0.55,
+    }
+    return float(lookup.get(str(lane), 0.5))
+
+
+def _lane_availability_score(
+    lane: str,
+    provider: str,
+    model_id: str,
+    policies: dict,
+    runtime_state: dict,
+) -> float:
+    score = 1.0
+    state = runtime_state if isinstance(runtime_state, dict) else {}
+
+    provider_state = state.get("provider_model_state", {}) if isinstance(state.get("provider_model_state", {}), dict) else {}
+    row_key = _provider_model_key(provider, model_id)
+    row = provider_state.get(row_key, {}) if isinstance(provider_state.get(row_key), dict) else {}
+    now_ts = time.time()
+
+    if row:
+        if float(row.get("cooldown_until", 0) or 0) > now_ts:
+            score -= 0.45
+        if bool(row.get("disabled_until_manual_review", False)):
+            score -= 0.60
+        if bool(row.get("exclude_from_free_rotation", False)):
+            score -= 0.35
+        promotion_state = str(row.get("promotion_state", "") or "").lower()
+        if promotion_state in {"quarantined", "retired"}:
+            score -= 0.70
+        failures_24h = int(row.get("failure_count_24h", 0) or 0)
+        if failures_24h > 0:
+            score -= min(0.35, failures_24h * 0.06)
+        err_type = str(row.get("last_error_type", "") or "").strip().lower()
+        if err_type in {"auth_error", "provider_timeout", "model_unavailable"}:
+            score -= 0.10
+
+    if lane == "openrouter.free":
+        limits = state.get("provider_rate_limits", {}) if isinstance(state.get("provider_rate_limits", {}), dict) else {}
+        pool = limits.get("openrouter_free", {}) if isinstance(limits.get("openrouter_free", {}), dict) else {}
+        openrouter_cfg = policies.get("openrouter", {}) if isinstance(policies.get("openrouter", {}), dict) else {}
+
+        rpm_limit = int(pool.get("rpm_limit", openrouter_cfg.get("free_rate_limit_rpm", 20)) or 20)
+        request_count = int(pool.get("request_count", 0) or 0)
+        if rpm_limit > 0:
+            utilization = min(1.0, float(request_count) / float(rpm_limit))
+            score -= 0.25 * utilization
+
+        queue = state.get("provider_request_queue", []) if isinstance(state.get("provider_request_queue", []), list) else []
+        max_depth = int(openrouter_cfg.get("max_queue_depth", 100) or 100)
+        if max_depth > 0:
+            queue_ratio = min(1.0, float(len(queue)) / float(max_depth))
+            score -= 0.20 * queue_ratio
+
+    return max(0.0, min(1.0, score))
+
+
+def _rank_candidate_chain(
+    candidate_chain: list[str],
+    req,
+    provider_models: dict,
+    policies: dict,
+    ranking_policy: dict,
+) -> tuple[list[str], list[dict]]:
+    lanes = [str(lane) for lane in candidate_chain if str(lane)]
+    if not lanes:
+        return [], []
+
+    provider_catalog = provider_models if isinstance(provider_models, dict) else {}
+    runtime_state = read_provider_runtime_state()
+    weights = ranking_policy.get("weights", {}) if isinstance(ranking_policy.get("weights", {}), dict) else {}
+    cost_weight = float(weights.get("cost", 0.6) or 0.6)
+    availability_weight = float(weights.get("availability", 0.3) or 0.3)
+    quality_weight = float(weights.get("quality", 0.1) or 0.1)
+    unknown_cost_score = float(ranking_policy.get("unknown_cost_score", 0.35) or 0.35)
+
+    token_estimate = ranking_policy.get("token_estimate", {}) if isinstance(ranking_policy.get("token_estimate", {}), dict) else {}
+    prompt_tokens = int(token_estimate.get("prompt_tokens", 500) or 500)
+    completion_tokens = int(token_estimate.get("completion_tokens", 256) or 256)
+    max_tokens = getattr(req, "max_tokens", None)
+    if max_tokens is not None:
+        try:
+            completion_tokens = max(0, int(max_tokens))
+        except Exception:
+            pass
+    if _normalize_task_type(getattr(req, "task_type", "chat")) == "embed":
+        completion_tokens = 0
+
+    rows = []
+    for index, lane in enumerate(lanes):
+        provider, model_id = _pick_catalog_model(
+            lane,
+            provider_catalog,
+            req,
+            excluded_models=set(),
+            policies=policies,
+        )
+        estimated_cost_usd = _estimate_request_cost_usd(
+            provider_catalog,
+            provider,
+            model_id,
+            prompt_tokens,
+            completion_tokens,
+        )
+        availability_score = _lane_availability_score(
+            lane,
+            provider,
+            model_id,
+            policies,
+            runtime_state,
+        )
+        quality_score = _lane_quality_score(lane)
+        rows.append({
+            "lane": lane,
+            "provider": provider,
+            "model": model_id,
+            "base_order": index + 1,
+            "estimated_cost_usd": estimated_cost_usd,
+            "availability_score": round(float(availability_score), 6),
+            "quality_score": round(float(quality_score), 6),
+        })
+
+    known_costs = [
+        float(row.get("estimated_cost_usd"))
+        for row in rows
+        if row.get("estimated_cost_usd") is not None
+    ]
+    min_cost = min(known_costs) if known_costs else None
+    max_cost = max(known_costs) if known_costs else None
+
+    for row in rows:
+        est_cost = row.get("estimated_cost_usd")
+        if est_cost is None:
+            cost_score = unknown_cost_score
+        else:
+            cost_value = float(est_cost)
+            if min_cost is None or max_cost is None or max_cost <= min_cost:
+                cost_score = 1.0
+            else:
+                cost_score = 1.0 - ((cost_value - min_cost) / (max_cost - min_cost))
+        cost_score = max(0.0, min(1.0, float(cost_score)))
+        row["cost_score"] = round(cost_score, 6)
+        weighted = (
+            (cost_weight * cost_score)
+            + (availability_weight * float(row.get("availability_score", 0.0) or 0.0))
+            + (quality_weight * float(row.get("quality_score", 0.0) or 0.0))
+        )
+        row["weighted_score"] = round(float(weighted), 6)
+
+    ranked_rows = sorted(
+        rows,
+        key=lambda row: (
+            -float(row.get("weighted_score", 0.0) or 0.0),
+            int(row.get("base_order", 9999) or 9999),
+            str(row.get("lane", "")),
+        ),
+    )
+    for idx, row in enumerate(ranked_rows):
+        row["rank"] = idx + 1
+
+    ranked_chain = [str(row.get("lane", "")) for row in ranked_rows if str(row.get("lane", ""))]
+    return ranked_chain, ranked_rows
+
+
 def _candidate_chain_resolution(
     strategy: str,
     req,
     policies: dict,
     effective_defaults: dict | None = None,
     effective_selection: dict | None = None,
+    provider_models: dict | None = None,
 ) -> dict:
     defaults = effective_defaults if isinstance(effective_defaults, dict) else _effective_policy_defaults(req, policies)
     selection = effective_selection if isinstance(effective_selection, dict) else _effective_policy_selection(req, policies)
@@ -2160,6 +2524,8 @@ def _candidate_chain_resolution(
     strict_task_constraint_reason = None
     strict_task_allowed_lanes = sorted(list(STRICT_PROVIDER_TASK_ALLOWED_LANES.get(task_type, ROUTING_LANES)))
     strict_filter_relaxed = False
+
+    tier_ctx = _service_tier_chain(req, policies, effective_defaults=defaults)
 
     if strategy == "strict_provider":
         strict_target = _normalize_preferred_provider_lane(
@@ -2189,7 +2555,6 @@ def _candidate_chain_resolution(
         if strict_task_constraint_applied:
             chain_source = f"{chain_source}.task_{task_type}"
     else:
-        tier_ctx = _service_tier_chain(req, policies, effective_defaults=defaults)
         if bool(tier_ctx.get("applied", False)):
             raw_chain = tier_ctx.get("chain", [])
             chain_source = f"service_tiers.{tier_ctx.get('service_tier')}.chain"
@@ -2223,15 +2588,51 @@ def _candidate_chain_resolution(
         else:
             filtered_chain = ["local"]
 
-    tier_ctx = _service_tier_chain(req, policies, effective_defaults=defaults)
+    filtered_chain_pre_ranking = list(filtered_chain)
+    ranking_policy = _dynamic_ranking_policy(policies)
+    dynamic_reason = "policy_disabled"
+    ranking_rows = []
+
+    if len(filtered_chain_pre_ranking) <= 1:
+        dynamic_reason = "chain_too_short"
+    elif strategy == "strict_provider":
+        dynamic_reason = "strict_provider_locked"
+    elif bool(tier_ctx.get("applied", False)):
+        dynamic_reason = "service_tier_chain_locked"
+    elif not bool(ranking_policy.get("enabled", False)):
+        dynamic_reason = "policy_disabled"
+    elif strategy not in set(ranking_policy.get("strategies", [])):
+        dynamic_reason = "strategy_not_enabled"
+    else:
+        provider_models_doc = provider_models if isinstance(provider_models, dict) else read_provider_models()
+        ranked_chain, ranking_rows = _rank_candidate_chain(
+            filtered_chain_pre_ranking,
+            req,
+            provider_models_doc,
+            policies,
+            ranking_policy,
+        )
+        if ranked_chain:
+            filtered_chain = _normalize_candidate_chain(ranked_chain) or filtered_chain_pre_ranking
+            dynamic_reason = "ranked"
+        else:
+            dynamic_reason = "ranking_no_candidates"
+
+    dynamic_applied = filtered_chain != filtered_chain_pre_ranking
+
     return {
         "strategy": strategy,
         "task_type": task_type,
         "chain_source": chain_source,
         "normalized_chain": normalized_chain,
+        "filtered_chain_pre_ranking": filtered_chain_pre_ranking,
         "filtered_chain": filtered_chain,
         "free_only": free_only,
         "paid_allowed": paid_allowed,
+        "dynamic_ranking_enabled": bool(ranking_policy.get("enabled", False)),
+        "dynamic_ranking_applied": dynamic_applied,
+        "dynamic_ranking_reason": dynamic_reason,
+        "dynamic_ranking_rows": ranking_rows,
         "strict_provider_target": strict_target,
         "strict_provider_task_allowed_lanes": strict_task_allowed_lanes,
         "strict_provider_task_constraint_applied": strict_task_constraint_applied,
@@ -6426,6 +6827,7 @@ def providers_policies_rollback(req: GovernanceRollbackReq):
 @app.post("/providers/policies/test")
 def providers_policies_test(req: PoliciesTestReq):
     env = read_env()
+    provider_models = read_provider_models()
     policies = read_provider_policies()
     task_type = _normalize_task_type(req.task_type)
     if task_type == "completion":
@@ -6454,7 +6856,12 @@ def providers_policies_test(req: PoliciesTestReq):
         )
     strategy_resolution = _strategy_resolution_context(probe, env, policies)
     strategy = str(strategy_resolution.get("resolved_strategy", "local_first"))
-    chain_resolution = _candidate_chain_resolution(strategy, probe, policies)
+    chain_resolution = _candidate_chain_resolution(
+        strategy,
+        probe,
+        policies,
+        provider_models=provider_models,
+    )
     chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
     if not chain:
         chain = ["local"]
@@ -6774,7 +7181,12 @@ def router_route_test(req: RouterRouteTestReq):
 
     strategy_resolution = _strategy_resolution_context(probe, env, policies)
     strategy = str(strategy_resolution.get("resolved_strategy", "local_first"))
-    chain_resolution = _candidate_chain_resolution(strategy, probe, policies)
+    chain_resolution = _candidate_chain_resolution(
+        strategy,
+        probe,
+        policies,
+        provider_models=provider_models,
+    )
     chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
     if not chain:
         chain = ["local"]
@@ -6914,6 +7326,7 @@ def router_chat(req: RouterChatRequest):
         policies,
         effective_defaults=effective_defaults,
         effective_selection=effective_selection,
+        provider_models=provider_models,
     )
     chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
     if not chain:
@@ -7287,6 +7700,7 @@ def router_completions(req: RouterCompletionRequest):
         policies,
         effective_defaults=effective_defaults,
         effective_selection=effective_selection,
+        provider_models=provider_models,
     )
     chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
     if not chain:
@@ -7657,6 +8071,7 @@ def router_embed(req: RouterEmbedRequest):
         policies,
         effective_defaults=effective_defaults,
         effective_selection=effective_selection,
+        provider_models=provider_models,
     )
     chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
     if not chain:

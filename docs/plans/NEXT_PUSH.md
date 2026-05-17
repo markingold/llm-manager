@@ -1,6 +1,6 @@
 <!--
 id: PLAN-NEXT-PUSH
-version: 2.1
+version: 2.2
 last_updated: 2026-05-17
 title: Next Push Recommendations
 purpose:
@@ -18,6 +18,7 @@ purpose:
 - backend-aware frontend operation gating is now complete in Operations UI (slot backend/model/recommendation surfacing + capability-aware test gating)
 - recovery runbook hardening is now complete in `docs/CLI_SYSOP_GUIDE.md` with explicit manual-review/quarantine recovery and GPU/TGW wedge reboot criteria
 - canonical `/srv/2bananas/engines` layout documentation is now complete in `docs/guides/RB-ENGINES-LAYOUT.md` with migration and verification checklists
+- cost-aware dynamic model ranking is now complete with policy-tunable lane scoring and chain-resolution diagnostics
 
 ## Implementation update (2026-05-17)
 
@@ -76,9 +77,13 @@ Completed items from the locked queue:
 - item 11: canonical layout ops doc package is now completed
   - canonical `/srv/2bananas/engines` filesystem contract is now documented with source-of-truth model storage and active-slot symlink expectations
   - migration runbook now includes preflight checks, unit wiring validation, sequential lane restart checks, and final contract verification
+- item 12: cost-aware dynamic model ranking is now completed
+  - policy schema now supports `dynamic_ranking` controls (`enabled`, strategy allowlist, cost/availability/quality weights, token estimate defaults)
+  - candidate chain resolution now computes and applies weighted lane ranking (cost + availability + quality) when enabled
+  - `POST /providers/policies/test` and `POST /router/route-test` now surface ranking diagnostics in `chain_resolution` and `policy_context`
 
 Next queued item:
-- cost-aware dynamic model ranking
+- EXL3 conversion path (Phase 2)
 
 ## Implementation update (2026-05-09)
 
@@ -106,9 +111,9 @@ Previously completed in this sequence:
 
 Checklist baseline from `docs/plans/CHECKLIST.md`:
 - total tracked tasks: 56
-- complete: 45
-- pending: 11
-- completion: 80.4%
+- complete: 46
+- pending: 10
+- completion: 82.1%
 
 Interpretation:
 - Core broker and operator capabilities are now established.
@@ -144,19 +149,15 @@ Interpretation:
 2. TabbyAPI lane lifecycle decision
 - Decide whether TabbyAPI switching remains symlink-based or gains backend-native load/unload operations.
 
-3. Cost-aware dynamic model ranking
-- Add strategy-local ranking heuristics (quality/cost/availability weighted) so lane selection is not limited to fixed order.
-
-4. Systemd launcher alignment and startup guardrails
+3. Systemd launcher alignment and startup guardrails
 - Align deployed engine units with launcher expectations and add guardrails for stale ExLlamaV2 JIT locks and unclean TGW restarts.
 
 ## Suggested immediate execution package (next 1-2 pushes)
 
 Push 1:
-- cost-aware dynamic model ranking prototype and policy tuning knobs
+- EXL3 conversion path bootstrap + metadata parity checks
 
 Push 2:
-- EXL3 conversion path bootstrap + metadata parity checks
 - optional TabbyAPI backend-native model load/unload decision and prototype
 - systemd launcher alignment + startup guardrail implementation and validation
 

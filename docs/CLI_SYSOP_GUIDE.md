@@ -345,7 +345,7 @@ Focus on:
         "provider_preferences":{"strategy":"local_first"}
       }' | python3 -m json.tool
 
-Verify `strategy_resolution`, `chain_resolution`, and `policy_context` to ensure strategy source, service-tier effects, and fallback normalization are what you expect.
+Verify `strategy_resolution`, `chain_resolution`, and `policy_context` to ensure strategy source, service-tier effects, fallback normalization, and dynamic-ranking diagnostics (`dynamic_ranking_enabled`, `dynamic_ranking_reason`, `dynamic_ranking_rows`) are what you expect.
 
 3) Apply a targeted curated quick-admin change (no full JSON document edit):
 
@@ -448,7 +448,7 @@ A) Clear manual-review or quarantine flags for provider models:
 
     curl "http://localhost:8101/router/decision-traces?limit=40&compact=true" | python3 -m json.tool
 
-Look for improving signals: fewer failure reason codes, lower fallback ratio, and no repeated auth/manual-review quarantines for the recovered model.
+Look for improving signals: fewer failure reason codes, lower fallback ratio, no repeated auth/manual-review quarantines for the recovered model, and expected dynamic-ranking outcomes in `chain_resolution`.
 
 B) Recover from GPU-driver wedges or uninterruptible TGW processes:
 

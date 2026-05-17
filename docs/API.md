@@ -114,6 +114,7 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
   - Returns routing and policy config from config/provider_policies.json
   - Includes deterministic document version hash for optimistic concurrency
   - Supports optional task-scoped overrides under `task_overrides.chat|completion|embed`
+  - Supports optional `dynamic_ranking` controls for strategy-local lane scoring (`enabled`, `strategies`, weight tuning, and token estimate defaults)
 - GET /providers/state
   - Returns provider runtime state scaffold from run/state/provider_runtime_state.json
 - POST /providers/state/provider-model-flags
@@ -146,7 +147,7 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
 - POST /providers/policies/test
   - Evaluates effective routing policy resolution for a probe request
   - Supports task-aware and project-aware policy testing via `task_type`, `project_id`, and `provider_preferences`
-  - Includes `strategy_resolution`, `chain_resolution`, and `policy_context` so operators can verify resolved strategy, chain source, strict-provider task constraints, service-tier influence, and fallback normalization
+  - Includes `strategy_resolution`, `chain_resolution`, and `policy_context` so operators can verify resolved strategy, chain source, strict-provider task constraints, service-tier influence, fallback normalization, and dynamic-ranking scoring details
 - POST /providers/openrouter/refresh
   - Fetches upstream OpenRouter model metadata and updates runtime cache including detected free model ids
   - Query: include_rankings=true optionally scrapes OpenRouter rankings into the same cache for popularity-aware discovery
@@ -171,7 +172,7 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
   - Request and response models are defined in api/router/contracts.py
   - Dispatches via provider adapters in api/providers for local, OpenRouter, and OpenAI
   - Local dispatch now resolves slot mode from selected local model alias and uses backend-aware slot base resolution (not chat-base only)
-  - Uses policy candidate chains with fallback when allowed, including service-tier-aware chain selection when configured
+  - Uses policy candidate chains with fallback when allowed, including service-tier-aware chain selection and optional dynamic lane ranking when configured
   - Logs routing decisions and usage into provider runtime state
   - Decision records include deterministic `attempt_trace` and `fallback_summary` fields for incident triage
   - Dispatch failures now use typed reason codes (`dispatch_rate_limited`, `dispatch_auth_error`, etc.) and can mark subsequent same-provider attempts as blocked for auth failures
@@ -192,7 +193,7 @@ On the deployed host, the corresponding units invoke run/engine_launcher.py, whi
   - Decision records include deterministic `attempt_trace` and `fallback_summary` fields for incident triage, plus typed dispatch reason codes
 - POST /router/route-test
   - Dry-run route resolution utility that returns strategy, candidate chain, selected models per lane, and cooldown/lifecycle hints
-  - Includes `strategy_resolution`, `chain_resolution`, and `policy_context` for deterministic strategy-source, chain-source, strict-provider task-constraint, and service-tier inspection
+  - Includes `strategy_resolution`, `chain_resolution`, and `policy_context` for deterministic strategy-source, chain-source, strict-provider task-constraint, service-tier inspection, and dynamic-ranking diagnostics (`dynamic_ranking_*` + per-lane score rows)
   - Optional `execute_first=true` runs a lightweight execution against the first eligible candidate for validation
   - Execution diagnostics now include resolved local backend and local slot mode when local lane is selected
 - GET /router/health

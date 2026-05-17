@@ -77,7 +77,7 @@ Source-plan status update (2026-05-15):
 - [x] Add per-project routing policy overrides. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_
 - [x] Add per-task-type routing policy overrides for chat, completion, and embed. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_ (`task_overrides` + `project_overrides.<project>.task_overrides`)
 - [x] Add budget guardrails for paid routing. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_
-- [ ] Add cost-aware dynamic model ranking within a strategy (beyond fixed lane order). - _source: docs/plans/NEXT_PUSH.md, docs/plans/retired/PROVIDER_ROUTER_PLAN.md_
+- [x] Add cost-aware dynamic model ranking within a strategy (beyond fixed lane order). - _source: docs/plans/NEXT_PUSH.md, docs/plans/retired/PROVIDER_ROUTER_PLAN.md_ (policy-driven dynamic lane ranking implemented with cost/availability/quality weights and route-test chain diagnostics)
 - [x] Add longer-horizon retention and audit controls for router/governance/lifecycle history. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_ (`retention` policy config + `/providers/retention-state`)
 - [x] Report whether a cheaper model lane is already sufficient for a task. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md, docs/plans/retired/EVALUATION_PLAN.md_ (`/router/lane-sufficiency-report` + dashboard lane sufficiency panel)
 

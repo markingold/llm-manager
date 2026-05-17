@@ -69,6 +69,7 @@ python api/server.py
 - Apache is expected to reverse-proxy `/llm-manager-api` to that local API
 - The dashboard is the static UI in `web/index.html` with domain modules under `web/js/domains/`
 - Operations UI now surfaces per-slot backend, model format (`kind`), and inspector recommendation/fallback context, and disables unsupported slot test actions with explicit reason hints
+- Provider routing policies now support optional dynamic lane ranking (cost/availability/quality weighted) within each strategy
 - Runtime serving stays in `text-generation-webui`; the API manages it rather than serving models itself
 - The deployed systemd engine units launch through `run/engine_launcher.py`
 
@@ -175,7 +176,7 @@ Process/service environment commonly used in deployment:
 | POST | `/bounce/{mode}` | Restart engine (chat/intent/small) |
 | GET/POST | `/knobs` | Read/write .env settings |
 | GET | `/providers/models` | Read provider model catalog config |
-| GET | `/providers/policies` | Read provider policy config |
+| GET | `/providers/policies` | Read provider policy config (including optional `dynamic_ranking` controls) |
 | GET | `/providers/state` | Read provider runtime state scaffold |
 | POST | `/providers/state/provider-model-flags` | Update provider-model manual-review and free-rotation flags |
 | GET | `/providers/models/curated-summary` | Flattened curated provider model rows for operator filtering and review |
@@ -184,7 +185,7 @@ Process/service environment commonly used in deployment:
 | POST | `/providers/models/rollback` | Roll back provider model document to last good snapshot |
 | PUT | `/providers/policies` | Validate/apply provider policy governance document |
 | POST | `/providers/policies/rollback` | Roll back provider policy document to last good snapshot |
-| POST | `/providers/policies/test` | Evaluate effective strategy/chain/defaults for a task- and project-scoped probe request (includes `strategy_resolution` + `chain_resolution`) |
+| POST | `/providers/policies/test` | Evaluate effective strategy/chain/defaults for a task- and project-scoped probe request (includes `strategy_resolution`, `chain_resolution`, and dynamic-ranking diagnostics) |
 | POST | `/providers/openrouter/refresh` | Refresh upstream OpenRouter metadata cache, optionally with rankings |
 | POST | `/providers/openrouter/discover-free` | Manually build and optionally activate temporary OpenRouter free fallback candidates (includes ranking + smoke evidence fields) |
 | GET | `/providers/openrouter/free-candidates` | Inspect the current manual OpenRouter free candidate pool with lifecycle/smoke evidence |
@@ -196,7 +197,7 @@ Process/service environment commonly used in deployment:
 | POST | `/router/chat` | Normalized broker chat entrypoint (supports `no_thinking` for local dispatch) |
 | POST | `/router/completions` | Normalized broker completions entrypoint (supports `no_thinking` for local dispatch) |
 | POST | `/router/embed` | Normalized broker embeddings entrypoint |
-| POST | `/router/route-test` | Dry-run route resolution with task-aware strategy, candidate-chain inspection, and `chain_resolution` diagnostics |
+| POST | `/router/route-test` | Dry-run route resolution with task-aware strategy, candidate-chain inspection, and `chain_resolution` diagnostics including dynamic-ranking score rows |
 | GET | `/router/health` | Router config and decision-log health |
 | GET | `/router/last-decisions` | Recent router decision logs |
 | GET | `/router/decision-traces` | Compact route traces with task-policy context, typed fallback reason codes, and backend/task mix summary |
