@@ -7,6 +7,7 @@ Additional local docs:
 - `docs/API.md`
 - `docs/CLI_SYSOP_GUIDE.md` (historical filename; this is the llm-manager CLI operations guide, including recovery procedures for manual-review/quarantine flags and GPU/TGW wedges)
 - `docs/guides/EXTERNAL_INTEGRATION.md`
+- `docs/guides/RB-ENGINES-LAYOUT.md` (canonical `/srv/2bananas/engines` filesystem layout and migration checklist)
 
 Baseline quality reports:
 - `python run/baseline_local_models.py`

@@ -1,14 +1,14 @@
 <!--
 id: PLAN-NEXT-PUSH
-version: 2.0
-last_updated: 2026-05-14
+version: 2.1
+last_updated: 2026-05-17
 title: Next Push Recommendations
 purpose:
   Fresh status scan, near-term priorities, and TGW WebUI direction for the next implementation push.
 -->
 # LLM Manager - Next Push
 
-## Docs sweep update (2026-05-15)
+## Docs sweep update (2026-05-17)
 
 - stale conversion/catalog checkboxes were updated in `CHECKLIST.md` and `ROADMAP.md`
 - managed EXL2 milestones are now marked complete for HF + merged-local source scope, including tokenizer/chat-template preservation checks
@@ -17,8 +17,9 @@ purpose:
 - retired source plans now also include `PROVIDER_ROUTER_PLAN.md`, with its remaining dynamic-ranking gap moved into this active backlog
 - backend-aware frontend operation gating is now complete in Operations UI (slot backend/model/recommendation surfacing + capability-aware test gating)
 - recovery runbook hardening is now complete in `docs/CLI_SYSOP_GUIDE.md` with explicit manual-review/quarantine recovery and GPU/TGW wedge reboot criteria
+- canonical `/srv/2bananas/engines` layout documentation is now complete in `docs/guides/RB-ENGINES-LAYOUT.md` with migration and verification checklists
 
-## Implementation update (2026-05-14)
+## Implementation update (2026-05-17)
 
 Completed items from the locked queue:
 - item 1: model-lane sufficiency reporting is now implemented end-to-end
@@ -72,9 +73,12 @@ Completed items from the locked queue:
 - item 10: recovery runbook hardening is now completed
   - CLI runbook now documents explicit procedures for clearing provider `manual_review` and `quarantined` states via provider-model flag and curated-entry APIs
   - runbook now defines GPU-driver wedge and uninterruptible TGW process reboot criteria plus sequential single-lane post-reboot validation probes
+- item 11: canonical layout ops doc package is now completed
+  - canonical `/srv/2bananas/engines` filesystem contract is now documented with source-of-truth model storage and active-slot symlink expectations
+  - migration runbook now includes preflight checks, unit wiring validation, sequential lane restart checks, and final contract verification
 
 Next queued item:
-- canonical layout ops doc package
+- cost-aware dynamic model ranking
 
 ## Implementation update (2026-05-09)
 
@@ -102,9 +106,9 @@ Previously completed in this sequence:
 
 Checklist baseline from `docs/plans/CHECKLIST.md`:
 - total tracked tasks: 56
-- complete: 44
-- pending: 12
-- completion: 78.6%
+- complete: 45
+- pending: 11
+- completion: 80.4%
 
 Interpretation:
 - Core broker and operator capabilities are now established.
@@ -137,23 +141,23 @@ Interpretation:
 1. EXL3 conversion path (Phase 2)
 - Extend managed conversion model from EXL2 to EXL3 with matching metadata discipline.
 
-2. Canonical layout ops doc package
-- Finalize `/srv/2bananas/engines` structure/runbook docs and migration checks.
-
-3. TabbyAPI lane lifecycle decision
+2. TabbyAPI lane lifecycle decision
 - Decide whether TabbyAPI switching remains symlink-based or gains backend-native load/unload operations.
 
-4. Cost-aware dynamic model ranking
+3. Cost-aware dynamic model ranking
 - Add strategy-local ranking heuristics (quality/cost/availability weighted) so lane selection is not limited to fixed order.
+
+4. Systemd launcher alignment and startup guardrails
+- Align deployed engine units with launcher expectations and add guardrails for stale ExLlamaV2 JIT locks and unclean TGW restarts.
 
 ## Suggested immediate execution package (next 1-2 pushes)
 
 Push 1:
-- canonical `/srv/2bananas/engines` layout doc + migration checklist
+- cost-aware dynamic model ranking prototype and policy tuning knobs
 
 Push 2:
 - EXL3 conversion path bootstrap + metadata parity checks
 - optional TabbyAPI backend-native model load/unload decision and prototype
-- cost-aware dynamic model ranking prototype and operator tuning knobs
+- systemd launcher alignment + startup guardrail implementation and validation
 
 If both pushes land cleanly, broker maturity and operator confidence increase significantly while setting up Phase-3 backend goals.

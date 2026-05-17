@@ -4,6 +4,9 @@ Historical note: this file keeps its old filename for compatibility, but it is n
 
 Quick-reference for command-line operations. All commands assume you're in the project root with venv activated.
 
+Canonical engine and model layout runbook:
+- `docs/guides/RB-ENGINES-LAYOUT.md`
+
 ```bash
 cd /srv/2bananas/projects/llm-manager
 source venv/bin/activate

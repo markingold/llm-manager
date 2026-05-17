@@ -20,7 +20,7 @@ Source-plan status update (2026-05-15):
 - [x] Add a normalized backend field to slot or switch configuration. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
 - [x] Introduce launcher wrappers for TGW, vLLM, and TabbyAPI. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
 - [x] Keep the existing engine-management API and dashboard controls stable while backend abstraction is introduced. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
-- [ ] Standardize and document the canonical engine and model directory layout under `/srv/2bananas/engines`. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
+- [x] Standardize and document the canonical engine and model directory layout under `/srv/2bananas/engines`. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_ (documented in `docs/guides/RB-ENGINES-LAYOUT.md` with migration and validation checklist)
 - [ ] Align deployed systemd engine units with the documented launcher path and add startup guardrails for stale ExLlamaV2 JIT locks and unclean TGW restarts. - _source: local runtime troubleshooting (2026-04-28)_
 - [x] Add provider catalog config for local, OpenRouter free, OpenRouter paid, and OpenAI models. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_
 - [x] Add request normalization and response normalization for brokered inference. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_ (chat/completions/embed contract and normalized responses)
