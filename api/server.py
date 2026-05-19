@@ -58,6 +58,7 @@ LOGS_DIR.mkdir(parents=True, exist_ok=True)
 SUPPORTED_BACKENDS = {"tgw", "vllm", "tabbyapi"}
 DEFAULT_SLOT_BACKENDS = {"chat": "tgw", "intent": "tgw", "small": "tgw"}
 SLOT_DEFAULT_PORTS = {"chat": 8500, "intent": 8501, "small": 8502}
+SWITCH_LIFECYCLE_MODES = {"legacy", "auto", "native"}
 SENSITIVE_ENV_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD")
 POLICY_TASK_TYPES = {"chat", "completion", "embed"}
 ROUTING_STRATEGIES = {"local_first", "free_first", "paid_first", "best_available", "strict_provider"}
@@ -5632,10 +5633,111 @@ def _bounce_engine(mode: str):
 
     return {"ok": False, "method": "none", "detail": "No SYSTEMD_LLM_* unit and no PM2_* proc configured"}
 
+
+def _normalize_switch_lifecycle_mode(value: str | None) -> str:
+    mode = str(value or "legacy").strip().lower() or "legacy"
+    if mode not in SWITCH_LIFECYCLE_MODES:
+        raise HTTPException(400, f"lifecycle_mode must be one of: {', '.join(sorted(SWITCH_LIFECYCLE_MODES))}")
+    return mode
+
+
+def _tabbyapi_native_base_for_mode(mode: str) -> tuple[str, str]:
+    env = read_env()
+    provider_models = read_provider_models()
+    base, base_source = _local_base_for_mode(mode, env, backend="tabbyapi", provider_models=provider_models)
+    return str(base).rstrip("/"), base_source
+
+
+def _tabbyapi_native_load(mode: str, model_path: Path, max_seq_len: int | None = None) -> dict:
+    mode_key = _normalize_slot_mode(mode)
+    base, base_source = _tabbyapi_native_base_for_mode(mode_key)
+
+    path_candidates = ["/v1/model/load", "/model/load"]
+    payload_key_candidates = ("name", "model_name", "model", "model_path")
+    model_value_candidates = [str(model_path), model_path.name]
+
+    payloads: list[dict] = []
+    seen_payloads: set[str] = set()
+    for payload_key in payload_key_candidates:
+        for model_value in model_value_candidates:
+            payload: dict[str, object] = {payload_key: model_value}
+            if max_seq_len is not None:
+                payload["max_seq_len"] = int(max_seq_len)
+            signature = json.dumps(payload, sort_keys=True)
+            if signature in seen_payloads:
+                continue
+            seen_payloads.add(signature)
+            payloads.append(payload)
+
+    errors: list[dict] = []
+    for path in path_candidates:
+        url = f"{base}{path}"
+        for payload in payloads:
+            try:
+                response = requests.post(url, json=payload, timeout=45)
+            except Exception as exc:
+                errors.append({"url": url, "payload": payload, "error": str(exc)})
+                continue
+
+            parsed_body: object
+            try:
+                parsed_body = response.json()
+            except Exception:
+                parsed_body = (response.text or "")[:500]
+
+            if response.ok:
+                return {
+                    "ok": True,
+                    "method": "tabbyapi_native_load",
+                    "mode": mode_key,
+                    "base": base,
+                    "base_source": base_source,
+                    "url": url,
+                    "status_code": int(response.status_code),
+                    "payload": payload,
+                    "response": parsed_body,
+                }
+
+            errors.append(
+                {
+                    "url": url,
+                    "payload": payload,
+                    "status_code": int(response.status_code),
+                    "response": parsed_body,
+                }
+            )
+
+    detail = "tabbyapi native load endpoint unavailable"
+    if errors:
+        last = errors[-1]
+        status_code = last.get("status_code")
+        if isinstance(status_code, int):
+            detail = f"tabbyapi native load failed with status {status_code}"
+        elif last.get("error"):
+            detail = f"tabbyapi native load request error: {last.get('error')}"
+
+    return {
+        "ok": False,
+        "method": "tabbyapi_native_load",
+        "mode": mode_key,
+        "base": base,
+        "base_source": base_source,
+        "detail": detail,
+        "attempts": len(errors),
+        "errors": errors[-3:],
+    }
+
 # -----------------------------------------------------------------------------
 # Core: model switch
 # -----------------------------------------------------------------------------
-def switch_model(mode: str, model_dir: str, bounce: bool, backend: str | None = None):
+def switch_model(
+    mode: str,
+    model_dir: str,
+    bounce: bool,
+    backend: str | None = None,
+    lifecycle_mode: str | None = None,
+    native_max_seq_len: int | None = None,
+):
     # Historical UI used 'util' for the third slot -> treat as small.
     if mode == "util":
         mode = "small"
@@ -5644,6 +5746,10 @@ def switch_model(mode: str, model_dir: str, bounce: bool, backend: str | None = 
 
     if backend is not None and backend not in SUPPORTED_BACKENDS:
         raise HTTPException(400, f"backend must be one of: {', '.join(sorted(SUPPORTED_BACKENDS))}")
+
+    normalized_lifecycle_mode = _normalize_switch_lifecycle_mode(lifecycle_mode)
+    if native_max_seq_len is not None and int(native_max_seq_len) <= 0:
+        raise HTTPException(400, "native_max_seq_len must be > 0 when provided")
 
     target = MODELS_DIR / model_dir
     if not target.exists():
@@ -5677,10 +5783,31 @@ def switch_model(mode: str, model_dir: str, bounce: bool, backend: str | None = 
     _make_symlink(link, target)
     if chosen_backend is not None:
         set_slot_backend(mode, chosen_backend)
-    if bounce:
-        _bounce_engine(mode)
-
     slot_backend = read_slot_backends().get(mode, "tgw")
+    native_load_attempted = False
+    native_load_used = False
+    native_load: dict | None = None
+    bounce_result: dict | None = None
+
+    if normalized_lifecycle_mode == "native" and slot_backend != "tabbyapi":
+        raise HTTPException(400, "lifecycle_mode=native requires backend=tabbyapi for the selected slot")
+
+    should_try_native = normalized_lifecycle_mode == "native" or (
+        normalized_lifecycle_mode == "auto" and slot_backend == "tabbyapi"
+    )
+
+    if should_try_native:
+        native_load_attempted = True
+        native_load = _tabbyapi_native_load(mode, target, max_seq_len=native_max_seq_len)
+        if native_load.get("ok"):
+            native_load_used = True
+        elif normalized_lifecycle_mode == "native":
+            detail = str(native_load.get("detail", "unknown error"))
+            raise HTTPException(502, f"tabbyapi native load failed: {detail}")
+
+    if bounce and not native_load_used:
+        bounce_result = _bounce_engine(mode)
+
     return {
         "ok": True,
         "link": str(link),
@@ -5693,6 +5820,12 @@ def switch_model(mode: str, model_dir: str, bounce: bool, backend: str | None = 
         "model_kind": model_kind,
         "recommended_backend": recommended_backend if recommended_backend in SUPPORTED_BACKENDS else None,
         "fallback_backends": fallback_backends,
+        "lifecycle_mode": normalized_lifecycle_mode,
+        "native_load_attempted": native_load_attempted,
+        "native_load_used": native_load_used,
+        "native_load": native_load,
+        "bounce": bool(bounce),
+        "bounce_result": bounce_result,
     }
 
 # -----------------------------------------------------------------------------
@@ -6353,6 +6486,8 @@ class SwitchReq(BaseModel):
     model_dir: str
     bounce: bool = True
     backend: str | None = None  # tgw|vllm|tabbyapi
+    lifecycle_mode: str | None = None  # legacy|auto|native
+    native_max_seq_len: int | None = None
 
 class Knobs(BaseModel):
     model_config = {"protected_namespaces": ()}
@@ -6641,7 +6776,14 @@ def models():
 
 @app.post("/switch")
 def switch(req: SwitchReq):
-    return switch_model(req.mode, req.model_dir, req.bounce, req.backend)
+    return switch_model(
+        req.mode,
+        req.model_dir,
+        req.bounce,
+        req.backend,
+        req.lifecycle_mode,
+        req.native_max_seq_len,
+    )
 
 @app.get("/knobs")
 def get_knobs():

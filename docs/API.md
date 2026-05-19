@@ -48,13 +48,17 @@ Current deployed unit wiring on this host:
 
 ### Model Switching
 - POST /switch
-  - Body: { mode, model_dir, bounce, backend? }
+  - Body: { mode, model_dir, bounce, backend?, lifecycle_mode?, native_max_seq_len? }
   - mode supports chat, intent, small, and legacy alias util
   - backend can be tgw, vllm, or tabbyapi
   - Updates the active symlink, then optionally bounces the target engine
   - If backend is provided, updates per-slot backend preference state
   - If backend is omitted and the model inspector recommends `vllm` or `tabbyapi`, switch auto-applies that backend
-  - Response includes backend recommendation context (`backend_source`, `auto_backend_applied`, `model_kind`, fallback list)
+  - lifecycle_mode controls backend-native behavior: `legacy` (default), `auto`, or `native`
+  - `auto` attempts TabbyAPI native load for tabbyapi-backed slots and falls back to symlink+bounce when native load is unavailable
+  - `native` requires the slot backend to be `tabbyapi` and returns HTTP 502 when native load fails
+  - native_max_seq_len optionally forwards a context length hint during native TabbyAPI loads
+  - Response includes backend recommendation context (`backend_source`, `auto_backend_applied`, `model_kind`, fallback list) plus lifecycle diagnostics (`native_load_attempted`, `native_load_used`, `native_load`, `bounce_result`)
 
 ### Knobs
 - GET /knobs

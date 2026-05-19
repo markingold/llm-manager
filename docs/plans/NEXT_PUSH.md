@@ -155,8 +155,8 @@ Interpretation:
 
 ## Biggest remaining value gaps
 
-1. TabbyAPI lane lifecycle decision
-- Decide whether TabbyAPI switching remains symlink-based or gains backend-native load/unload operations.
+1. TabbyAPI lane lifecycle production hardening
+- Initial `/switch` lifecycle prototype is now in place (`legacy|auto|native` with TabbyAPI native-load attempts and fallback diagnostics); next step is host-level runtime validation once TabbyAPI is installed and wired.
 
 2. Slot capability metadata
 - Add optional slot metadata for embeddings/classification/structured-output/tool-calling/multimodal capability routing.
@@ -167,7 +167,7 @@ Interpretation:
 ## Suggested immediate execution package (next 1-2 pushes)
 
 Push 1:
-- optional TabbyAPI backend-native model load/unload decision and prototype
+- TabbyAPI lifecycle prototype host validation and operational wiring (TabbyAPI install, lane base URL, and restart policy)
 
 Push 2:
 - slot capability metadata and routing/UI surfacing

@@ -66,7 +66,7 @@ Source-plan retirement update (2026-05-15):
 - [x] Add EXL3 conversion once the ExLlamaV3 toolchain is installed and validated on the host. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md (host toolchain installed and first successful managed run completed: `job_id=aa060e774ece`, `artifact_id=6dab1cbca58468eb`, preservation checks `ok=true` on 2026-05-19)
 
 ## Nice To Have
-- [ ] Add optional backend-native model load and unload support for the TabbyAPI lane. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
+- [x] Add optional backend-native model load and unload support for the TabbyAPI lane. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md (initial `/switch` lifecycle prototype added with `legacy|auto|native` modes and TabbyAPI native-load fallback diagnostics)
 - [ ] Add direct llama.cpp integration instead of relying on TGW for GGUF. - effort: large | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [ ] Add a lightweight raw-Transformers fallback backend if experiments justify it. - effort: large | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [x] Add per-project routing overrides and budget guardrails for paid providers. - effort: medium | source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md
