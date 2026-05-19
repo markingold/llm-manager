@@ -103,6 +103,10 @@ Engine endpoints require SYSTEMD_LLM_A, SYSTEMD_LLM_B, and SYSTEMD_LLM_C to be c
 Standalone TGW WebUI endpoints use SYSTEMD_TGW_WEBUI and default to llm-tgw-webui.service.
 
 On the deployed host, the corresponding units invoke run/engine_launcher.py, which forwards to run/launch_tgw.py and forces API-only mode (`--no-webui`) for slot services.
+`run/launch_tgw.py` applies startup guardrails by default to reduce restart wedges:
+- stale TGW-like listeners on the target API port are terminated before launch
+- stale ExLlama torch-extension lock files are cleaned before launch
+- behavior can be tuned via `TGW_STARTUP_GUARDRAILS`, `TGW_GUARDRAIL_CLEAN_PORT`, `TGW_GUARDRAIL_TERM_TIMEOUT_SECONDS`, `TGW_GUARDRAIL_CLEAN_EXLLAMA_LOCKS`, `TGW_EXLLAMA_LOCK_STALE_SECONDS`, `TGW_EXLLAMA_LOCK_FORCE_REMOVE`, and `TGW_EXLLAMA_LOCK_PATHS`
 
 ## Provider Config and State
 
@@ -328,6 +332,10 @@ Job payloads support:
 - webui_models_dir
 - exllama_root
 
+Managed conversion kinds also include:
+- `convert_hf_exl3`
+- `convert_merged_exl3`
+
 Notes:
 - Jobs are launched as local subprocesses rooted at the project directory
 - Generic job process state is kept in memory only
@@ -352,7 +360,7 @@ Notes:
 
 Persisted EXL2 metadata fields include source type and source id/hash, bits, groupsize, output directory/model dir, timestamps, detected format/loader, preservation checks (`tokenizer` artifacts + chat-template continuity), and catalog sync result.
 
-## Managed EXL3 Conversion (Guarded Bootstrap)
+## Managed EXL3 Conversion
 
 - POST /conversions/exl3
   - Starts managed EXL3 conversion from either source type:
@@ -360,6 +368,7 @@ Persisted EXL2 metadata fields include source type and source id/hash, bits, gro
     - `source_type=merged_local_model` with `model_key` (optional `source_model_dir`, `output_dir` overrides)
   - Body: { source_type, repo_id?, model_key?, source_model_dir?, output_dir?, bits, groupsize?, force?, base_models_dir?, webui_models_dir?, exllama_root?, convert_script? }
   - Returns `503` with toolchain diagnostics when ExLlamaV3 conversion tooling is not installed or not configured (`EXLLAMA_V3_ROOT` or `EXL3_CONVERT_SCRIPT`)
+  - Host validation note: first successful managed run completed on 2026-05-19 (`job_id=aa060e774ece`, `artifact_id=6dab1cbca58468eb`)
 - GET /conversions/exl3/jobs
   - Lists persisted EXL3 conversion runs for both HF and merged-local source types
 - GET /conversions/exl3/jobs/{job_id}

@@ -21,7 +21,7 @@ Source-plan status update (2026-05-15):
 - [x] Introduce launcher wrappers for TGW, vLLM, and TabbyAPI. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
 - [x] Keep the existing engine-management API and dashboard controls stable while backend abstraction is introduced. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
 - [x] Standardize and document the canonical engine and model directory layout under `/srv/2bananas/engines`. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_ (documented in `docs/guides/RB-ENGINES-LAYOUT.md` with migration and validation checklist)
-- [ ] Align deployed systemd engine units with the documented launcher path and add startup guardrails for stale ExLlamaV2 JIT locks and unclean TGW restarts. - _source: local runtime troubleshooting (2026-04-28)_
+- [x] Align deployed systemd engine units with the documented launcher path and add startup guardrails for stale ExLlamaV2 JIT locks and unclean TGW restarts. - _source: local runtime troubleshooting (2026-04-28)_ (launcher guardrails now clean stale TGW port owners and stale ExLlama lock files; smoke-validated on 2026-05-19)
 - [x] Add provider catalog config for local, OpenRouter free, OpenRouter paid, and OpenAI models. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_
 - [x] Add request normalization and response normalization for brokered inference. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_ (chat/completions/embed contract and normalized responses)
 - [x] Implement a unified broker entrypoint for routed chat requests. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_ (`POST /router/chat` adapter-dispatch slice)
@@ -47,7 +47,7 @@ Source-plan status update (2026-05-15):
 ## Phase 3: ExLlama Lane And Resilient Routing (Mid-term)
 - [x] Add a TabbyAPI launcher path. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_ (launcher wrapper shipped and integrated into backend-aware slot lane resolution)
 - [x] Treat EXL2 and EXL3 as first-class backends through the ExLlama lane. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md, docs/plans/EXLLAMA_CONVERSION_PLAN.md_ (local lane dispatch and endpoint selection now honor slot backend and slot model alias instead of chat-only routing)
-- [ ] Add an EXL3 conversion path once the ExLlamaV3 toolchain is installed and validated on the host. - _source: docs/plans/EXLLAMA_CONVERSION_PLAN.md_ (guarded EXL3 API/UI bootstrap and metadata parity are in place; host toolchain installation + first validated conversion run remain)
+- [x] Add an EXL3 conversion path once the ExLlamaV3 toolchain is installed and validated on the host. - _source: docs/plans/EXLLAMA_CONVERSION_PLAN.md_ (host toolchain install + first successful managed run complete: `job_id=aa060e774ece`, `artifact_id=6dab1cbca58468eb`, preservation checks `ok=true`)
 - [ ] Decide whether TabbyAPI switching should remain symlink-based or gain backend-native load and unload operations. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
 - [x] Refresh upstream OpenRouter metadata and intersect it with the curated free allowlist. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_
 - [x] Normalize OpenRouter errors into actionable routing states. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_ (status/body-aware classification with provider code/type metadata)

@@ -45,11 +45,11 @@
 - You already have a full-model EXL2 conversion path in the repo for Hugging Face style models with safetensors weights.
 - The relevant script is `app/src/llm_manager/download_convert_chat_model.py`, which can download or reuse a raw HF model directory and run the ExLlama conversion script to produce an EXL2 output.
 - `app/src/llm_manager/convert_lora.py` is narrower than its name first suggests: it converts merged LoRA outputs from `output/merged_<model_key>` into EXL2, not arbitrary raw base-model folders.
-- So the current answer is: full-model to EXL2 exists and is now promoted to a managed llm-manager workflow for HF repo sources, while EXL3 conversion is not yet implemented as a parallel managed path.
+- So the current answer is: full-model managed conversion exists for both EXL2 and EXL3, with EXL3 now validated on-host as a parallel managed path.
 
 ## Implementation status (2026-05-14)
 
-Estimated completion: about 75%.
+Estimated completion: about 90%.
 
 ### Completed
 
@@ -59,6 +59,9 @@ Estimated completion: about 75%.
 - Persisted metadata includes source type and source id/hash, bits, groupsize, output path/model dir, timestamps, and detected loader/kind.
 - Conversion metadata now includes preservation checks for tokenizer artifacts and chat-template continuity to reduce instruct-format regressions.
 - Converted artifact metadata is surfaced in `/models` and `/providers/models` and synced into provider catalog state under `local.converted_models`.
+- Managed EXL3 conversion API flow is now implemented and host-validated.
+- New EXL3 endpoints are live: `/conversions/exl3`, `/conversions/exl3/jobs`, `/conversions/exl3/jobs/{job_id}`, `/conversions/exl3/artifacts`, `/conversions/exl3/artifacts/{artifact_id}`.
+- First successful host-managed EXL3 run completed on 2026-05-19 (`job_id=aa060e774ece`, `artifact_id=6dab1cbca58468eb`) with preservation checks `ok=true`.
 
 ### Partially completed
 
@@ -66,8 +69,7 @@ Estimated completion: about 75%.
 
 ### Not completed
 
-- EXL3 managed conversion path (Phase 2) is still pending.
-- ExLlamaV3-native conversion metadata parity and TabbyAPI-first EXL3 lane wiring remain pending.
+- ExLlama lane lifecycle decisions (for example backend-native load and unload for TabbyAPI) remain pending.
 
 ## Planned conversion workflow for EXL2 and EXL3
 
@@ -118,9 +120,9 @@ Estimated completion: about 75%.
 
 ## Phase 2: EXL3 conversion enablement
 
-1. Add an EXL3 conversion path backed by ExLlamaV3 tooling once the host-side toolchain is installed and validated.
-2. Treat EXL3 outputs as first-class model catalog entries with the same metadata discipline as EXL2 outputs.
-3. Keep EXL3 aligned with the TabbyAPI-backed ExLlama lane rather than treating it as a TGW-only loader feature.
+1. Add an EXL3 conversion path backed by ExLlamaV3 tooling once the host-side toolchain is installed and validated. (implemented)
+2. Treat EXL3 outputs as first-class model catalog entries with the same metadata discipline as EXL2 outputs. (implemented)
+3. Keep EXL3 aligned with the TabbyAPI-backed ExLlama lane rather than treating it as a TGW-only loader feature. (implemented)
 4. Decide whether EXL3 conversion should share the same job model as EXL2 conversion immediately or remain a separate workflow while the toolchain matures.
 
 ## Operational caution

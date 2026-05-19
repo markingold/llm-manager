@@ -7,9 +7,14 @@ can be enabled explicitly with --webui.
 """
 
 import argparse
+import glob
 import os
 import pathlib
+import re
+import signal
+import subprocess
 import sys
+import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "api"))
 from model_inspector import detect_kind, detect_loader
@@ -67,9 +72,163 @@ def env_int(value: str | None, default: int) -> int:
     return parsed if parsed > 0 else default
 
 
+def _pid_cmdline(pid: int) -> str:
+    path = pathlib.Path(f"/proc/{pid}/cmdline")
+    if not path.exists():
+        return ""
+    try:
+        raw = path.read_bytes()
+    except Exception:
+        return ""
+    return raw.replace(b"\x00", b" ").decode("utf-8", errors="replace").strip()
+
+
+def _listening_pids(port: int) -> set[int]:
+    try:
+        proc = subprocess.run(["ss", "-ltnp"], capture_output=True, text=True, check=False)
+    except Exception:
+        return set()
+
+    pids: set[int] = set()
+    port_marker = f":{int(port)}"
+    for line in (proc.stdout or "").splitlines():
+        if port_marker not in line:
+            continue
+        for pid_match in re.findall(r"pid=(\d+)", line):
+            try:
+                pids.add(int(pid_match))
+            except Exception:
+                continue
+    return pids
+
+
+def _wait_pid_exit(pid: int, timeout_s: float) -> bool:
+    end = time.monotonic() + max(0.0, float(timeout_s))
+    while time.monotonic() < end:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return True
+        except PermissionError:
+            return False
+        time.sleep(0.2)
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return True
+    except PermissionError:
+        return False
+    return False
+
+
+def _cleanup_stale_port_owners(port: int, term_timeout_s: float) -> None:
+    pids = sorted(_listening_pids(port))
+    if not pids:
+        return
+
+    for pid in pids:
+        cmdline = _pid_cmdline(pid)
+        if not cmdline:
+            continue
+
+        is_tgw_like = (
+            "text-generation-webui" in cmdline
+            or " server.py" in f" {cmdline}"
+            or cmdline.endswith("server.py")
+        )
+        if not is_tgw_like:
+            print(f"[launch-tgw] guardrail: port {port} occupied by non-TGW pid={pid}; leaving untouched", flush=True)
+            continue
+
+        print(f"[launch-tgw] guardrail: terminating stale TGW pid={pid} on port {port}", flush=True)
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            continue
+        except PermissionError:
+            print(f"[launch-tgw] guardrail: no permission to terminate pid={pid}", flush=True)
+            continue
+
+        if _wait_pid_exit(pid, term_timeout_s):
+            continue
+
+        print(f"[launch-tgw] guardrail: forcing SIGKILL on stale pid={pid}", flush=True)
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            continue
+        except PermissionError:
+            print(f"[launch-tgw] guardrail: no permission to SIGKILL pid={pid}", flush=True)
+            continue
+        _wait_pid_exit(pid, 2.0)
+
+
+def _candidate_exllama_lock_paths(runtime_env: dict) -> list[pathlib.Path]:
+    explicit = str(runtime_env.get("TGW_EXLLAMA_LOCK_PATHS") or "").strip()
+    if explicit:
+        rows = [token.strip() for token in explicit.split(",") if token.strip()]
+        return [pathlib.Path(row).expanduser() for row in rows]
+
+    default_globs = [
+        "~/.cache/torch_extensions/*/exllamav2_ext/lock",
+        "~/.cache/torch_extensions/*/exllamav2_ext*/lock",
+    ]
+    found: list[pathlib.Path] = []
+    seen: set[str] = set()
+    for pattern in default_globs:
+        for row in glob.glob(os.path.expanduser(pattern)):
+            if row in seen:
+                continue
+            seen.add(row)
+            found.append(pathlib.Path(row))
+    return found
+
+
+def _cleanup_stale_exllama_locks(runtime_env: dict) -> None:
+    stale_seconds = env_int(runtime_env.get("TGW_EXLLAMA_LOCK_STALE_SECONDS"), 300)
+    remove_any = env_flag(runtime_env.get("TGW_EXLLAMA_LOCK_FORCE_REMOVE"), False)
+
+    now = time.time()
+    for lock_path in _candidate_exllama_lock_paths(runtime_env):
+        if not lock_path.exists():
+            continue
+        try:
+            age_s = now - lock_path.stat().st_mtime
+        except Exception:
+            age_s = float(stale_seconds + 1)
+
+        if not remove_any and age_s < float(stale_seconds):
+            print(
+                f"[launch-tgw] guardrail: keeping recent ExLlama lock {lock_path} (age={int(max(age_s, 0))}s)",
+                flush=True,
+            )
+            continue
+
+        try:
+            lock_path.unlink(missing_ok=True)
+            print(
+                f"[launch-tgw] guardrail: removed ExLlama lock {lock_path} (age={int(max(age_s, 0))}s)",
+                flush=True,
+            )
+        except Exception as e:
+            print(f"[launch-tgw] guardrail: failed to remove lock {lock_path}: {e}", flush=True)
+
+
+def _apply_startup_guardrails(api_port: int, runtime_env: dict) -> None:
+    if not env_flag(runtime_env.get("TGW_STARTUP_GUARDRAILS"), True):
+        return
+
+    if env_flag(runtime_env.get("TGW_GUARDRAIL_CLEAN_PORT"), True):
+        term_timeout_s = env_int(runtime_env.get("TGW_GUARDRAIL_TERM_TIMEOUT_SECONDS"), 8)
+        _cleanup_stale_port_owners(api_port, float(term_timeout_s))
+
+    if env_flag(runtime_env.get("TGW_GUARDRAIL_CLEAN_EXLLAMA_LOCKS"), True):
+        _cleanup_stale_exllama_locks(runtime_env)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Launch text-generation-webui with auto loader detection")
-    parser.add_argument("--api-port", required=True, help="API listen port")
+    parser.add_argument("--api-port", required=True, type=int, help="API listen port")
     parser.add_argument("--model", required=True, help="Model directory name or symlink in model dir")
     parser.add_argument("--max-seq-len", required=True, help="Context length")
     parser.add_argument("--listen-host", default="127.0.0.1", help="Listen host")
@@ -99,7 +258,11 @@ def main():
         or args.listen_host
     ).strip() or args.listen_host
 
+    _apply_startup_guardrails(int(args.api_port), runtime_env)
+
     model_path = pathlib.Path(args.model_dir) / args.model
+    if not model_path.exists():
+        raise SystemExit(f"[launch-tgw] model path not found: {model_path}")
     resolved = model_path.resolve()
 
     kind = detect_kind(resolved)
@@ -115,7 +278,7 @@ def main():
         "server.py",
         "--api",
         "--api-port",
-        str(args.api_port),
+        str(int(args.api_port)),
         "--listen",
         "--listen-host",
         tgw_webui_bind_host,

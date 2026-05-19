@@ -19,7 +19,7 @@ Source-plan retirement update (2026-05-15):
 - [x] Add backend selection to slot or switch configuration. - effort: small | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [x] Add normalized launcher wrappers for TGW, vLLM, and TabbyAPI under `run/`. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [x] Standardize and document the canonical engine and model directory layout under `/srv/2bananas/engines`, keeping llm-manager as the control plane rather than the asset store. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md (canonical layout and migration runbook documented in `docs/guides/RB-ENGINES-LAYOUT.md`)
-- [ ] Align deployed systemd engine units with the documented launcher path and add startup guardrails for stale ExLlamaV2 JIT locks and unclean TGW restarts. - effort: medium | source: local runtime troubleshooting 2026-04-28
+- [x] Align deployed systemd engine units with the documented launcher path and add startup guardrails for stale ExLlamaV2 JIT locks and unclean TGW restarts. - effort: medium | source: local runtime troubleshooting 2026-04-28 (launcher guardrails now handle stale TGW port owners + stale ExLlama lock cleanup; validated with `run/governance_smoke.py`, `run/tgw_webui_smoke.py`, and `run/webui_smoke.py` on 2026-05-19)
 - [x] Add provider model catalog config for local, OpenRouter free, OpenRouter paid, and OpenAI. - effort: medium | source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md
 - [x] Add provider secrets and default routing config to the application configuration model. - effort: small | source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md
 - [x] Define a normalized router request and response contract for chat, completion, embed, and evaluation workflows. - effort: large | source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md, docs/plans/retired/EVALUATION_PLAN.md (chat/completions/embed slices implemented)
@@ -63,7 +63,7 @@ Source-plan retirement update (2026-05-15):
 - [x] Add provider and lane filters plus optional estimated-cost rollups for evaluation triage. - effort: medium | source: docs/plans/retired/EVALUATION_PLAN.md, docs/plans/retired/PROVIDER_ROUTER_PLAN.md (provider/lane/suite_pass filters and estimated cost summary fields implemented)
 - [x] Add a lightweight dashboard panel for evaluation queue and report visibility. - effort: small | source: docs/plans/retired/EVALUATION_PLAN.md (initial Evaluation Ops panel implemented)
 - [x] Add priority-aware scheduling for free-tier router queue items with interactive/batch/evaluation classes. - effort: medium | source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md
-- [ ] Add EXL3 conversion once the ExLlamaV3 toolchain is installed and validated on the host. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md (guarded `/conversions/exl3` bootstrap + metadata parity landed; host toolchain install/validation and first successful run still pending)
+- [x] Add EXL3 conversion once the ExLlamaV3 toolchain is installed and validated on the host. - effort: medium | source: docs/plans/EXLLAMA_CONVERSION_PLAN.md (host toolchain installed and first successful managed run completed: `job_id=aa060e774ece`, `artifact_id=6dab1cbca58468eb`, preservation checks `ok=true` on 2026-05-19)
 
 ## Nice To Have
 - [ ] Add optional backend-native model load and unload support for the TabbyAPI lane. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md

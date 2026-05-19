@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 import argparse
 import json
@@ -62,13 +63,18 @@ def convert_to_exl2(
     dest.mkdir(parents=True, exist_ok=True)
 
     cmd = [
-        "python3", str(script_path),
+        sys.executable, str(script_path),
         "-i", str(source),
         "-o", str(dest),
         "-b", str(bits),
     ]
     if format_name == "exl2" or groupsize_override is not None:
         cmd += ["-ss", str(groupsize)]
+    if format_name == "exl3":
+        work_dir = dest.parent / f".{dest.name}_work"
+        # Keep ExLlamaV3 checkpoint rotation effectively disabled to avoid
+        # intermittent ckpt rename failures on long conversions.
+        cmd += ["-w", str(work_dir), "-cpi", "999999"]
 
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = CUDA_DEVICES
@@ -77,6 +83,11 @@ def convert_to_exl2(
     result = subprocess.run(cmd, env=env)
     if result.returncode != 0:
         print(f"❌ Conversion failed for {model_key} (exit code {result.returncode})")
+        return
+
+    quant_outputs = list(dest.glob("*.safetensors")) + list(dest.glob("*.exl3"))
+    if not quant_outputs:
+        print(f"❌ Conversion failed for {model_key}: no quantized artifacts found in {dest}")
         return
 
     for fname in [

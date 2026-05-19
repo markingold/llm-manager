@@ -144,11 +144,21 @@ Notes:
 | `WEBUI_ROOT` | text-generation-webui install dir | `/srv/2bananas/engines/text-generation-webui` |
 | `WEBUI_MODELS_DIR` | Shared models directory | `/srv/2bananas/engines/models` |
 | `EXLLAMA_ROOT` | ExLlamaV2 install dir | `/srv/2bananas/engines/exllamav2` |
+| `EXLLAMA_V3_ROOT` | ExLlamaV3 install dir used by managed EXL3 conversion | `/srv/2bananas/engines/exllamav3` |
+| `EXL3_CONVERT_SCRIPT` | Optional explicit ExLlamaV3 convert script path | (none) |
+| `CONVERSION_PYTHON_BIN` | Optional Python interpreter override for managed conversion jobs | (none) |
 | `ENABLE_CHAT` / `ENABLE_INTENT` / `ENABLE_SMALL` | Show slot in dashboard (0/1) | `1` |
 | `TGW_WEBUI_ENABLED` | Default TGW WebUI mode for launch_tgw.py when no explicit `--webui`/`--no-webui` is passed | `0` |
 | `TGW_WEBUI_PORT` | TGW WebUI listen port | `7860` |
 | `TGW_WEBUI_BIND_HOST` | TGW WebUI bind host | `127.0.0.1` |
 | `TGW_WEBUI_PUBLIC_URL` | Optional TGW WebUI public URL override | (none) |
+| `TGW_STARTUP_GUARDRAILS` | Enable startup guardrails in `run/launch_tgw.py` | `1` |
+| `TGW_GUARDRAIL_CLEAN_PORT` | Terminate stale TGW-like processes that still own the target API port | `1` |
+| `TGW_GUARDRAIL_TERM_TIMEOUT_SECONDS` | Grace period before SIGKILL for stale TGW-like processes | `8` |
+| `TGW_GUARDRAIL_CLEAN_EXLLAMA_LOCKS` | Remove stale ExLlama torch-extension lock files before launch | `1` |
+| `TGW_EXLLAMA_LOCK_STALE_SECONDS` | Minimum lock-file age (seconds) before automatic cleanup | `300` |
+| `TGW_EXLLAMA_LOCK_FORCE_REMOVE` | Remove matching ExLlama lock files regardless of age | `0` |
+| `TGW_EXLLAMA_LOCK_PATHS` | Optional comma-separated explicit lock-file paths to manage | (none) |
 | `HF_TOKEN` | Hugging Face auth token | (none) |
 
 Process/service environment commonly used in deployment:
@@ -194,7 +204,7 @@ Process/service environment commonly used in deployment:
 | GET | `/conversions/exl2/jobs/{job_id}` | Get one managed conversion run with log tail |
 | GET | `/conversions/exl2/artifacts` | List persisted EXL2 conversion artifacts |
 | GET | `/conversions/exl2/artifacts/{artifact_id}` | Get one persisted EXL2 conversion artifact |
-| POST | `/conversions/exl3` | Start managed EXL3 conversion from Hugging Face repo or merged local source (guarded until ExLlamaV3 tooling is configured) |
+| POST | `/conversions/exl3` | Start managed EXL3 conversion from Hugging Face repo or merged local source (returns `503` diagnostics when ExLlamaV3 tooling is not configured) |
 | GET | `/conversions/exl3/jobs` | List persisted managed EXL3 conversion runs |
 | GET | `/conversions/exl3/jobs/{job_id}` | Get one persisted EXL3 conversion run with log tail |
 | GET | `/conversions/exl3/artifacts` | List persisted EXL3 conversion artifacts |
@@ -340,6 +350,7 @@ Notes:
 - `POST /bounce/{mode}` can still fall back to legacy PM2 names when systemd unit env vars are absent
 - The dashboard hides slots when `ENABLE_CHAT`, `ENABLE_INTENT`, or `ENABLE_SMALL` is set to `0`
 - The currently deployed engine units launch `run/engine_launcher.py`, which auto-detects the loader from the selected model contents
+- `run/launch_tgw.py` now applies startup guardrails by default to clean stale TGW port owners and stale ExLlama lock files before launch
 
 ## Supported Model Formats
 

@@ -1,7 +1,7 @@
 <!--
 id: PLAN-NEXT-PUSH
-version: 2.3
-last_updated: 2026-05-17
+version: 2.4
+last_updated: 2026-05-19
 title: Next Push Recommendations
 purpose:
   Fresh status scan, near-term priorities, and TGW WebUI direction for the next implementation push.
@@ -19,7 +19,7 @@ purpose:
 - recovery runbook hardening is now complete in `docs/CLI_SYSOP_GUIDE.md` with explicit manual-review/quarantine recovery and GPU/TGW wedge reboot criteria
 - canonical `/srv/2bananas/engines` layout documentation is now complete in `docs/guides/RB-ENGINES-LAYOUT.md` with migration and verification checklists
 - cost-aware dynamic model ranking is now complete with policy-tunable lane scoring and chain-resolution diagnostics
-- managed conversion bootstrap now supports EXL3 API/UI paths with guarded runtime checks when ExLlamaV3 toolchain is absent
+- managed EXL3 conversion is now host-validated end-to-end (toolchain install + successful managed run + artifact catalog sync)
 
 ## Implementation update (2026-05-17)
 
@@ -87,9 +87,15 @@ Completed items from the locked queue:
   - conversion runtime metadata now supports mixed EXL2/EXL3 runs and artifacts with shared preservation/categorization fields
   - Operations dashboard managed-conversion panel now supports EXL2/EXL3 format selection and format-scoped monitoring
   - EXL3 start requests now fail fast with explicit `503` diagnostics when ExLlamaV3 conversion tooling is not installed/configured
+- item 13 closeout (2026-05-19): EXL3 toolchain install + first validated managed run are now complete
+  - host-managed run completed: `job_id=aa060e774ece`, `artifact_id=6dab1cbca58468eb`
+  - artifact status is `ready` with preservation checks `ok=true` from `GET /conversions/exl3/artifacts/6dab1cbca58468eb`
+- systemd launcher alignment/startup guardrails are now complete
+  - `run/launch_tgw.py` startup guardrails now clean stale TGW port owners and stale ExLlama lock files prior to launch
+  - guardrail slice validated with `run/governance_smoke.py`, `run/tgw_webui_smoke.py`, and `run/webui_smoke.py` on 2026-05-19
 
 Next queued item:
-- EXL3 toolchain install + first validated EXL3 conversion run (Phase 2 closeout)
+- TabbyAPI lane lifecycle decision (symlink-only vs backend-native load/unload)
 
 ## Implementation update (2026-05-09)
 
@@ -117,13 +123,13 @@ Previously completed in this sequence:
 
 Checklist baseline from `docs/plans/CHECKLIST.md`:
 - total tracked tasks: 56
-- complete: 46
-- pending: 10
-- completion: 82.1%
+- complete: 48
+- pending: 8
+- completion: 85.7%
 
 Interpretation:
 - Core broker and operator capabilities are now established.
-- Remaining work is concentrated in route-quality hardening, backend lane maturity, and EXL3 follow-through.
+- Remaining work is concentrated in backend lane maturity and lifecycle ergonomics.
 
 ## Locked implementation order (active queue)
 
@@ -149,22 +155,22 @@ Interpretation:
 
 ## Biggest remaining value gaps
 
-1. EXL3 conversion path (Phase 2)
-- Install/validate ExLlamaV3 host tooling and execute first successful managed EXL3 conversion run to close the guarded bootstrap gap.
-
-2. TabbyAPI lane lifecycle decision
+1. TabbyAPI lane lifecycle decision
 - Decide whether TabbyAPI switching remains symlink-based or gains backend-native load/unload operations.
 
-3. Systemd launcher alignment and startup guardrails
-- Align deployed engine units with launcher expectations and add guardrails for stale ExLlamaV2 JIT locks and unclean TGW restarts.
+2. Slot capability metadata
+- Add optional slot metadata for embeddings/classification/structured-output/tool-calling/multimodal capability routing.
+
+3. Conversion resiliency follow-up
+- Keep EXL3 conversion stable under long runs and add a configurable checkpoint-interval override for operator tuning.
 
 ## Suggested immediate execution package (next 1-2 pushes)
 
 Push 1:
-- EXL3 toolchain install/validation + first successful managed EXL3 conversion closeout
+- optional TabbyAPI backend-native model load/unload decision and prototype
 
 Push 2:
-- optional TabbyAPI backend-native model load/unload decision and prototype
-- systemd launcher alignment + startup guardrail implementation and validation
+- slot capability metadata and routing/UI surfacing
+- EXL3 conversion resiliency follow-up (operator-tunable checkpoint interval)
 
-If both pushes land cleanly, broker maturity and operator confidence increase significantly while setting up Phase-3 backend goals.
+If both pushes land cleanly, backend lane ergonomics and operator confidence improve while keeping conversion workflows robust.

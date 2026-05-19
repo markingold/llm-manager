@@ -120,7 +120,7 @@ def main():
     repo_id, raw_dir = (args.repo_id, None) if args.repo_id else (None, None)
     if not repo_id:
         repo_id, raw_dir = menu_choose_raw_model()
-    if args.bits in (6.5, 8.0):
+    if args.bits is not None and args.bits > 0:
         bits = args.bits
     else:
         bits = menu_choose_bits()
@@ -172,17 +172,27 @@ def main():
 
     # ---- Run conversion ----
     cmd = [
-        "python3", str(convert_script),
+        sys.executable, str(convert_script),
         "-i", str(raw_dir),
         "-o", str(output_dir),
         "-b", str(bits),
     ]
     if target_format == "exl2":
         cmd += ["-ss", str(args.groupsize), "--res"]
+    elif target_format == "exl3":
+        work_dir = output_dir.parent / f".{output_dir.name}_work"
+        # ExLlamaV3 checkpoint rotation can crash on some hosts; keep interval
+        # effectively disabled so long conversions complete in one pass.
+        cmd += ["-w", str(work_dir), "-cpi", "999999"]
     print(f"\n🔁 Converting to {target_format.upper()} ({bits} bpw)…\n{' '.join(cmd)}\n")
     ret = subprocess.call(cmd)
     if ret != 0:
         print("❌ Conversion script failed.")
+        sys.exit(1)
+
+    quant_outputs = list(output_dir.glob("*.safetensors")) + list(output_dir.glob("*.exl3"))
+    if not quant_outputs:
+        print(f"❌ Conversion did not produce quantized artifacts in {output_dir}")
         sys.exit(1)
 
     # ---- Copy tokenizer & config artefacts ----
@@ -194,7 +204,7 @@ def main():
             shutil.copy(src, output_dir / fname)
 
     hash_path.write_text(source_sha)
-        print(f"✅ Done!  Converted model saved to {output_dir}")
+    print(f"✅ Done!  Converted model saved to {output_dir}")
     print("   (Original model remains in", raw_dir, ")")
 
 if __name__ == "__main__":

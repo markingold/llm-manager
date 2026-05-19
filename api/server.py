@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os, json, subprocess, time, uuid, threading, signal, shutil, re, hashlib
+import os, json, subprocess, time, uuid, threading, signal, shutil, re, hashlib, sys
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
@@ -6152,6 +6152,13 @@ def _launch_job(kind: str, args: dict) -> dict:
 
     runtime_env = read_env()
     env = os.environ.copy()
+    conversion_python_bin = str(runtime_env.get("CONVERSION_PYTHON_BIN") or "").strip()
+    base_python_cmd = "python3"
+    if kind in conversion_kinds and conversion_python_bin:
+        base_python_cmd = conversion_python_bin
+    elif sys.executable:
+        base_python_cmd = str(sys.executable)
+
     env["CUDA_VISIBLE_DEVICES"] = runtime_env.get("CUDA_VISIBLE_DEVICES", "0")
     for env_key in ("BASE_MODELS_DIR", "WEBUI_MODELS_DIR", "EXLLAMA_ROOT", "EXLLAMA_V3_ROOT", "EXL3_CONVERT_SCRIPT", "HF_TOKEN"):
         value = runtime_env.get(env_key)
@@ -6174,12 +6181,12 @@ def _launch_job(kind: str, args: dict) -> dict:
     cmd = None
     if kind == "train":
         if args.get("train_all"):
-            cmd = ["python3", str(script), "--train_all"]
+            cmd = [base_python_cmd, str(script), "--train_all"]
         else:
             mk = args.get("model_key")
             if not mk:
                 raise HTTPException(400, "model_key required for train (or set train_all)")
-            cmd = ["python3", str(script), "--model_key", mk]
+            cmd = [base_python_cmd, str(script), "--model_key", mk]
         if args.get("force"):
             cmd.append("--force")
         if args.get("data_path"):
@@ -6187,23 +6194,23 @@ def _launch_job(kind: str, args: dict) -> dict:
 
     elif kind == "merge":
         if args.get("merge_all"):
-            cmd = ["python3", str(script), "--merge_all"]
+            cmd = [base_python_cmd, str(script), "--merge_all"]
         else:
             mk = args.get("model_key")
             if not mk:
                 raise HTTPException(400, "model_key required for merge (or set merge_all)")
-            cmd = ["python3", str(script), "--model_key", mk]
+            cmd = [base_python_cmd, str(script), "--model_key", mk]
         if args.get("force"):
             cmd.append("--force")
 
     elif kind == "convert":
         if args.get("convert_all"):
-            cmd = ["python3", str(script), "--convert_all"]
+            cmd = [base_python_cmd, str(script), "--convert_all"]
         else:
             mk = args.get("model_key")
             if not mk:
                 raise HTTPException(400, "model_key required for convert (or set convert_all)")
-            cmd = ["python3", str(script), "--model_key", mk]
+            cmd = [base_python_cmd, str(script), "--model_key", mk]
         if args.get("force"):
             cmd.append("--force")
 
@@ -6230,7 +6237,7 @@ def _launch_job(kind: str, args: dict) -> dict:
                 )
 
         cmd = [
-            "python3",
+            base_python_cmd,
             str(script),
             "--repo_id",
             repo_id,
@@ -6281,7 +6288,7 @@ def _launch_job(kind: str, args: dict) -> dict:
                 )
 
         cmd = [
-            "python3",
+            base_python_cmd,
             str(script),
             "--model_key",
             model_key,

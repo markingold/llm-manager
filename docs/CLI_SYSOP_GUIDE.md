@@ -20,6 +20,11 @@ This project is operated systemd-first. The API can still fall back to legacy PM
 
 On the deployed host, `llm-a`, `llm-b`, and `llm-c` all launch through `run/engine_launcher.py` rather than calling `text-generation-webui/server.py` directly.
 
+Startup guardrails (enabled by default in `run/launch_tgw.py`):
+- stale TGW-like listeners on the target API port are terminated before launch
+- stale ExLlama torch-extension lock files are removed before launch
+- tuning knobs: `TGW_STARTUP_GUARDRAILS`, `TGW_GUARDRAIL_CLEAN_PORT`, `TGW_GUARDRAIL_TERM_TIMEOUT_SECONDS`, `TGW_GUARDRAIL_CLEAN_EXLLAMA_LOCKS`, `TGW_EXLLAMA_LOCK_STALE_SECONDS`, `TGW_EXLLAMA_LOCK_FORCE_REMOVE`, `TGW_EXLLAMA_LOCK_PATHS`
+
 Check engines:
 - `sudo systemctl status llm-a llm-b llm-c llm-manager-api`
 

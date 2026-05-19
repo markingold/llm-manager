@@ -19,8 +19,222 @@
       }
     }
   },
-  "conversion_artifacts": {},
-  "conversion_runs": {},
+  "conversion_artifacts": {
+    "6dab1cbca58468eb": {
+      "artifact_id": "6dab1cbca58468eb",
+      "bits": 4.5,
+      "created_ts": "2026-05-19T22:28:49.572349Z",
+      "detected_kind": "exl3",
+      "format": "exl3",
+      "groupsize": null,
+      "job_id": "aa060e774ece",
+      "loader": "exllamav2",
+      "model_ref": "meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+      "output_dir": "/srv/2bananas/engines/models/meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+      "output_model_dir": "meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+      "output_size_bytes": 2682149898,
+      "preservation_checks": {
+        "chat_template_output_present": true,
+        "chat_template_preserved": true,
+        "chat_template_source_present": true,
+        "files": [
+          {
+            "name": "config.json",
+            "output_exists": true,
+            "source_exists": true
+          },
+          {
+            "name": "generation_config.json",
+            "output_exists": true,
+            "source_exists": true
+          },
+          {
+            "name": "tokenizer.json",
+            "output_exists": true,
+            "source_exists": true
+          },
+          {
+            "name": "tokenizer_config.json",
+            "output_exists": true,
+            "source_exists": true
+          },
+          {
+            "name": "tokenizer.model",
+            "output_exists": false,
+            "source_exists": false
+          },
+          {
+            "name": "vocab.json",
+            "output_exists": false,
+            "source_exists": false
+          },
+          {
+            "name": "merges.txt",
+            "output_exists": false,
+            "source_exists": false
+          },
+          {
+            "name": "special_tokens_map.json",
+            "output_exists": true,
+            "source_exists": true
+          }
+        ],
+        "missing_tokenizer_artifacts": [],
+        "ok": true,
+        "output_chat_template_file": "tokenizer_config.json",
+        "source_chat_template_file": "tokenizer_config.json",
+        "tokenizer_artifacts_expected": 5,
+        "tokenizer_artifacts_present": 5
+      },
+      "recommended_backend": "tabbyapi",
+      "source_model_dir": "/srv/2bananas/engines/models/meta-llama__Llama-3.2-3B-Instruct",
+      "source_repo_id": "meta-llama/Llama-3.2-3B-Instruct",
+      "source_sha256": "13cbd6d16e927a0c5bad54102514e6e18b4a47b3a6eb911e39d678d328d19f55",
+      "source_type": "huggingface_repo",
+      "status": "ready",
+      "updated_ts": "2026-05-19T22:28:49.572349Z"
+    }
+  },
+  "conversion_runs": {
+    "4ce2f4fa0395": {
+      "bits": 4.5,
+      "catalog_sync": {
+        "ok": false,
+        "updated": false
+      },
+      "completed_ts": "2026-05-19T22:10:51.942972Z",
+      "created_ts": "2026-05-19T22:05:28.859389Z",
+      "force": true,
+      "format": "exl3",
+      "groupsize": null,
+      "id": "4ce2f4fa0395",
+      "job_id": "4ce2f4fa0395",
+      "kind": "convert_hf_exl3",
+      "log": "/srv/2bananas/projects/llm-manager/run/logs/1779228328_convert_hf_exl3_4ce2f4fa0395.log",
+      "model_key": "",
+      "output_dir": "/srv/2bananas/engines/models/meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+      "output_model_dir": "meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+      "pid": 9073,
+      "preservation_checks": null,
+      "returncode": 1,
+      "source_model_dir": "/srv/2bananas/engines/models/meta-llama__Llama-3.2-3B-Instruct",
+      "source_repo_id": "meta-llama/Llama-3.2-3B-Instruct",
+      "source_type": "huggingface_repo",
+      "started_ts": "2026-05-19T22:05:28.859389Z",
+      "status": "error",
+      "updated_ts": "2026-05-19T22:10:51.942972Z"
+    },
+    "aa060e774ece": {
+      "artifact_id": "6dab1cbca58468eb",
+      "bits": 4.5,
+      "catalog_sync": {
+        "model_ref": "meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+        "ok": true,
+        "updated": true
+      },
+      "completed_ts": "2026-05-19T22:28:49.565840Z",
+      "created_ts": "2026-05-19T22:12:20.616102Z",
+      "force": true,
+      "format": "exl3",
+      "groupsize": null,
+      "id": "aa060e774ece",
+      "job_id": "aa060e774ece",
+      "kind": "convert_hf_exl3",
+      "log": "/srv/2bananas/projects/llm-manager/run/logs/1779228740_convert_hf_exl3_aa060e774ece.log",
+      "model_key": "",
+      "output_dir": "/srv/2bananas/engines/models/meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+      "output_model_dir": "meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+      "pid": 16764,
+      "preservation_checks": {
+        "chat_template_output_present": true,
+        "chat_template_preserved": true,
+        "chat_template_source_present": true,
+        "files": [
+          {
+            "name": "config.json",
+            "output_exists": true,
+            "source_exists": true
+          },
+          {
+            "name": "generation_config.json",
+            "output_exists": true,
+            "source_exists": true
+          },
+          {
+            "name": "tokenizer.json",
+            "output_exists": true,
+            "source_exists": true
+          },
+          {
+            "name": "tokenizer_config.json",
+            "output_exists": true,
+            "source_exists": true
+          },
+          {
+            "name": "tokenizer.model",
+            "output_exists": false,
+            "source_exists": false
+          },
+          {
+            "name": "vocab.json",
+            "output_exists": false,
+            "source_exists": false
+          },
+          {
+            "name": "merges.txt",
+            "output_exists": false,
+            "source_exists": false
+          },
+          {
+            "name": "special_tokens_map.json",
+            "output_exists": true,
+            "source_exists": true
+          }
+        ],
+        "missing_tokenizer_artifacts": [],
+        "ok": true,
+        "output_chat_template_file": "tokenizer_config.json",
+        "source_chat_template_file": "tokenizer_config.json",
+        "tokenizer_artifacts_expected": 5,
+        "tokenizer_artifacts_present": 5
+      },
+      "returncode": 0,
+      "source_model_dir": "/srv/2bananas/engines/models/meta-llama__Llama-3.2-3B-Instruct",
+      "source_repo_id": "meta-llama/Llama-3.2-3B-Instruct",
+      "source_type": "huggingface_repo",
+      "started_ts": "2026-05-19T22:12:20.616102Z",
+      "status": "completed",
+      "updated_ts": "2026-05-19T22:28:49.565840Z"
+    },
+    "c7a350b4405e": {
+      "bits": 4.5,
+      "catalog_sync": {
+        "ok": false,
+        "updated": false
+      },
+      "completed_ts": "2026-05-19T22:08:45.176014Z",
+      "created_ts": "2026-05-19T22:05:26.947486Z",
+      "force": true,
+      "format": "exl3",
+      "groupsize": null,
+      "id": "c7a350b4405e",
+      "job_id": "c7a350b4405e",
+      "kind": "convert_hf_exl3",
+      "log": "/srv/2bananas/projects/llm-manager/run/logs/1779228326_convert_hf_exl3_c7a350b4405e.log",
+      "model_key": "",
+      "output_dir": "/srv/2bananas/engines/models/meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+      "output_model_dir": "meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+      "pid": 9058,
+      "preservation_checks": null,
+      "returncode": 1,
+      "source_model_dir": "/srv/2bananas/engines/models/meta-llama__Llama-3.2-3B-Instruct",
+      "source_repo_id": "meta-llama/Llama-3.2-3B-Instruct",
+      "source_type": "huggingface_repo",
+      "started_ts": "2026-05-19T22:05:26.947486Z",
+      "status": "error",
+      "updated_ts": "2026-05-19T22:08:45.176014Z"
+    }
+  },
   "evaluation_queue": [],
   "evaluation_reports": {},
   "evaluation_runs": {},
@@ -293,12 +507,99 @@
       "reason": "flags smoke",
       "resource": "provider_model_state",
       "ts": "2026-05-17T16:25:26.099499Z"
+    },
+    {
+      "action": "validate",
+      "actor": "smoke",
+      "after_version": "43f7cc978095b3cf",
+      "before_version": "43f7cc978095b3cf",
+      "changed_keys": [],
+      "expected_version": "43f7cc978095b3cf",
+      "outcome": "validated",
+      "reason": "validate policies smoke",
+      "resource": "policies",
+      "ts": "2026-05-19T22:29:45.983848Z"
+    },
+    {
+      "action": "validate",
+      "actor": "smoke",
+      "after_version": "b4785a7520d63308",
+      "before_version": "a9189e0348736d33",
+      "changed_keys": [
+        "__gov_smoke_marker"
+      ],
+      "expected_version": "a9189e0348736d33",
+      "outcome": "validated",
+      "reason": "validate smoke",
+      "resource": "models",
+      "ts": "2026-05-19T22:29:46.023540Z"
+    },
+    {
+      "action": "apply",
+      "actor": "smoke",
+      "after_version": "b4785a7520d63308",
+      "before_version": "a9189e0348736d33",
+      "changed_keys": [
+        "__gov_smoke_marker"
+      ],
+      "expected_version": "a9189e0348736d33",
+      "outcome": "applied",
+      "reason": "apply smoke",
+      "resource": "models",
+      "ts": "2026-05-19T22:29:46.079513Z"
+    },
+    {
+      "action": "rollback",
+      "actor": "smoke",
+      "after_version": "a9189e0348736d33",
+      "before_version": "b4785a7520d63308",
+      "changed_keys": [
+        "__gov_smoke_marker"
+      ],
+      "expected_version": "b4785a7520d63308",
+      "outcome": "rolled_back",
+      "reason": "rollback smoke",
+      "resource": "models",
+      "ts": "2026-05-19T22:29:46.126929Z"
+    },
+    {
+      "action": "flags_update",
+      "actor": "smoke",
+      "changed_keys": [
+        "disabled_until_manual_review",
+        "exclude_from_free_rotation"
+      ],
+      "model_key": "openrouter:test-model",
+      "outcome": "applied",
+      "reason": "flags smoke",
+      "resource": "provider_model_state",
+      "ts": "2026-05-19T22:29:46.233247Z"
     }
   ],
   "governance_last_good": {
     "models": {
       "document": {
         "local": {
+          "converted_models": [
+            {
+              "artifact_id": "6dab1cbca58468eb",
+              "backend": "tabbyapi",
+              "bits": 4.5,
+              "created_ts": "2026-05-19T22:28:49.572349Z",
+              "enabled": true,
+              "format": "exl3",
+              "groupsize": null,
+              "id": "meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+              "job_id": "aa060e774ece",
+              "label": "meta-llama/Llama-3.2-3B-Instruct",
+              "model_dir": "meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+              "notes": "Managed EXL3 conversion artifact",
+              "path": "/srv/2bananas/engines/models/meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+              "source_repo_id": "meta-llama/Llama-3.2-3B-Instruct",
+              "source_sha256": "13cbd6d16e927a0c5bad54102514e6e18b4a47b3a6eb911e39d678d328d19f55",
+              "source_type": "huggingface_repo"
+            }
+          ],
           "slots": [
             {
               "backend": "tgw",
@@ -715,8 +1016,8 @@
           ]
         }
       },
-      "ts": "2026-05-17T16:25:25.930444Z",
-      "version": "39d72832a4b220a2"
+      "ts": "2026-05-19T22:29:46.052696Z",
+      "version": "a9189e0348736d33"
     }
   },
   "openrouter_catalog_cache": {
@@ -25008,7 +25309,7 @@
       "exclude_from_free_rotation": true,
       "promotion_state": "quarantined",
       "promotion_state_reason": "manual_flag_update",
-      "promotion_state_updated_ts": "2026-05-17T16:25:26.077950Z",
+      "promotion_state_updated_ts": "2026-05-19T22:29:46.215952Z",
       "promotion_transitions": [
         {
           "actor": "smoke",
@@ -25018,7 +25319,7 @@
           "ts": "2026-05-08T02:54:31.373817Z"
         }
       ],
-      "updated_ts": "2026-05-17T16:25:26.077957Z"
+      "updated_ts": "2026-05-19T22:29:46.215960Z"
     },
     "openrouter:thedrummer/cydonia-24b-v4.1": {
       "failure_count_24h": 0,
@@ -31879,7 +32180,7 @@
       "ts": "2026-05-15T04:00:38.225840Z"
     }
   ],
-  "updated_ts": "2026-05-17T16:25:26.103349Z",
+  "updated_ts": "2026-05-19T22:29:46.235636Z",
   "usage_logs": [
     {
       "completion_tokens": 1683,

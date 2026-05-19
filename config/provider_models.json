@@ -1,5 +1,25 @@
 {
   "local": {
+    "converted_models": [
+      {
+        "artifact_id": "6dab1cbca58468eb",
+        "backend": "tabbyapi",
+        "bits": 4.5,
+        "created_ts": "2026-05-19T22:28:49.572349Z",
+        "enabled": true,
+        "format": "exl3",
+        "groupsize": null,
+        "id": "meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+        "job_id": "aa060e774ece",
+        "label": "meta-llama/Llama-3.2-3B-Instruct",
+        "model_dir": "meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+        "notes": "Managed EXL3 conversion artifact",
+        "path": "/srv/2bananas/engines/models/meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+        "source_repo_id": "meta-llama/Llama-3.2-3B-Instruct",
+        "source_sha256": "13cbd6d16e927a0c5bad54102514e6e18b4a47b3a6eb911e39d678d328d19f55",
+        "source_type": "huggingface_repo"
+      }
+    ],
     "slots": [
       {
         "backend": "tgw",
