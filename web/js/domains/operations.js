@@ -22,6 +22,8 @@ let ENGINE_STATUS_CACHE = null;
 const SLOT_UI = {
   chat: {
     prefix: "chat",
+    modelSelectId: "chatModel",
+    backendSelectId: "chatBackendSelect",
     testButtonId: "chatTest",
     quickTestButtonId: "btnTestChat",
     backendPillId: "chatBackendPill",
@@ -31,6 +33,8 @@ const SLOT_UI = {
   },
   intent: {
     prefix: "intent",
+    modelSelectId: "intentModel",
+    backendSelectId: "intentBackendSelect",
     testButtonId: "intentTest",
     quickTestButtonId: "btnTestIntent",
     backendPillId: "intentBackendPill",
@@ -40,6 +44,8 @@ const SLOT_UI = {
   },
   small: {
     prefix: "small",
+    modelSelectId: "smallModel",
+    backendSelectId: "smallBackendSelect",
     testButtonId: "smallTest",
     quickTestButtonId: "btnTestUtil",
     backendPillId: "smallBackendPill",
@@ -63,6 +69,8 @@ const BACKEND_CAPABILITIES = {
     supportsNoThinking: false,
   },
 };
+
+const KNOWN_BACKENDS = Object.keys(BACKEND_CAPABILITIES);
 
 
 function normalizeBackendName(raw) {
@@ -116,6 +124,94 @@ function modelBackendCompatibility(backend, meta) {
     compatible: false,
     reason: `Active model prefers ${recommended}${fallbackLabel}.`,
   };
+}
+
+
+function compatibleBackendsForModel(meta, currentBackend = "") {
+  const list = [];
+  const recommended = normalizeBackendName(meta?.recommended_backend || "");
+  const fallbackBackends = Array.isArray(meta?.fallback_backends)
+    ? meta.fallback_backends.map((item) => normalizeBackendName(item)).filter(Boolean)
+    : [];
+
+  if (recommended && recommended !== "unknown" && KNOWN_BACKENDS.includes(recommended)) {
+    list.push(recommended);
+  }
+
+  for (const backend of fallbackBackends) {
+    if (!KNOWN_BACKENDS.includes(backend)) continue;
+    if (!list.includes(backend)) list.push(backend);
+  }
+
+  if (!list.length) {
+    list.push(...KNOWN_BACKENDS);
+  }
+
+  const current = normalizeBackendName(currentBackend || "");
+  if (KNOWN_BACKENDS.includes(current) && !list.includes(current)) {
+    list.push(current);
+  }
+
+  return list;
+}
+
+
+function setBackendSelectOptions(selectEl, options, selectedValue, modelName) {
+  if (!selectEl) return;
+
+  selectEl.innerHTML = "";
+  for (const backend of options) {
+    const opt = document.createElement("option");
+    opt.value = backend;
+    opt.textContent = backend;
+    selectEl.appendChild(opt);
+  }
+
+  if (selectedValue && options.includes(selectedValue)) {
+    selectEl.value = selectedValue;
+  } else if (options.length) {
+    selectEl.value = options[0];
+  } else {
+    selectEl.value = "";
+  }
+
+  selectEl.dataset.modelName = modelName || "";
+}
+
+
+function syncSlotBackendSelector(slotMode, models, engines) {
+  const ui = SLOT_UI[slotMode];
+  if (!ui) return;
+
+  const modelSelect = $(ui.modelSelectId);
+  const backendSelect = $(ui.backendSelectId);
+  if (!backendSelect) return;
+
+  const selectedModel = String(modelSelect?.value || basename(models?.active?.[slotMode]) || "").trim();
+  const meta = selectedModel ? models?.meta?.[selectedModel] || null : null;
+  const recommended = normalizeBackendName(meta?.recommended_backend || "");
+  const currentBackend = normalizeBackendName(engines?.[slotMode]?.backend || models?.slot_backends?.[slotMode]);
+
+  const compatibleBackends = compatibleBackendsForModel(meta, currentBackend);
+  const modelChanged = String(backendSelect.dataset.modelName || "") !== selectedModel;
+
+  let preferred = compatibleBackends[0] || "";
+  if (KNOWN_BACKENDS.includes(recommended) && compatibleBackends.includes(recommended)) {
+    preferred = recommended;
+  } else if (KNOWN_BACKENDS.includes(currentBackend) && compatibleBackends.includes(currentBackend)) {
+    preferred = currentBackend;
+  }
+
+  const previous = normalizeBackendName(backendSelect.value || "");
+  const next = !modelChanged && compatibleBackends.includes(previous) ? previous : preferred;
+  setBackendSelectOptions(backendSelect, compatibleBackends, next, selectedModel);
+}
+
+
+function syncAllBackendSelectors(models, engines) {
+  for (const slotMode of Object.keys(SLOT_UI)) {
+    syncSlotBackendSelector(slotMode, models, engines);
+  }
 }
 
 
@@ -248,6 +344,12 @@ function applySlotOperationGating(slotMode, models, engines) {
   applyOptionalDisable(`${ui.prefix}Restart`, disableMutations, disableReason);
   applyOptionalDisable(`${ui.prefix}Solo`, disableMutations, disableReason);
   applyOptionalDisable(`${ui.prefix}Logs`, disableMutations, disableReason);
+
+  const backendSelect = $(ui.backendSelectId);
+  if (backendSelect) {
+    backendSelect.disabled = !slotEnabled;
+    backendSelect.title = slotEnabled ? "" : disableReason;
+  }
 
   const hint = $(ui.gateHintId);
   if (hint) {
@@ -618,6 +720,7 @@ async function refreshModels() {
   setSelectOptions($("chatModel"), m.chat || [], activeChat);
   setSelectOptions($("intentModel"), m.intent || [], activeIntent);
   setSelectOptions($("smallModel"), m.small || [], activeSmall);
+  syncAllBackendSelectors(MODEL_CACHE, ENGINE_STATUS_CACHE);
 }
 
 export async function refreshAll() {
@@ -660,6 +763,7 @@ export async function refreshAll() {
     setEngineButtonStates("chat", s.chat.systemd?.ActiveState);
     setEngineButtonStates("intent", s.intent.systemd?.ActiveState);
     setEngineButtonStates("small", s.small.systemd?.ActiveState);
+    syncAllBackendSelectors(MODEL_CACHE, ENGINE_STATUS_CACHE);
     applyBackendAwareOperationGating(MODEL_CACHE, ENGINE_STATUS_CACHE);
 
     try {
@@ -767,14 +871,19 @@ async function engineLogs(mode) {
   }
 }
 
-async function doSwitch(mode, selection) {
+async function doSwitch(mode, selection, backendSelection = "") {
   if (!selection) throw new Error(`No selection for ${mode}`);
   const bounce = true;
+  const backend = normalizeBackendName(backendSelection || "");
+  const payload = { mode, model_dir: selection, bounce };
+  if (KNOWN_BACKENDS.includes(backend)) {
+    payload.backend = backend;
+  }
   try {
-    setOut({ running: true, action: "switch", mode, selection, bounce });
-    setOut(await api("/switch", { method: "POST", body: { mode, model_dir: selection, bounce } }));
+    setOut({ running: true, action: "switch", mode, selection, backend: payload.backend || "auto", bounce });
+    setOut(await api("/switch", { method: "POST", body: payload }));
   } catch (e) {
-    setOut({ error: e.message, action: "switch", mode, selection });
+    setOut({ error: e.message, action: "switch", mode, selection, backend: payload.backend || "auto" });
   } finally {
     await refreshAll();
   }
@@ -835,9 +944,13 @@ export function wireOperationsDomain() {
   $("smallLogs")?.addEventListener("click", () => engineLogs("small"));
   $("smallTest")?.addEventListener("click", () => runTest("small"));
 
-  $("chatSwitch")?.addEventListener("click", async () => doSwitch("chat", $("chatModel").value));
-  $("intentSwitch")?.addEventListener("click", async () => doSwitch("intent", $("intentModel").value));
-  $("smallSwitch")?.addEventListener("click", async () => doSwitch("small", $("smallModel").value));
+  $("chatModel")?.addEventListener("change", () => syncAllBackendSelectors(MODEL_CACHE, ENGINE_STATUS_CACHE));
+  $("intentModel")?.addEventListener("change", () => syncAllBackendSelectors(MODEL_CACHE, ENGINE_STATUS_CACHE));
+  $("smallModel")?.addEventListener("change", () => syncAllBackendSelectors(MODEL_CACHE, ENGINE_STATUS_CACHE));
+
+  $("chatSwitch")?.addEventListener("click", async () => doSwitch("chat", $("chatModel").value, $("chatBackendSelect")?.value || ""));
+  $("intentSwitch")?.addEventListener("click", async () => doSwitch("intent", $("intentModel").value, $("intentBackendSelect")?.value || ""));
+  $("smallSwitch")?.addEventListener("click", async () => doSwitch("small", $("smallModel").value, $("smallBackendSelect")?.value || ""));
 
   let timer = null;
   $("autoRefresh")?.addEventListener("change", (e) => {
