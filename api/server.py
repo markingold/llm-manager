@@ -3210,7 +3210,7 @@ def _build_chat_payload(req: RouterChatRequest, selected_model: str, provider: s
     if req.json_schema:
         payload["response_format"] = {
             "type": "json_schema",
-            "json_schema": req.json_schema,
+            "json_schema": req.provider_json_schema(),
         }
     if req.no_thinking and provider == "local":
         payload["enable_thinking"] = False

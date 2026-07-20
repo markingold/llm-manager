@@ -46,6 +46,22 @@ class RouterChatRequest(BaseModel):
     model_preferences: RouterModelPreferences = Field(default_factory=RouterModelPreferences)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
+    def provider_json_schema(self) -> dict[str, Any] | None:
+        """Normalize a raw JSON Schema to the OpenAI response-format envelope."""
+        if self.json_schema is None:
+            return None
+        if isinstance(self.json_schema.get("schema"), dict):
+            return {
+                "name": str(self.json_schema.get("name") or "structured_response"),
+                "strict": bool(self.json_schema.get("strict", True)),
+                "schema": self.json_schema["schema"],
+            }
+        return {
+            "name": "structured_response",
+            "strict": True,
+            "schema": self.json_schema,
+        }
+
 
 class RouterChoice(BaseModel):
     index: int = 0
