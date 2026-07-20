@@ -44,7 +44,7 @@
   },
   "dynamic_ranking": {
     "enabled": true,
-    "strategies": ["local_first", "free_first", "paid_first", "best_available"],
+    "strategies": ["free_first", "paid_first", "best_available"],
     "weights": {
       "cost": 0.6,
       "availability": 0.3,
