@@ -51,7 +51,9 @@ Current deployed unit wiring on this host:
   - Body: { mode, model_dir, bounce, backend?, lifecycle_mode?, native_max_seq_len? }
   - mode supports chat, intent, small, and legacy alias util
   - backend can be tgw, vllm, or tabbyapi
-  - Updates the active symlink, then optionally bounces the target engine
+  - Serializes lifecycle mutations across API workers and atomically replaces the active symlink
+  - Loads natively before committing state where supported; restart failures restore the prior symlink/backend
+  - Rejects model paths outside the configured models root and rejects multimodal checkpoints until a compatible local lane exists
   - If backend is provided, updates per-slot backend preference state
   - If backend is omitted, switch auto-applies the model inspector's recommended backend (`tgw`, `vllm`, or `tabbyapi`)
   - If the selected backend is incompatible with the model kind, `/switch` returns HTTP 400 when backend was explicit, or auto-falls back to a compatible backend when backend was omitted
@@ -67,13 +69,15 @@ Current deployed unit wiring on this host:
 ### Model Lifecycle
 - POST /models/load
   - Body: { mode, model_dir, bounce?, backend?, lifecycle_mode?, native_max_seq_len? }
-  - Explicit lifecycle-oriented alias for `/switch` that defaults to `bounce=false`
+  - Explicit lifecycle-oriented alias for `/switch` that defaults to `bounce=true`
+  - Requires a successful native load or engine restart; staged/no-op loads return an error
   - Reuses the same TabbyAPI native load behavior and fallback diagnostics as `/switch`
 - POST /models/unload
   - Body: { mode, bounce?, backend?, lifecycle_mode? }
   - Attempts TabbyAPI native unload (`/v1/model/unload` then `/model/unload`) when backend and lifecycle mode permit
   - `native` mode requires tabbyapi backend and returns HTTP 502 on native unload failure
-  - `auto` mode attempts native unload for tabbyapi-backed slots and falls back to optional bounce
+  - `auto` mode attempts native unload for tabbyapi-backed slots; other backends require `bounce=true` to stop the engine
+  - Already-unloaded, backend-mismatch, and unavailable stop/unload cases return errors rather than successful no-ops
   - Response includes lifecycle diagnostics (`native_unload_attempted`, `native_unload_used`, `native_unload`, `bounce_result`)
 
 ### Knobs
@@ -280,6 +284,7 @@ TGW launches remain API-only by default (`--no-webui`) for slot services.
 
 - OpenRouter free-tier lanes are rate-limited locally using provider policy free_rate_limit_rpm (default 20 rpm)
 - On free-tier overflow, behavior follows policy queue_behavior: wait, fail_fast, fallback_to_local, or upgrade_to_paid
+- `wait` blocks the current request until the priority queue owns limiter capacity or `max_queue_wait_ms` expires; timeout removes the entry before fallback/failure
 - Free-tier queue scheduling is priority-aware (`interactive`, `batch`, `evaluation`) and can evict lower-priority queued entries when at capacity
 - Rate-limited or retryable provider failures can place provider-model pairs into temporary cooldown windows
 - OpenRouter cooldown behavior is policy-tunable via `openrouter.cooldown_seconds_*` settings and `openrouter.auth_error_manual_review_threshold`
@@ -305,6 +310,7 @@ TGW launches remain API-only by default (`--no-webui`) for slot services.
   - warn_threshold_pct
   - hard_fail_on_budget_exceeded
   - providers map to enable guardrails per provider
+- `model_preferences.preferred_model` is accepted only when the exact model is enabled, capability-compatible, and present in a policy-permitted candidate lane; the normal budget guardrail still runs
 
 ## Local Evaluation Pipeline
 
@@ -360,6 +366,8 @@ Managed conversion kinds also include:
 Notes:
 - Jobs are launched as local subprocesses rooted at the project directory
 - Generic job process state is kept in memory only
+- Job paths and repository identifiers are constrained to configured managed roots before launch
+- Cancellation uses the live managed process handle (pidfd on Linux when available), not the numeric PID copied into response state
 - Logs are written to run/logs/
 - For managed conversion jobs (`convert_hf_exl2`, `convert_merged_exl2`, `convert_hf_exl3`, `convert_merged_exl3`), run and artifact metadata is also persisted in run/state/provider_runtime_state.json
 

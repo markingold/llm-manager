@@ -1,47 +1,92 @@
 from __future__ import annotations
 
-import os, json, subprocess, time, uuid, threading, signal, shutil, re, hashlib, sys, importlib.util
-from pathlib import Path
+import fcntl
+import functools
+import hashlib
+import importlib.util
+import json
+import os
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import uuid
+from contextlib import contextmanager
 from datetime import datetime
+from html.parser import HTMLParser
+from pathlib import Path
 from urllib.parse import urlparse
-from fastapi import FastAPI, Query, HTTPException, Request
+
+import requests
+import uvicorn
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from html.parser import HTMLParser
-import uvicorn
-import requests
 
-from model_inspector import inspect_one, inspect_batch, get_gpu_info, detect_kind, detect_loader
-from router.contracts import (
-    RouterProviderPreferences,
-    RouterModelPreferences,
-    RouterChatRequest,
-    RouterChatResponse,
-    RouterChoice,
-    RouterUsage,
-    RouterCompletionRequest,
-    RouterCompletionResponse,
-    RouterCompletionChoice,
-    RouterEmbedRequest,
-    RouterEmbedResponse,
-    RouterEmbedDatum,
-)
-from providers.local import LocalProviderAdapter
-from providers.openrouter import OpenRouterProviderAdapter
-from providers.openai import OpenAIProviderAdapter
-from evaluation.schemas import (
-    LocalEvalRequest,
-    LocalEvalResponse,
-    EvalVariant,
-    LocalEvalEnqueueResponse,
-    EvalSuitePayload,
-    EvalRerunRequest,
-)
+try:
+    from .evaluation.schemas import (
+        EvalRerunRequest,
+        EvalSuitePayload,
+        EvalVariant,
+        LocalEvalEnqueueResponse,
+        LocalEvalRequest,
+        LocalEvalResponse,
+    )
+    from .model_inspector import detect_kind, detect_loader, get_gpu_info, inspect_batch, inspect_one
+    from .providers.local import LocalProviderAdapter
+    from .providers.openai import OpenAIProviderAdapter
+    from .providers.openrouter import OpenRouterProviderAdapter
+    from .router.contracts import (
+        RouterChatRequest,
+        RouterChatResponse,
+        RouterChoice,
+        RouterCompletionChoice,
+        RouterCompletionRequest,
+        RouterCompletionResponse,
+        RouterEmbedDatum,
+        RouterEmbedRequest,
+        RouterEmbedResponse,
+        RouterModelPreferences,
+        RouterProviderPreferences,
+        RouterUsage,
+    )
+except ImportError:  # Support direct execution via `python api/server.py`.
+    from evaluation.schemas import (
+        EvalRerunRequest,
+        EvalSuitePayload,
+        EvalVariant,
+        LocalEvalEnqueueResponse,
+        LocalEvalRequest,
+        LocalEvalResponse,
+    )
+    from model_inspector import detect_kind, detect_loader, get_gpu_info, inspect_batch, inspect_one
+    from providers.local import LocalProviderAdapter
+    from providers.openai import OpenAIProviderAdapter
+    from providers.openrouter import OpenRouterProviderAdapter
+    from router.contracts import (
+        RouterChatRequest,
+        RouterChatResponse,
+        RouterChoice,
+        RouterCompletionChoice,
+        RouterCompletionRequest,
+        RouterCompletionResponse,
+        RouterEmbedDatum,
+        RouterEmbedRequest,
+        RouterEmbedResponse,
+        RouterModelPreferences,
+        RouterProviderPreferences,
+        RouterUsage,
+    )
 
 # -----------------------------------------------------------------------------
 # Paths / config
 # -----------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parents[1]
+ENGINES_ROOT = Path(os.getenv("LLM_MANAGER_ENGINES_ROOT", "/srv/2bananas/engines")).resolve()
 MODELS_DIR = Path(os.getenv("SERVER_MODELS_DIR", os.getenv("MODELS_DIR", "/srv/2bananas/engines/models")))
 CONFIG_PATH = ROOT / "model_configs.json"
 ENV_PATH = ROOT / "secrets" / ".env"
@@ -249,6 +294,10 @@ EVAL_WORKER_TICK_SECONDS = 0.5
 EVAL_WORKER_LOCK = threading.Lock()
 EVAL_QUEUE_CLAIM_LOCK = threading.Lock()
 CONVERSION_STATE_LOCK = threading.Lock()
+PROVIDER_STATE_LOCK = threading.RLock()
+PROVIDER_STATE_TRANSACTION = threading.local()
+SLOT_STATE_LOCK = threading.RLock()
+MODEL_LIFECYCLE_LOCK = threading.RLock()
 EVAL_WORKER_STARTED = False
 EVAL_WORKER_COUNT = max(1, int(os.getenv("EVAL_WORKER_COUNT", "2")))
 EVAL_PRIORITY_RUNNING_CAPS = {
@@ -355,11 +404,41 @@ def read_env() -> dict:
             env[k] = v
     return env
 
+def _atomic_write_text(path: Path, content: str, mode: int = 0o600):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=str(path.parent))
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.chmod(temporary_path, mode)
+        os.replace(temporary_path, path)
+        try:
+            directory_fd = os.open(path.parent, os.O_DIRECTORY)
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+        except OSError:
+            pass
+    finally:
+        if temporary_path.exists():
+            temporary_path.unlink()
+
+
 def write_env(env: dict):
-    lines = [f"{k}={v}" for k, v in env.items()]
-    ENV_PATH.parent.mkdir(parents=True, exist_ok=True)
-    ENV_PATH.write_text("\n".join(lines) + "\n")
-    os.chmod(ENV_PATH, 0o600)
+    lines = []
+    for key, value in sorted(env.items()):
+        key_text = str(key).strip()
+        value_text = str(value)
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key_text):
+            raise HTTPException(422, f"invalid environment key: {key_text!r}")
+        if "\n" in value_text or "\r" in value_text:
+            raise HTTPException(422, f"environment value for {key_text} may not contain newlines")
+        lines.append(f"{key_text}={value_text}")
+    _atomic_write_text(ENV_PATH, "\n".join(lines) + "\n", mode=0o600)
 
 
 def redacted_env(env: dict) -> dict:
@@ -370,6 +449,31 @@ def redacted_env(env: dict) -> dict:
         else:
             out[k] = v
     return out
+
+
+def redact_sensitive_data(value):
+    """Remove credential-like values before user-controlled data is persisted."""
+    if isinstance(value, dict):
+        return {
+            str(key): (
+                "[REDACTED]"
+                if any(marker in str(key).upper() for marker in SENSITIVE_ENV_MARKERS)
+                else redact_sensitive_data(item)
+            )
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [redact_sensitive_data(item) for item in value]
+    if isinstance(value, tuple):
+        return [redact_sensitive_data(item) for item in value]
+    if isinstance(value, str):
+        stripped = value.strip()
+        if (
+            re.match(r"^(?:Bearer\s+)?(?:sk-[A-Za-z0-9_-]{12,}|hf_[A-Za-z0-9]{12,})$", stripped, re.IGNORECASE)
+            or "-----BEGIN PRIVATE KEY-----" in stripped
+        ):
+            return "[REDACTED]"
+    return value
 
 
 def _env_flag(value: str | None, default: bool = False) -> bool:
@@ -476,35 +580,110 @@ def list_non_intent_models():
     ])
 
 def _make_symlink(link: Path, target: Path):
-    if link.exists() or link.is_symlink():
-        link.unlink()
-    link.symlink_to(target, target_is_directory=True)
+    link.parent.mkdir(parents=True, exist_ok=True)
+    temporary = link.with_name(f".{link.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        temporary.symlink_to(target, target_is_directory=True)
+        os.replace(temporary, link)
+    finally:
+        if temporary.is_symlink() or temporary.exists():
+            temporary.unlink()
+
+
+def _symlink_target(link: Path) -> Path | None:
+    if not link.is_symlink():
+        return None
+    raw = Path(os.readlink(link))
+    return raw.resolve() if raw.is_absolute() else (link.parent / raw).resolve()
+
+
+def _restore_symlink(link: Path, previous_target: Path | None):
+    if previous_target is None:
+        if link.is_symlink() or link.exists():
+            link.unlink()
+        return
+    _make_symlink(link, previous_target)
+
+
+def _resolve_path_within(
+    value: str | Path,
+    roots: list[Path],
+    *,
+    must_exist: bool = False,
+    must_be_dir: bool = False,
+    label: str = "path",
+) -> Path:
+    raw = str(value or "").strip()
+    if not raw or "\x00" in raw:
+        raise HTTPException(422, f"{label} is required")
+
+    requested = Path(raw)
+    candidates = [requested] if requested.is_absolute() else [root / requested for root in roots]
+    allowed_roots = [root.resolve() for root in roots]
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if not any(resolved == root or resolved.is_relative_to(root) for root in allowed_roots):
+            continue
+        if must_exist and not resolved.exists():
+            continue
+        if must_be_dir and (not resolved.exists() or not resolved.is_dir()):
+            continue
+        return resolved
+
+    allowed = ", ".join(str(root) for root in allowed_roots)
+    requirement = "existing directory within" if must_be_dir else "path within"
+    raise HTTPException(422, f"{label} must be an {requirement}: {allowed}")
+
+
+def _resolve_model_directory(model_dir: str) -> Path:
+    return _resolve_path_within(
+        model_dir,
+        [MODELS_DIR],
+        must_exist=True,
+        must_be_dir=True,
+        label="model_dir",
+    )
+
+
+def _validate_repo_id(repo_id: str) -> str:
+    value = str(repo_id or "").strip()
+    if (
+        not value
+        or value.startswith(('/', '\\'))
+        or ".." in value.split("/")
+        or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)?", value)
+    ):
+        raise HTTPException(422, "repo_id must be a safe Hugging Face owner/model identifier")
+    return value
 
 
 def read_slot_backends() -> dict:
-    data = DEFAULT_SLOT_BACKENDS.copy()
-    if SLOT_BACKENDS_PATH.exists():
-        try:
-            raw = json.loads(SLOT_BACKENDS_PATH.read_text())
-            if isinstance(raw, dict):
-                for mode in ("chat", "intent", "small"):
-                    backend = raw.get(mode)
-                    if backend in SUPPORTED_BACKENDS:
-                        data[mode] = backend
-        except Exception:
-            pass
-    return data
+    with SLOT_STATE_LOCK:
+        data = DEFAULT_SLOT_BACKENDS.copy()
+        if SLOT_BACKENDS_PATH.exists():
+            try:
+                raw = json.loads(SLOT_BACKENDS_PATH.read_text())
+                if isinstance(raw, dict):
+                    for mode in ("chat", "intent", "small"):
+                        backend = raw.get(mode)
+                        if backend in SUPPORTED_BACKENDS:
+                            data[mode] = backend
+            except Exception:
+                pass
+        return data
 
 
 def write_slot_backends(data: dict):
-    STATE_DIR.mkdir(parents=True, exist_ok=True)
-    SLOT_BACKENDS_PATH.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+    with SLOT_STATE_LOCK:
+        STATE_DIR.mkdir(parents=True, exist_ok=True)
+        _atomic_write_text(SLOT_BACKENDS_PATH, json.dumps(data, indent=2, sort_keys=True) + "\n", mode=0o600)
 
 
 def set_slot_backend(mode: str, backend: str):
-    current = read_slot_backends()
-    current[mode] = backend
-    write_slot_backends(current)
+    with SLOT_STATE_LOCK:
+        current = read_slot_backends()
+        current[mode] = backend
+        write_slot_backends(current)
 
 
 def _normalize_slot_mode(mode: str | None, default: str = "chat") -> str:
@@ -690,18 +869,79 @@ def read_provider_policies() -> dict:
 
 
 def read_provider_runtime_state() -> dict:
-    state = _load_json(PROVIDER_STATE_PATH, DEFAULT_PROVIDER_RUNTIME_STATE)
-    changed = _ensure_provider_runtime_state(state)
-    if not PROVIDER_STATE_PATH.exists() or changed:
-        write_provider_runtime_state(state)
-    return state
+    with PROVIDER_STATE_LOCK:
+        state = _load_json(PROVIDER_STATE_PATH, DEFAULT_PROVIDER_RUNTIME_STATE)
+        changed = _ensure_provider_runtime_state(state)
+        if not PROVIDER_STATE_PATH.exists() or changed:
+            if int(getattr(PROVIDER_STATE_TRANSACTION, "depth", 0) or 0) > 0:
+                write_provider_runtime_state(state)
+            else:
+                with _provider_state_transaction():
+                    state = _load_json(PROVIDER_STATE_PATH, DEFAULT_PROVIDER_RUNTIME_STATE)
+                    changed = _ensure_provider_runtime_state(state)
+                    if not PROVIDER_STATE_PATH.exists() or changed:
+                        write_provider_runtime_state(state)
+        return state
 
 
 def write_provider_runtime_state(state: dict):
-    STATE_DIR.mkdir(parents=True, exist_ok=True)
-    state = dict(state)
-    state["updated_ts"] = datetime.utcnow().isoformat() + "Z"
-    PROVIDER_STATE_PATH.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
+    with PROVIDER_STATE_LOCK:
+        STATE_DIR.mkdir(parents=True, exist_ok=True)
+        state = dict(state)
+        state["updated_ts"] = datetime.utcnow().isoformat() + "Z"
+        _atomic_write_text(
+            PROVIDER_STATE_PATH,
+            json.dumps(state, indent=2, sort_keys=True) + "\n",
+            mode=0o600,
+        )
+
+
+@contextmanager
+def _provider_state_transaction():
+    """Serialize state read/modify/write sequences across threads and workers."""
+    with PROVIDER_STATE_LOCK:
+        depth = int(getattr(PROVIDER_STATE_TRANSACTION, "depth", 0) or 0)
+        lock_handle = None
+        if depth == 0:
+            STATE_DIR.mkdir(parents=True, exist_ok=True)
+            lock_path = PROVIDER_STATE_PATH.with_suffix(PROVIDER_STATE_PATH.suffix + ".lock")
+            lock_handle = lock_path.open("a+")
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+            PROVIDER_STATE_TRANSACTION.lock_handle = lock_handle
+        PROVIDER_STATE_TRANSACTION.depth = depth + 1
+        try:
+            yield
+        finally:
+            remaining = int(getattr(PROVIDER_STATE_TRANSACTION, "depth", 1) or 1) - 1
+            PROVIDER_STATE_TRANSACTION.depth = max(0, remaining)
+            if remaining <= 0:
+                held = getattr(PROVIDER_STATE_TRANSACTION, "lock_handle", None)
+                if held is not None:
+                    fcntl.flock(held.fileno(), fcntl.LOCK_UN)
+                    held.close()
+                PROVIDER_STATE_TRANSACTION.lock_handle = None
+
+
+def _state_transactional(func):
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        with _provider_state_transaction():
+            return func(*args, **kwargs)
+    return wrapped
+
+
+def _model_lifecycle_transactional(func):
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        with MODEL_LIFECYCLE_LOCK:
+            STATE_DIR.mkdir(parents=True, exist_ok=True)
+            with (STATE_DIR / "model_lifecycle.lock").open("a+") as lock_handle:
+                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+                try:
+                    return func(*args, **kwargs)
+                finally:
+                    fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+    return wrapped
 
 
 def _ensure_provider_runtime_state(state: dict) -> bool:
@@ -767,8 +1007,7 @@ MAX_GOVERNANCE_AUDIT = 500
 
 
 def _write_json(path: Path, payload: dict):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    _atomic_write_text(path, json.dumps(payload, indent=2, sort_keys=True) + "\n", mode=0o600)
 
 
 def _doc_version(payload: dict) -> str:
@@ -1146,6 +1385,7 @@ def _retention_policy_settings(policies: dict | None = None) -> dict:
     }
 
 
+@_state_transactional
 def _append_governance_audit(entry: dict):
     state = read_provider_runtime_state()
     retention = _retention_policy_settings()
@@ -1160,6 +1400,7 @@ def _append_governance_audit(entry: dict):
     }
 
 
+@_state_transactional
 def _governance_apply(
     resource: str,
     target_path: Path,
@@ -1170,6 +1411,7 @@ def _governance_apply(
     reason: str,
     validate_only: bool,
 ):
+    current_doc = _load_json(target_path, current_doc)
     current_version = _doc_version(current_doc)
     if expected_version and str(expected_version) != current_version:
         raise HTTPException(409, {
@@ -1251,7 +1493,9 @@ def _governance_apply(
     }
 
 
+@_state_transactional
 def _governance_rollback(resource: str, target_path: Path, current_doc: dict, expected_version: str | None, actor: str, reason: str):
+    current_doc = _load_json(target_path, current_doc)
     current_version = _doc_version(current_doc)
     if expected_version and str(expected_version) != current_version:
         raise HTTPException(409, {
@@ -1304,7 +1548,9 @@ def _governance_rollback(resource: str, target_path: Path, current_doc: dict, ex
     }
 
 
+@_state_transactional
 def _append_router_decision(decision: dict, policies: dict | None = None):
+    decision = redact_sensitive_data(decision)
     state = read_provider_runtime_state()
     retention = _retention_policy_settings(policies)
     logs = state.get("request_logs", [])
@@ -1484,6 +1730,7 @@ def _provider_model_key(provider: str, model: str) -> str:
     return f"{provider}:{model}"
 
 
+@_state_transactional
 def _set_provider_model_promotion_state(provider: str, model: str, promotion_state: str, reason: str = "", actor: str = "system"):
     state = read_provider_runtime_state()
     model_state = state.get("provider_model_state", {})
@@ -1499,6 +1746,7 @@ def _set_provider_model_promotion_state(provider: str, model: str, promotion_sta
     write_provider_runtime_state(state)
 
 
+@_state_transactional
 def _append_openrouter_smoke_evidence(model_id: str, evidence: dict):
     if not str(model_id or "").strip() or not isinstance(evidence, dict):
         return
@@ -1522,6 +1770,7 @@ def _append_openrouter_smoke_evidence(model_id: str, evidence: dict):
     write_provider_runtime_state(state)
 
 
+@_state_transactional
 def _sync_openrouter_candidate_states(payload: dict, actor: str = "system", reason: str = ""):
     if not isinstance(payload, dict):
         return
@@ -1637,6 +1886,7 @@ def _is_model_in_cooldown(provider: str, model: str) -> bool:
     return cooldown_until > time.time()
 
 
+@_state_transactional
 def _mark_provider_success(provider: str, model: str):
     state = read_provider_runtime_state()
     model_state = state.get("provider_model_state", {})
@@ -1698,6 +1948,7 @@ def _openrouter_cooldown_seconds(err_type: str, retryable: bool, openrouter_cfg:
     return 0
 
 
+@_state_transactional
 def _mark_provider_failure(provider: str, model: str, normalized_error: dict):
     state = read_provider_runtime_state()
     model_state = state.get("provider_model_state", {})
@@ -1799,6 +2050,7 @@ def _mark_provider_failure(provider: str, model: str, normalized_error: dict):
     write_provider_runtime_state(state)
 
 
+@_state_transactional
 def _consume_openrouter_free_token(policies: dict) -> tuple[bool, dict]:
     state = read_provider_runtime_state()
     limits = state.get("provider_rate_limits", {})
@@ -1860,6 +2112,14 @@ def _queue_entry_priority_rank(entry: dict) -> int:
     return rank
 
 
+def _queue_deadline_ms(entry: dict) -> int:
+    try:
+        return int(entry.get("deadline_ms", 0) or 0) if isinstance(entry, dict) else 0
+    except (TypeError, ValueError):
+        return 0
+
+
+@_state_transactional
 def _enqueue_free_tier_request(request_class: str, strategy: str, metadata: dict, policies: dict) -> tuple[bool, dict]:
     state = read_provider_runtime_state()
     queue = state.get("provider_request_queue", [])
@@ -1867,9 +2127,10 @@ def _enqueue_free_tier_request(request_class: str, strategy: str, metadata: dict
         queue = []
 
     cfg = policies.get("openrouter", {}) if isinstance(policies.get("openrouter", {}), dict) else {}
-    max_depth = int(cfg.get("max_queue_depth", 100) or 100)
-    max_wait_ms = int(cfg.get("max_queue_wait_ms", 15000) or 15000)
+    max_depth = max(1, int(cfg.get("max_queue_depth", 100) or 100))
+    max_wait_ms = min(60000, max(1, int(cfg.get("max_queue_wait_ms", 15000) or 15000)))
     now_ms = int(time.time() * 1000)
+    queue = [row for row in queue if isinstance(row, dict) and _queue_deadline_ms(row) >= now_ms]
 
     metadata_obj = metadata if isinstance(metadata, dict) else {}
     priority_raw = metadata_obj.get("priority") if isinstance(metadata_obj.get("priority"), str) else None
@@ -1907,9 +2168,9 @@ def _enqueue_free_tier_request(request_class: str, strategy: str, metadata: dict
         "priority": priority,
         "priority_rank": priority_rank,
         "enqueue_ts": datetime.utcnow().isoformat() + "Z",
+        "enqueue_ms": now_ms,
         "deadline_ms": now_ms + max_wait_ms,
         "state": "queued",
-        "metadata": metadata_obj,
     }
     queue.append(entry)
     queue.sort(key=lambda row: (_queue_entry_priority_rank(row), str(row.get("enqueue_ts", ""))))
@@ -1928,6 +2189,119 @@ def _enqueue_free_tier_request(request_class: str, strategy: str, metadata: dict
             "priority": dropped_entry.get("priority", "batch"),
         }
     return True, payload
+
+
+@_state_transactional
+def _claim_queued_free_tier_request(entry_id: str, policies: dict) -> tuple[str, dict]:
+    """Atomically claim free-tier capacity for the highest-priority queued request."""
+    state = read_provider_runtime_state()
+    queue = state.get("provider_request_queue", [])
+    if not isinstance(queue, list):
+        queue = []
+
+    now_ms = int(time.time() * 1000)
+    live_queue = [
+        row for row in queue
+        if isinstance(row, dict) and _queue_deadline_ms(row) >= now_ms
+    ]
+    live_queue.sort(key=lambda row: (_queue_entry_priority_rank(row), str(row.get("enqueue_ts", ""))))
+    own = next((row for row in live_queue if str(row.get("id", "")) == entry_id), None)
+    if own is None:
+        state["provider_request_queue"] = live_queue
+        write_provider_runtime_state(state)
+        return "expired_or_evicted", {"entry_id": entry_id, "queue_depth": len(live_queue)}
+
+    position = next(i for i, row in enumerate(live_queue) if str(row.get("id", "")) == entry_id)
+    if position != 0:
+        if live_queue != queue:
+            state["provider_request_queue"] = live_queue
+            write_provider_runtime_state(state)
+        return "waiting", {"entry_id": entry_id, "queue_depth": len(live_queue), "position": position + 1}
+
+    cfg = policies.get("openrouter", {}) if isinstance(policies.get("openrouter", {}), dict) else {}
+    limits = state.get("provider_rate_limits", {})
+    if not isinstance(limits, dict):
+        limits = {}
+    pool = limits.get("openrouter_free", {})
+    if not isinstance(pool, dict):
+        pool = {}
+
+    rpm_limit = int(cfg.get("free_rate_limit_rpm", pool.get("rpm_limit", 20)) or 20)
+    window_seconds = int(pool.get("window_seconds", 60) or 60)
+    now = int(time.time())
+    window_start = int(pool.get("window_start", 0) or 0)
+    request_count = int(pool.get("request_count", 0) or 0)
+    if window_start <= 0 or now - window_start >= window_seconds:
+        window_start = now
+        request_count = 0
+
+    limiter = {
+        "rpm_limit": rpm_limit,
+        "window_seconds": window_seconds,
+        "window_start": window_start,
+        "request_count": request_count,
+    }
+    if request_count >= rpm_limit:
+        pool.update(limiter)
+        limits["openrouter_free"] = pool
+        state["provider_rate_limits"] = limits
+        state["provider_request_queue"] = live_queue
+        write_provider_runtime_state(state)
+        return "waiting", {
+            "entry_id": entry_id,
+            "queue_depth": len(live_queue),
+            "position": 1,
+            "limiter": limiter,
+        }
+
+    request_count += 1
+    limiter["request_count"] = request_count
+    pool.update(limiter)
+    limits["openrouter_free"] = pool
+    state["provider_rate_limits"] = limits
+    state["provider_request_queue"] = [
+        row for row in live_queue if str(row.get("id", "")) != entry_id
+    ]
+    write_provider_runtime_state(state)
+    return "acquired", {
+        "entry_id": entry_id,
+        "queue_depth": len(state["provider_request_queue"]),
+        "waited_ms": max(0, now_ms - int(own.get("enqueue_ms", now_ms) or now_ms)),
+        "limiter": limiter,
+    }
+
+
+@_state_transactional
+def _remove_queued_free_tier_request(entry_id: str) -> bool:
+    state = read_provider_runtime_state()
+    queue = state.get("provider_request_queue", [])
+    if not isinstance(queue, list):
+        return False
+    remaining = [row for row in queue if not isinstance(row, dict) or str(row.get("id", "")) != entry_id]
+    if len(remaining) == len(queue):
+        return False
+    state["provider_request_queue"] = remaining
+    write_provider_runtime_state(state)
+    return True
+
+
+def _wait_for_queued_free_tier_request(queue_info: dict, policies: dict) -> tuple[bool, dict]:
+    entry_id = str(queue_info.get("entry_id", ""))
+    max_wait_ms = max(0, int(queue_info.get("max_queue_wait_ms", 0) or 0))
+    deadline = time.monotonic() + (max_wait_ms / 1000.0)
+    last = {"entry_id": entry_id, "queue_depth": queue_info.get("queue_depth", 0)}
+    while True:
+        status, detail = _claim_queued_free_tier_request(entry_id, policies)
+        last = detail
+        if status == "acquired":
+            return True, {**queue_info, **detail, "state": "acquired"}
+        if status == "expired_or_evicted":
+            return False, {**queue_info, **detail, "state": status}
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            _remove_queued_free_tier_request(entry_id)
+            return False, {**queue_info, **last, "state": "timed_out", "waited_ms": max_wait_ms}
+        time.sleep(min(0.1, remaining))
 
 
 def _handle_free_tier_overflow(
@@ -1956,9 +2330,14 @@ def _handle_free_tier_overflow(
     if behavior == "wait":
         ok, q = _enqueue_free_tier_request(request_class, strategy, metadata_obj, policies)
         if ok:
-            base_error["type"] = "queued"
-            base_error["message"] = "Request queued for free-tier capacity"
-            base_error["queue"] = q
+            acquired, queue_result = _wait_for_queued_free_tier_request(q, policies)
+            base_error["queue"] = queue_result
+            if acquired:
+                return "acquired", base_error
+            base_error["type"] = "queue_timeout"
+            base_error["message"] = "Timed out waiting for free-tier capacity"
+            if allow_fallbacks:
+                return "continue", base_error
             return "break", base_error
         base_error["type"] = "queue_full"
         base_error["message"] = "Free-tier queue is full"
@@ -2791,6 +3170,7 @@ def _estimate_request_cost_usd(provider_models: dict, provider: str, model: str,
     return round(total, 8)
 
 
+@_state_transactional
 def _record_spend(
     provider: str,
     lane: str,
@@ -2972,19 +3352,112 @@ def _row_supports_requirements(row: dict, requirements: dict) -> bool:
         return False
     reqs = requirements if isinstance(requirements, dict) else {}
 
-    if bool(reqs.get("tools", False)) and row.get("supports_tools") is False:
+    if bool(reqs.get("tools", False)) and row.get("supports_tools") is not True:
         return False
     if bool(reqs.get("structured_outputs", False)):
         supports_structured = row.get("supports_structured_outputs")
         if supports_structured is None:
             supports_structured = row.get("supports_json_schema")
-        if supports_structured is False:
+        if supports_structured is not True:
             return False
-    if bool(reqs.get("reasoning", False)) and row.get("supports_reasoning") is False:
+    if bool(reqs.get("reasoning", False)) and row.get("supports_reasoning") is not True:
         return False
-    if bool(reqs.get("vision", False)) and row.get("supports_vision") is False:
+    if bool(reqs.get("vision", False)) and row.get("supports_vision") is not True:
         return False
     return True
+
+
+def _local_slot_supports_request(row: dict, req) -> bool:
+    capabilities = {
+        str(cap).strip().lower()
+        for cap in (row.get("capabilities", []) if isinstance(row.get("capabilities", []), list) else [])
+        if str(cap).strip()
+    }
+    required_task_capability = {
+        "chat": "chat",
+        "completion": "chat",
+        "embed": "embeddings",
+    }.get(_normalize_task_type(getattr(req, "task_type", "chat")), "chat")
+    if required_task_capability not in capabilities:
+        return False
+
+    requirements = _request_capability_requirements(req)
+    mapping = {
+        "tools": {"tools", "tool_calling", "function_calling"},
+        "structured_outputs": {"structured_outputs", "json_schema"},
+        "reasoning": {"reasoning"},
+        "vision": {"vision", "multimodal"},
+    }
+    for requirement, accepted in mapping.items():
+        if bool(requirements.get(requirement, False)) and not capabilities.intersection(accepted):
+            return False
+    return True
+
+
+def _constrain_chain_to_preferred_model(req, chain: list[str], provider_models: dict, policies: dict) -> list[str]:
+    preferred = str(getattr(getattr(req, "model_preferences", None), "preferred_model", "") or "").strip()
+    if not preferred:
+        return chain
+
+    requirements = _request_capability_requirements(req)
+    matching_lanes: list[str] = []
+
+    local = provider_models.get("local", {}) if isinstance(provider_models.get("local", {}), dict) else {}
+    for row in local.get("slots", []) if isinstance(local.get("slots", []), list) else []:
+        if not isinstance(row, dict) or not bool(row.get("enabled", True)):
+            continue
+        mode = _normalize_slot_mode(row.get("id"), default="")
+        aliases = {mode, _slot_alias_for_mode(mode), _active_model_name_for_mode(mode)}
+        if preferred in aliases and _local_slot_supports_request(row, req):
+            matching_lanes.append("local")
+            break
+
+    openrouter = provider_models.get("openrouter", {}) if isinstance(provider_models.get("openrouter", {}), dict) else {}
+    for bucket, lane in (("free", "openrouter.free"), ("paid", "openrouter.paid")):
+        rows = openrouter.get(bucket, []) if isinstance(openrouter.get(bucket, []), list) else []
+        if any(
+            isinstance(row, dict)
+            and bool(row.get("enabled", True))
+            and str(row.get("id", "")) == preferred
+            and _row_supports_requirements(row, requirements)
+            for row in rows
+        ):
+            matching_lanes.append(lane)
+
+    openai = provider_models.get("openai", {}) if isinstance(provider_models.get("openai", {}), dict) else {}
+    allowed = openai.get("allowed", []) if isinstance(openai.get("allowed", []), list) else []
+    if any(
+        isinstance(row, dict)
+        and bool(row.get("enabled", True))
+        and str(row.get("id", "")) == preferred
+        and _row_supports_requirements(row, requirements)
+        for row in allowed
+    ):
+        matching_lanes.append("openai")
+
+    manual = _manual_openrouter_free_candidates_state()
+    if preferred in {str(mid) for mid in manual.get("active_ids", []) if str(mid)}:
+        state = read_provider_runtime_state()
+        cache = state.get("openrouter_catalog_cache", {}) if isinstance(state.get("openrouter_catalog_cache", {}), dict) else {}
+        row = _openrouter_catalog_model_map(cache).get(preferred, {})
+        if (
+            isinstance(row, dict)
+            and bool(row.get("is_free", False))
+            and _row_supports_requirements(row, requirements)
+            and _openrouter_state_allows_free_rotation(preferred)
+        ):
+            matching_lanes.append("openrouter.free")
+
+    matching_lanes = list(dict.fromkeys(matching_lanes))
+    selected = next((lane for lane in chain if lane in matching_lanes), None)
+    if selected is None:
+        raise HTTPException(422, {
+            "message": "preferred_model is not an enabled, capability-compatible model in the permitted candidate chain",
+            "preferred_model": preferred,
+            "candidate_chain": chain,
+            "catalog_lanes": matching_lanes,
+        })
+    return [selected]
 
 
 def _openrouter_state_allows_free_rotation(model_id: str) -> bool:
@@ -3027,12 +3500,6 @@ def _pick_catalog_model(
     policies = policies or {}
     requirements = _request_capability_requirements(req)
     preferred = (req.model_preferences.preferred_model or "").strip()
-    if preferred:
-        if lane.startswith("openrouter"):
-            return "openrouter", preferred
-        if lane == "openai":
-            return "openai", preferred
-        return "local", preferred
 
     if lane == "local":
         local_cfg = provider_models.get("local", {}) if isinstance(provider_models.get("local", {}), dict) else {}
@@ -3079,17 +3546,26 @@ def _pick_catalog_model(
             candidates.append({
                 "slot_mode": slot_mode,
                 "alias": alias,
+                "active_model": _active_model_name_for_mode(slot_mode),
                 "backend": runtime_backend,
                 "capabilities": capabilities,
                 "priority": priority,
+                "source_row": row,
             })
 
         if candidates:
-            capability_filtered = [
-                c for c in candidates
-                if not c["capabilities"] or required_capability in c["capabilities"]
-            ]
-            pool = capability_filtered if capability_filtered else candidates
+            pool = [c for c in candidates if _local_slot_supports_request(c["source_row"], req)]
+            if preferred:
+                pool = [
+                    c for c in pool
+                    if preferred in {c["slot_mode"], c["alias"], c.get("active_model")}
+                ]
+            if not pool:
+                raise HTTPException(422, {
+                    "message": "no enabled local slot satisfies the requested model and capabilities",
+                    "preferred_model": preferred or None,
+                    "required_capability": required_capability,
+                })
 
             backend_hints = [tag for tag in preferred_tags if tag in SUPPORTED_BACKENDS]
             if backend_hints:
@@ -3125,12 +3601,7 @@ def _pick_catalog_model(
             ))
             return "local", str(pool[0]["alias"])
 
-        fallback_mode = {
-            "chat": "chat",
-            "completion": "chat",
-            "embed": "small",
-        }.get(task_type, "chat")
-        return "local", _slot_alias_for_mode(fallback_mode)
+        raise HTTPException(422, "no enabled local slots are configured")
 
     if lane == "openrouter.free":
         items = provider_models.get("openrouter", {}).get("free", [])
@@ -3142,6 +3613,8 @@ def _pick_catalog_model(
         enabled = [m for m in enabled if str(m.get("id", "")) not in excluded_models]
         enabled = [m for m in enabled if _openrouter_state_allows_free_rotation(str(m.get("id", "") or ""))]
         enabled = _apply_capability_filter(enabled, requirements)
+        if preferred:
+            enabled = [m for m in enabled if str(m.get("id", "")) == preferred]
         enabled.sort(key=_priority_sort_key)
         if enabled:
             return "openrouter", str(enabled[0]["id"])
@@ -3153,6 +3626,8 @@ def _pick_catalog_model(
         catalog_map = _openrouter_catalog_model_map(catalog)
         upstream_free = _openrouter_upstream_free_ids()
         for model_id in active_ids:
+            if preferred and model_id != preferred:
+                continue
             if model_id in excluded_models:
                 continue
             row = catalog_map.get(model_id, {}) if isinstance(catalog_map.get(model_id, {}), dict) else {}
@@ -3166,27 +3641,42 @@ def _pick_catalog_model(
                 continue
             return "openrouter", model_id
 
-        return "openrouter", "openrouter-free-default"
+        raise HTTPException(422, {
+            "message": "no enabled OpenRouter free model satisfies the request",
+            "preferred_model": preferred or None,
+        })
 
     if lane == "openrouter.paid":
         items = provider_models.get("openrouter", {}).get("paid", [])
         enabled = [m for m in items if isinstance(m, dict) and m.get("enabled", True)]
         enabled = [m for m in enabled if str(m.get("id", "")) not in excluded_models]
         enabled = _apply_capability_filter(enabled, requirements)
+        if preferred:
+            enabled = [m for m in enabled if str(m.get("id", "")) == preferred]
         enabled.sort(key=_priority_sort_key)
-        picked = enabled[0]["id"] if enabled else "openrouter-paid-default"
-        return "openrouter", str(picked)
+        if not enabled:
+            raise HTTPException(422, {
+                "message": "no enabled OpenRouter paid model satisfies the request",
+                "preferred_model": preferred or None,
+            })
+        return "openrouter", str(enabled[0]["id"])
 
     if lane == "openai":
         items = provider_models.get("openai", {}).get("allowed", [])
         enabled = [m for m in items if isinstance(m, dict) and m.get("enabled", True)]
         enabled = [m for m in enabled if str(m.get("id", "")) not in excluded_models]
         enabled = _apply_capability_filter(enabled, requirements)
+        if preferred:
+            enabled = [m for m in enabled if str(m.get("id", "")) == preferred]
         enabled.sort(key=_priority_sort_key)
-        picked = enabled[0]["id"] if enabled else "openai-default"
-        return "openai", str(picked)
+        if not enabled:
+            raise HTTPException(422, {
+                "message": "no enabled OpenAI model satisfies the request",
+                "preferred_model": preferred or None,
+            })
+        return "openai", str(enabled[0]["id"])
 
-    return "local", "chat_active_model"
+    raise HTTPException(422, f"unsupported routing lane: {lane}")
 
 
 def _build_chat_payload(req: RouterChatRequest, selected_model: str, provider: str) -> dict:
@@ -3711,6 +4201,7 @@ def _manual_openrouter_free_candidates_state() -> dict:
     return section if isinstance(section, dict) else {}
 
 
+@_state_transactional
 def _store_manual_openrouter_free_candidates(payload: dict):
     state = read_provider_runtime_state()
     state["openrouter_free_candidates"] = payload
@@ -3977,10 +4468,10 @@ def _smoke_check_openrouter_candidates(env: dict, payload: dict, req: OpenRouter
     }
 
 
-def _refresh_openrouter_rankings_in_cache() -> dict:
+@_state_transactional
+def _commit_openrouter_rankings(snapshot: dict) -> dict:
     state = read_provider_runtime_state()
     cache = state.get("openrouter_catalog_cache", {}) if isinstance(state.get("openrouter_catalog_cache"), dict) else {}
-    snapshot = _fetch_openrouter_rankings()
     rankings = snapshot.get("rankings", []) if isinstance(snapshot.get("rankings"), list) else []
     cache["rankings"] = rankings
     cache["rankings_fetched_ts"] = snapshot.get("fetched_ts")
@@ -3989,6 +4480,10 @@ def _refresh_openrouter_rankings_in_cache() -> dict:
     state["openrouter_catalog_cache"] = cache
     write_provider_runtime_state(state)
     return cache
+
+
+def _refresh_openrouter_rankings_in_cache() -> dict:
+    return _commit_openrouter_rankings(_fetch_openrouter_rankings())
 
 
 def _score_openrouter_candidate(row: dict) -> float:
@@ -4201,6 +4696,47 @@ def _build_openrouter_free_candidates(provider_models: dict, discovery_req: Open
     }
 
 
+@_state_transactional
+def _commit_openrouter_catalog(fetched: dict) -> dict:
+    state = read_provider_runtime_state()
+    models = fetched.get("models", []) if isinstance(fetched.get("models"), list) else []
+    model_state = state.get("provider_model_state", {}) if isinstance(state.get("provider_model_state"), dict) else {}
+    free_id_set = set(fetched.get("free_ids", []))
+
+    if not fetched.get("error"):
+        for model_row in models:
+            if not isinstance(model_row, dict):
+                continue
+            model_id = str(model_row.get("id", "") or "")
+            if not model_id:
+                continue
+            key = _provider_model_key("openrouter", model_id)
+            row_state = model_state.get(key, {}) if isinstance(model_state.get(key), dict) else {}
+            if _openrouter_expiration_is_past(model_row.get("expiration_date")):
+                row_state["exclude_from_free_rotation"] = True
+                _set_promotion_state_on_row(row_state, "retired", reason="expired")
+            elif bool(model_row.get("is_free", False)):
+                if str(row_state.get("promotion_state", "") or "") not in PROMOTION_STATES:
+                    _set_promotion_state_on_row(row_state, "discovered", reason="catalog_refresh")
+            _refresh_failure_window_fields(row_state)
+            model_state[key] = row_state
+
+        for key, row_state in list(model_state.items()):
+            if not isinstance(row_state, dict) or not str(key).startswith("openrouter:"):
+                continue
+            model_id = str(key).split(":", 1)[1]
+            promotion_state = str(row_state.get("promotion_state", "") or "").lower()
+            if model_id and model_id not in free_id_set and promotion_state in {"discovered", "candidate", "smoke_passed", "active"}:
+                row_state["exclude_from_free_rotation"] = True
+                _set_promotion_state_on_row(row_state, "retired", reason="upstream_not_free")
+                model_state[key] = row_state
+
+    state["provider_model_state"] = model_state
+    state["openrouter_catalog_cache"] = fetched
+    write_provider_runtime_state(state)
+    return fetched
+
+
 def _refresh_openrouter_catalog(env: dict, state: dict | None = None, include_rankings: bool = False) -> dict:
     base = str(env.get("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1")).rstrip("/")
     api_key = str(env.get("OPENROUTER_API_KEY", "") or "")
@@ -4254,45 +4790,10 @@ def _refresh_openrouter_catalog(env: dict, state: dict | None = None, include_ra
         fetched["count"] = len(models)
         fetched["free_ids"] = sorted(set(free_ids))
 
-        model_state = state.get("provider_model_state", {}) if isinstance(state.get("provider_model_state"), dict) else {}
-        free_id_set = set(fetched["free_ids"])
-
-        for model_row in models:
-            if not isinstance(model_row, dict):
-                continue
-            model_id = str(model_row.get("id", "") or "")
-            if not model_id:
-                continue
-            key = _provider_model_key("openrouter", model_id)
-            row_state = model_state.get(key, {}) if isinstance(model_state.get(key), dict) else {}
-            if _openrouter_expiration_is_past(model_row.get("expiration_date")):
-                row_state["exclude_from_free_rotation"] = True
-                _set_promotion_state_on_row(row_state, "retired", reason="expired")
-            elif bool(model_row.get("is_free", False)):
-                if str(row_state.get("promotion_state", "") or "") not in PROMOTION_STATES:
-                    _set_promotion_state_on_row(row_state, "discovered", reason="catalog_refresh")
-            _refresh_failure_window_fields(row_state)
-            model_state[key] = row_state
-
-        for key, row_state in list(model_state.items()):
-            if not isinstance(row_state, dict):
-                continue
-            if not str(key).startswith("openrouter:"):
-                continue
-            model_id = str(key).split(":", 1)[1]
-            promotion_state = str(row_state.get("promotion_state", "") or "").lower()
-            if model_id and model_id not in free_id_set and promotion_state in {"discovered", "candidate", "smoke_passed", "active"}:
-                row_state["exclude_from_free_rotation"] = True
-                _set_promotion_state_on_row(row_state, "retired", reason="upstream_not_free")
-                model_state[key] = row_state
-
-        state["provider_model_state"] = model_state
     except Exception as e:
         fetched["error"] = str(e)
 
-    state["openrouter_catalog_cache"] = fetched
-    write_provider_runtime_state(state)
-    return fetched
+    return _commit_openrouter_catalog(fetched)
 
 
 def _maybe_refresh_openrouter_catalog(env: dict, max_age_seconds: int = 900) -> dict:
@@ -5019,6 +5520,7 @@ def _trim_evaluation_queue(queue_rows: list[dict]) -> list[dict]:
     return non_queued + keep_queued
 
 
+@_state_transactional
 def _upsert_suite_from_request(req: LocalEvalRequest):
     state = read_provider_runtime_state()
     suites = state.get("evaluation_suites", {})
@@ -5034,7 +5536,7 @@ def _upsert_suite_from_request(req: LocalEvalRequest):
         "cases": [c.dict() for c in req.cases],
         "case_pass_threshold_pct": req.case_pass_threshold_pct,
         "suite_pass_threshold_pct": req.suite_pass_threshold_pct,
-        "metadata": req.metadata,
+        "metadata": redact_sensitive_data(req.metadata),
         "latest_run_id": suites.get(key, {}).get("latest_run_id"),
         "case_count": len(req.cases),
         "variant_count": len(req.variants),
@@ -5044,6 +5546,7 @@ def _upsert_suite_from_request(req: LocalEvalRequest):
     write_provider_runtime_state(state)
 
 
+@_state_transactional
 def _mark_suite_latest_run(suite_name: str, suite_version: str, run_id: str):
     state = read_provider_runtime_state()
     suites = state.get("evaluation_suites", {})
@@ -5107,6 +5610,7 @@ def _build_compare_compact(run: dict) -> dict:
     }
 
 
+@_state_transactional
 def _claim_next_eval_job() -> dict | None:
     with EVAL_QUEUE_CLAIM_LOCK:
         state = read_provider_runtime_state()
@@ -5195,6 +5699,26 @@ def _claim_next_eval_job() -> dict | None:
         }
 
 
+@_state_transactional
+def _finish_eval_job(run_id: str, status: str, error: str | None = None):
+    state = read_provider_runtime_state()
+    runs = state.get("evaluation_runs", {}) if isinstance(state.get("evaluation_runs"), dict) else {}
+    if error is not None:
+        row = runs.get(run_id, {}) if isinstance(runs.get(run_id), dict) else {}
+        row["status"] = "error"
+        row["error"] = error
+        row["completed_ts"] = datetime.utcnow().isoformat() + "Z"
+        runs[run_id] = row
+    queue = state.get("evaluation_queue", []) if isinstance(state.get("evaluation_queue"), list) else []
+    for row in queue:
+        if isinstance(row, dict) and row.get("run_id") == run_id:
+            row["status"] = status
+            row["completed_ts"] = datetime.utcnow().isoformat() + "Z"
+    state["evaluation_runs"] = runs
+    state["evaluation_queue"] = queue
+    write_provider_runtime_state(state)
+
+
 def _eval_worker_once() -> bool:
     job = _claim_next_eval_job()
     if not isinstance(job, dict):
@@ -5206,6 +5730,7 @@ def _eval_worker_once() -> bool:
 
     payload = job.get("request", {}) if isinstance(job.get("request"), dict) else {}
     req = _suite_to_request(payload)
+    error_message = None
     try:
         _run_local_evaluation(
             req,
@@ -5218,25 +5743,10 @@ def _eval_worker_once() -> bool:
         )
         final_status = "completed"
     except Exception as e:
-        state = read_provider_runtime_state()
-        runs = state.get("evaluation_runs", {}) if isinstance(state.get("evaluation_runs"), dict) else {}
-        row = runs.get(run_id, {}) if isinstance(runs.get(run_id), dict) else {}
-        row["status"] = "error"
-        row["error"] = str(e)
-        row["completed_ts"] = datetime.utcnow().isoformat() + "Z"
-        runs[run_id] = row
-        state["evaluation_runs"] = runs
-        write_provider_runtime_state(state)
+        error_message = str(e)
         final_status = "error"
 
-    state = read_provider_runtime_state()
-    queue = state.get("evaluation_queue", []) if isinstance(state.get("evaluation_queue"), list) else []
-    for q in queue:
-        if isinstance(q, dict) and q.get("run_id") == run_id:
-            q["status"] = final_status
-            q["completed_ts"] = datetime.utcnow().isoformat() + "Z"
-    state["evaluation_queue"] = queue
-    write_provider_runtime_state(state)
+    _finish_eval_job(run_id, final_status, error_message)
     return True
 
 
@@ -5260,6 +5770,7 @@ def _ensure_eval_worker_started():
         EVAL_WORKER_STARTED = True
 
 
+@_state_transactional
 def _enqueue_local_evaluation(req: LocalEvalRequest, priority: str) -> tuple[str, int, str]:
     if not req.cases:
         raise HTTPException(400, "cases must contain at least one test case")
@@ -5300,7 +5811,7 @@ def _enqueue_local_evaluation(req: LocalEvalRequest, priority: str) -> tuple[str
         "cases": [c.dict() for c in req.cases],
         "case_pass_threshold_pct": req.case_pass_threshold_pct,
         "suite_pass_threshold_pct": req.suite_pass_threshold_pct,
-        "metadata": req.metadata,
+        "metadata": redact_sensitive_data(req.metadata),
         "created_ts": enqueued_ts,
         "status": "queued",
         "results": [],
@@ -5317,6 +5828,60 @@ def _enqueue_local_evaluation(req: LocalEvalRequest, priority: str) -> tuple[str
     position = next((i + 1 for i, q in enumerate(queued) if q.get("run_id") == run_id), len(queued))
     _ensure_eval_worker_started()
     return run_id, position, enqueued_ts
+
+
+@_state_transactional
+def _store_local_evaluation(run_record: dict):
+    run_id = str(run_record["run_id"])
+    suite_key = f"{run_record['suite_name']}:{run_record['suite_version']}"
+    state = read_provider_runtime_state()
+    runs = state.get("evaluation_runs", {})
+    if not isinstance(runs, dict):
+        runs = {}
+    runs[run_id] = run_record
+    if len(runs) > MAX_EVALUATION_RUNS:
+        ordered = sorted(runs.items(), key=lambda kv: str(kv[1].get("created_ts", "")))
+        for old_id, _ in ordered[:-MAX_EVALUATION_RUNS]:
+            runs.pop(old_id, None)
+
+    reports = state.get("evaluation_reports", {})
+    if not isinstance(reports, dict):
+        reports = {}
+    reports[run_id] = {
+        "run_id": run_id,
+        "suite_name": run_record["suite_name"],
+        "suite_version": run_record["suite_version"],
+        "created_ts": run_record["created_ts"],
+        "suite_pass": run_record["suite_pass"],
+        "summary": run_record["summary"],
+        "recommendations": run_record["recommendations"],
+    }
+
+    suites = state.get("evaluation_suites", {})
+    if not isinstance(suites, dict):
+        suites = {}
+    prior_suite = suites.get(suite_key, {}) if isinstance(suites.get(suite_key), dict) else {}
+    suites[suite_key] = {
+        "suite_name": run_record["suite_name"],
+        "suite_version": run_record["suite_version"],
+        "target_mode": run_record["target_mode"],
+        "candidate_specs": run_record["candidate_specs"],
+        "candidate_models": run_record["candidate_models"],
+        "variants": run_record["variants"],
+        "cases": run_record["cases"],
+        "case_pass_threshold_pct": run_record["case_pass_threshold_pct"],
+        "suite_pass_threshold_pct": run_record["suite_pass_threshold_pct"],
+        "latest_run_id": run_id,
+        "case_count": len(run_record["cases"]),
+        "variant_count": len(run_record["variants"]),
+        "updated_ts": datetime.utcnow().isoformat() + "Z",
+        "metadata": run_record["metadata"],
+        "created_ts": prior_suite.get("created_ts", datetime.utcnow().isoformat() + "Z"),
+    }
+    state["evaluation_runs"] = runs
+    state["evaluation_reports"] = reports
+    state["evaluation_suites"] = suites
+    write_provider_runtime_state(state)
 
 
 def _run_local_evaluation(req: LocalEvalRequest, run_id: str | None = None, queued_meta: dict | None = None) -> dict:
@@ -5469,7 +6034,7 @@ def _run_local_evaluation(req: LocalEvalRequest, run_id: str | None = None, queu
         "case_pass_threshold_pct": req.case_pass_threshold_pct,
         "suite_pass_threshold_pct": req.suite_pass_threshold_pct,
         "suite_pass": suite_pass,
-        "metadata": req.metadata,
+        "metadata": redact_sensitive_data(req.metadata),
         "created_ts": created_ts,
         "started_ts": started_ts,
         "completed_ts": datetime.utcnow().isoformat() + "Z",
@@ -5481,60 +6046,7 @@ def _run_local_evaluation(req: LocalEvalRequest, run_id: str | None = None, queu
     if isinstance(queued_meta, dict):
         run_record["queue"] = queued_meta
 
-    suite_key = f"{req.suite_name}:{req.suite_version}"
-    state = read_provider_runtime_state()
-    runs = state.get("evaluation_runs", {})
-    if not isinstance(runs, dict):
-        runs = {}
-    runs[run_id] = run_record
-
-    if len(runs) > MAX_EVALUATION_RUNS:
-        ordered = sorted(
-            runs.items(),
-            key=lambda kv: str(kv[1].get("created_ts", "")),
-        )
-        for old_id, _ in ordered[:-MAX_EVALUATION_RUNS]:
-            runs.pop(old_id, None)
-
-    reports = state.get("evaluation_reports", {})
-    if not isinstance(reports, dict):
-        reports = {}
-    reports[run_id] = {
-        "run_id": run_id,
-        "suite_name": req.suite_name,
-        "suite_version": req.suite_version,
-        "created_ts": created_ts,
-        "suite_pass": suite_pass,
-        "summary": summary,
-        "recommendations": recommendations,
-    }
-
-    suites = state.get("evaluation_suites", {})
-    if not isinstance(suites, dict):
-        suites = {}
-    prior_suite = suites.get(suite_key, {}) if isinstance(suites.get(suite_key), dict) else {}
-    suites[suite_key] = {
-        "suite_name": req.suite_name,
-        "suite_version": req.suite_version,
-        "target_mode": req.target_mode,
-        "candidate_specs": candidate_specs,
-        "candidate_models": candidate_models,
-        "variants": [v.dict() for v in variants],
-        "cases": [c.dict() for c in req.cases],
-        "case_pass_threshold_pct": req.case_pass_threshold_pct,
-        "suite_pass_threshold_pct": req.suite_pass_threshold_pct,
-        "latest_run_id": run_id,
-        "case_count": len(req.cases),
-        "variant_count": len(variants),
-        "updated_ts": datetime.utcnow().isoformat() + "Z",
-        "metadata": req.metadata,
-        "created_ts": prior_suite.get("created_ts", datetime.utcnow().isoformat() + "Z"),
-    }
-
-    state["evaluation_runs"] = runs
-    state["evaluation_reports"] = reports
-    state["evaluation_suites"] = suites
-    write_provider_runtime_state(state)
+    _store_local_evaluation(run_record)
 
     _mark_suite_latest_run(req.suite_name, req.suite_version, run_id)
 
@@ -5561,9 +6073,12 @@ def current_links():
 # -----------------------------------------------------------------------------
 def _pm2(cmd: list[str]):
     try:
-        subprocess.run(["pm2"] + cmd, check=False)
+        result = subprocess.run(["pm2"] + cmd, capture_output=True, text=True, check=False)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"pm2 error: {e}")
+    if result.returncode != 0:
+        raise HTTPException(status_code=500, detail=f"pm2 {' '.join(cmd)} failed: {(result.stderr or result.stdout)[-500:]}")
+    return result
 
 def _systemctl(args: list[str], timeout: int = 30) -> subprocess.CompletedProcess:
     # Using sudo because your units are managed at system scope
@@ -5632,7 +6147,29 @@ def _bounce_engine(mode: str):
         _pm2(["restart", pm2name])
         return {"ok": True, "method": "pm2", "proc": pm2name}
 
-    return {"ok": False, "method": "none", "detail": "No SYSTEMD_LLM_* unit and no PM2_* proc configured"}
+    raise HTTPException(409, f"no engine process is configured for {mode}")
+
+
+def _stop_engine(mode: str):
+    unit = {
+        "chat": os.getenv("SYSTEMD_LLM_A"),
+        "intent": os.getenv("SYSTEMD_LLM_B"),
+        "small": os.getenv("SYSTEMD_LLM_C"),
+    }.get(mode)
+    if unit:
+        _systemctl_stop(unit)
+        return {"ok": True, "method": "systemd_stop", "unit": unit}
+
+    env = read_env()
+    pm2name = {
+        "chat": env.get("PM2_CHAT"),
+        "intent": env.get("PM2_INTENT"),
+        "small": env.get("PM2_SMALL"),
+    }.get(mode)
+    if pm2name:
+        _pm2(["stop", pm2name])
+        return {"ok": True, "method": "pm2_stop", "proc": pm2name}
+    raise HTTPException(409, f"no engine process is configured for {mode}")
 
 
 def _normalize_switch_lifecycle_mode(value: str | None) -> str:
@@ -5647,7 +6184,7 @@ def _backend_supports_model_kind(backend: str, model_kind: str) -> bool:
     kind = str(model_kind or "unknown").strip().lower()
 
     if backend_key == "tgw":
-        return True
+        return kind != "multimodal"
     if backend_key == "tabbyapi":
         if kind == "multimodal":
             return False
@@ -5856,6 +6393,7 @@ def _tabbyapi_native_unload(mode: str) -> dict:
 # -----------------------------------------------------------------------------
 # Core: model switch
 # -----------------------------------------------------------------------------
+@_model_lifecycle_transactional
 def switch_model(
     mode: str,
     model_dir: str,
@@ -5863,6 +6401,7 @@ def switch_model(
     backend: str | None = None,
     lifecycle_mode: str | None = None,
     native_max_seq_len: int | None = None,
+    require_loaded: bool = False,
 ):
     # Historical UI used 'util' for the third slot -> treat as small.
     if mode == "util":
@@ -5877,11 +6416,10 @@ def switch_model(
     if native_max_seq_len is not None and int(native_max_seq_len) <= 0:
         raise HTTPException(400, "native_max_seq_len must be > 0 when provided")
 
-    target = MODELS_DIR / model_dir
-    if not target.exists():
-        raise HTTPException(404, f"model dir not found: {target}")
+    target = _resolve_model_directory(model_dir)
+    model_name = str(target.relative_to(MODELS_DIR.resolve()))
 
-    inspection = inspect_one(model_dir)
+    inspection = inspect_one(model_name)
     model_kind = str(inspection.get("kind", "unknown") or "unknown")
     recommended_backend = str(inspection.get("recommended_backend", "") or "").strip().lower()
     unsupported_reason = str(inspection.get("unsupported_reason", "") or "").strip() or None
@@ -5953,14 +6491,19 @@ def switch_model(
         backend_source = "auto_vllm_unavailable_fallback"
         auto_backend_applied = chosen_backend != previous_backend
 
-    _make_symlink(link, target)
-    if chosen_backend is not None:
-        set_slot_backend(mode, chosen_backend)
-    slot_backend = read_slot_backends().get(mode, "tgw")
+    slot_backend = str(chosen_backend or previous_backend)
     native_load_attempted = False
     native_load_used = False
     native_load: dict | None = None
     bounce_result: dict | None = None
+    rollback_result: dict | None = None
+    if link.exists() and not link.is_symlink():
+        raise HTTPException(409, f"active model path is not a managed symlink: {link}")
+    previous_target = _symlink_target(link)
+    if previous_target is not None:
+        models_root = MODELS_DIR.resolve()
+        if previous_target != models_root and not previous_target.is_relative_to(models_root):
+            raise HTTPException(409, f"active model symlink points outside the managed models directory: {link}")
 
     if normalized_lifecycle_mode == "native" and slot_backend != "tabbyapi":
         raise HTTPException(400, "lifecycle_mode=native requires backend=tabbyapi for the selected slot")
@@ -5978,8 +6521,45 @@ def switch_model(
             detail = str(native_load.get("detail", "unknown error"))
             raise HTTPException(502, f"tabbyapi native load failed: {detail}")
 
-    if bounce and not native_load_used:
-        bounce_result = _bounce_engine(mode)
+    if require_loaded and not native_load_used and not bounce:
+        detail = "selected backend requires an engine restart to load the model"
+        if native_load_attempted and isinstance(native_load, dict):
+            detail = str(native_load.get("detail") or detail)
+        raise HTTPException(409, f"model was not loaded: {detail}; set bounce=true or use a working native lifecycle")
+
+    try:
+        _make_symlink(link, target)
+        set_slot_backend(mode, slot_backend)
+        if bounce and not native_load_used:
+            bounce_result = _bounce_engine(mode)
+    except Exception as exc:
+        rollback_errors = []
+        try:
+            _restore_symlink(link, previous_target)
+        except Exception as rollback_exc:
+            rollback_errors.append(f"symlink: {rollback_exc}")
+        try:
+            set_slot_backend(mode, previous_backend)
+        except Exception as rollback_exc:
+            rollback_errors.append(f"backend: {rollback_exc}")
+        if bounce and not native_load_used:
+            try:
+                rollback_result = _bounce_engine(mode)
+            except Exception as rollback_exc:
+                rollback_errors.append(f"engine: {rollback_exc}")
+        if native_load_used:
+            unload_result = _tabbyapi_native_unload(mode)
+            if not unload_result.get("ok"):
+                rollback_errors.append(f"native unload: {unload_result.get('detail', 'failed')}")
+        detail = exc.detail if isinstance(exc, HTTPException) else str(exc)
+        status_code = exc.status_code if isinstance(exc, HTTPException) else 500
+        raise HTTPException(status_code, {
+            "message": "model switch failed and previous slot state was restored",
+            "cause": detail,
+            "rollback_errors": rollback_errors,
+            "previous_backend": previous_backend,
+            "previous_target": str(previous_target) if previous_target else None,
+        }) from exc
 
     return {
         "ok": True,
@@ -5999,14 +6579,83 @@ def switch_model(
         "native_load_attempted": native_load_attempted,
         "native_load_used": native_load_used,
         "native_load": native_load,
+        "loaded": bool(native_load_used or bounce),
+        "load_method": "tabbyapi_native" if native_load_used else ("engine_restart" if bounce else "staged"),
         "bounce": bool(bounce),
         "bounce_result": bounce_result,
+        "rollback_result": rollback_result,
     }
 
 # -----------------------------------------------------------------------------
 # Jobs: tiny runner for train/merge/convert
 # -----------------------------------------------------------------------------
 JOBS: dict[str, dict] = {}
+JOB_PROCESSES: dict[str, subprocess.Popen] = {}
+JOB_PIDFDS: dict[str, int] = {}
+JOB_LOCK = threading.RLock()
+
+
+def _validate_job_path_args(kind: str, args: dict, env: dict) -> dict:
+    validated = dict(args)
+    if str(validated.get("data_path") or "").strip():
+        validated["data_path"] = str(_resolve_path_within(
+            validated["data_path"],
+            [ROOT / "data"],
+            must_exist=True,
+            label="data_path",
+        ))
+
+    if str(validated.get("source_model_dir") or "").strip():
+        validated["source_model_dir"] = str(_resolve_path_within(
+            validated["source_model_dir"],
+            [ROOT / "output", MODELS_DIR.resolve()],
+            must_exist=True,
+            must_be_dir=True,
+            label="source_model_dir",
+        ))
+    if str(validated.get("output_dir") or "").strip():
+        validated["output_dir"] = str(_resolve_path_within(
+            validated["output_dir"],
+            [ROOT / "output", MODELS_DIR.resolve()],
+            label="output_dir",
+        ))
+
+    for field, configured in (
+        ("base_models_dir", env.get("BASE_MODELS_DIR") or (ENGINES_ROOT / "models")),
+        ("webui_models_dir", env.get("WEBUI_MODELS_DIR") or MODELS_DIR),
+    ):
+        if str(validated.get(field) or "").strip():
+            configured_path = Path(str(configured)).resolve()
+            validated[field] = str(_resolve_path_within(
+                validated[field],
+                [configured_path, ENGINES_ROOT],
+                label=field,
+            ))
+
+    if str(validated.get("exllama_root") or "").strip():
+        validated["exllama_root"] = str(_resolve_path_within(
+            validated["exllama_root"],
+            [ENGINES_ROOT],
+            must_exist=True,
+            must_be_dir=True,
+            label="exllama_root",
+        ))
+
+    for field in ("convert_script", "exl3_convert_script"):
+        if str(validated.get(field) or "").strip():
+            script_path = _resolve_path_within(
+                validated[field],
+                [ENGINES_ROOT],
+                must_exist=True,
+                label=field,
+            )
+            if not script_path.is_file() or script_path.suffix != ".py":
+                raise HTTPException(422, f"{field} must be an existing Python file under {ENGINES_ROOT}")
+            validated[field] = str(script_path)
+
+    if kind.startswith("convert_hf_"):
+        validated["repo_id"] = _validate_repo_id(str(validated.get("repo_id") or ""))
+    return validated
 
 def _tail(path: Path, n: int = 120) -> list[str]:
     if not path.exists():
@@ -6019,7 +6668,7 @@ def _tail(path: Path, n: int = 120) -> list[str]:
 
 
 def _safe_repo_folder_name(repo_id: str) -> str:
-    return str(repo_id).strip().replace("/", "__")
+    return _validate_repo_id(repo_id).replace("/", "__")
 
 
 def _as_positive_float(value: object, default: float) -> float:
@@ -6039,26 +6688,42 @@ def _as_positive_int(value: object, default: int) -> int:
 
 
 def _conversion_paths_for_hf(repo_id: str, bits: float, args: dict, env: dict, target_format: str = "exl2") -> tuple[Path, Path]:
-    base_models_dir = str(args.get("base_models_dir") or env.get("BASE_MODELS_DIR") or "models").strip() or "models"
-    webui_models_dir = str(
-        args.get("webui_models_dir")
-        or env.get("WEBUI_MODELS_DIR")
-        or "text-generation-webui/user_data/models"
-    ).strip() or "text-generation-webui/user_data/models"
+    configured_base = Path(str(env.get("BASE_MODELS_DIR") or (ROOT / "models"))).resolve()
+    configured_webui = Path(str(env.get("WEBUI_MODELS_DIR") or MODELS_DIR)).resolve()
+    base_models_dir = _resolve_path_within(
+        args.get("base_models_dir") or configured_base,
+        [configured_base],
+        label="base_models_dir",
+    )
+    webui_models_dir = _resolve_path_within(
+        args.get("webui_models_dir") or configured_webui,
+        [configured_webui, MODELS_DIR.resolve()],
+        label="webui_models_dir",
+    )
     safe_name = _safe_repo_folder_name(repo_id)
     bits_tag = str(bits).replace(".", "p")
     format_name = str(target_format or "exl2").strip().lower() or "exl2"
-    return Path(base_models_dir) / safe_name, Path(webui_models_dir) / f"{safe_name}_{format_name}_b{bits_tag}"
+    return base_models_dir / safe_name, webui_models_dir / f"{safe_name}_{format_name}_b{bits_tag}"
 
 
 def _conversion_paths_for_merged(model_key: str, args: dict, target_format: str = "exl2") -> tuple[Path, Path]:
     source_model_dir = str(args.get("source_model_dir") or "").strip()
     output_dir = str(args.get("output_dir") or "").strip()
 
-    source_path = Path(source_model_dir) if source_model_dir else (ROOT / "output" / f"merged_{model_key}")
+    source_path = _resolve_path_within(
+        source_model_dir or (ROOT / "output" / f"merged_{model_key}"),
+        [ROOT / "output", MODELS_DIR.resolve()],
+        must_exist=True,
+        must_be_dir=True,
+        label="source_model_dir",
+    )
     format_name = str(target_format or "exl2").strip().lower() or "exl2"
     default_output = f"lora_{model_key}" if format_name == "exl2" else f"lora_{model_key}_{format_name}"
-    output_path = Path(output_dir) if output_dir else (ROOT / "output" / default_output)
+    output_path = _resolve_path_within(
+        output_dir or (ROOT / "output" / default_output),
+        [ROOT / "output", MODELS_DIR.resolve()],
+        label="output_dir",
+    )
     return source_path, output_path
 
 
@@ -6349,6 +7014,7 @@ def _build_conversion_artifact_record(run_row: dict) -> dict:
     }
 
 
+@_state_transactional
 def _record_conversion_run_start(job_id: str, kind: str, args: dict, env: dict, log_path: Path, pid: int) -> dict:
     source_type = _conversion_kind_source_type(kind) or str(args.get("source_type") or "").strip().lower()
     target_format = _conversion_kind_format(kind) or _normalized_conversion_format(args.get("target_format"), default="exl2")
@@ -6403,6 +7069,7 @@ def _record_conversion_run_start(job_id: str, kind: str, args: dict, env: dict, 
     return row
 
 
+@_state_transactional
 def _record_conversion_run_finish(job_id: str, returncode: int):
     with CONVERSION_STATE_LOCK:
         state = read_provider_runtime_state()
@@ -6459,6 +7126,7 @@ def _launch_job(kind: str, args: dict) -> dict:
     conversion_kinds = set(CONVERSION_KIND_FORMAT.keys())
 
     runtime_env = read_env()
+    args = _validate_job_path_args(kind, args, runtime_env)
     env = os.environ.copy()
     conversion_python_bin = str(runtime_env.get("CONVERSION_PYTHON_BIN") or "").strip()
     base_python_cmd = "python3"
@@ -6629,23 +7297,51 @@ def _launch_job(kind: str, args: dict) -> dict:
         lf.write(f"### {kind} job {job_id} @ {datetime.now().isoformat()}\n")
         lf.write("$ " + " ".join(cmd) + "\n\n")
 
-    proc = subprocess.Popen(cmd, cwd=str(ROOT), stdout=open(log_path, "a"), stderr=subprocess.STDOUT, env=env)
-    JOBS[job_id] = {
-        "id": job_id, "kind": kind, "args": args, "cmd": cmd,
-        "pid": proc.pid, "start_ts": time.time(), "end_ts": None,
-        "status": "running", "log": str(log_path),
-    }
+    log_handle = open(log_path, "a")
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=str(ROOT),
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            env=env,
+            start_new_session=True,
+        )
+    finally:
+        log_handle.close()
+
+    pidfd = None
+    if hasattr(os, "pidfd_open"):
+        try:
+            pidfd = os.pidfd_open(proc.pid, 0)
+        except OSError:
+            pidfd = None
+
+    with JOB_LOCK:
+        JOB_PROCESSES[job_id] = proc
+        if pidfd is not None:
+            JOB_PIDFDS[job_id] = pidfd
+        JOBS[job_id] = {
+            "id": job_id, "kind": kind, "args": args, "cmd": cmd,
+            "pid": proc.pid, "start_ts": time.time(), "end_ts": None,
+            "status": "running", "log": str(log_path),
+        }
 
     if kind in conversion_kinds:
         JOBS[job_id]["conversion"] = _record_conversion_run_start(job_id, kind, args, env, log_path, proc.pid)
 
     def _watch():
         rc = proc.wait()
-        j = JOBS.get(job_id)
-        if j:
-            j["end_ts"] = time.time()
-            j["returncode"] = rc
-            j["status"] = "ok" if rc == 0 else "error"
+        with JOB_LOCK:
+            j = JOBS.get(job_id)
+            if j:
+                j["end_ts"] = time.time()
+                j["returncode"] = rc
+                j["status"] = "cancelled" if j.get("status") == "cancelling" else ("ok" if rc == 0 else "error")
+            JOB_PROCESSES.pop(job_id, None)
+            finished_pidfd = JOB_PIDFDS.pop(job_id, None)
+            if finished_pidfd is not None:
+                os.close(finished_pidfd)
         if kind in conversion_kinds:
             _record_conversion_run_finish(job_id, rc)
 
@@ -6669,7 +7365,7 @@ class ModelLoadReq(BaseModel):
     model_config = {"protected_namespaces": ()}
     mode: str            # chat|intent|small|util
     model_dir: str
-    bounce: bool = False
+    bounce: bool = True
     backend: str | None = None  # tgw|vllm|tabbyapi
     lifecycle_mode: str | None = "auto"  # legacy|auto|native
     native_max_seq_len: int | None = None
@@ -6988,10 +7684,12 @@ def model_load(req: ModelLoadReq):
         req.backend,
         req.lifecycle_mode,
         req.native_max_seq_len,
+        True,
     )
 
 
 @app.post("/models/unload")
+@_model_lifecycle_transactional
 def model_unload(req: ModelUnloadReq):
     mode = _normalize_slot_mode(req.mode, default="")
     if mode not in ("chat", "intent", "small"):
@@ -7001,10 +7699,13 @@ def model_unload(req: ModelUnloadReq):
         raise HTTPException(400, f"backend must be one of: {', '.join(sorted(SUPPORTED_BACKENDS))}")
 
     normalized_lifecycle_mode = _normalize_switch_lifecycle_mode(req.lifecycle_mode)
-    previous_backend = str(read_slot_backends().get(mode, DEFAULT_SLOT_BACKENDS.get(mode, "tgw")) or "tgw")
-    if req.backend is not None:
-        set_slot_backend(mode, req.backend)
     slot_backend = str(read_slot_backends().get(mode, DEFAULT_SLOT_BACKENDS.get(mode, "tgw")) or "tgw")
+    previous_backend = slot_backend
+    if req.backend is not None and req.backend != slot_backend:
+        raise HTTPException(
+            409,
+            f"requested backend '{req.backend}' does not match active slot backend '{slot_backend}'",
+        )
 
     if normalized_lifecycle_mode == "native" and slot_backend != "tabbyapi":
         raise HTTPException(400, "lifecycle_mode=native requires backend=tabbyapi for the selected slot")
@@ -7016,7 +7717,20 @@ def model_unload(req: ModelUnloadReq):
     native_unload_attempted = False
     native_unload_used = False
     native_unload: dict | None = None
-    bounce_result: dict | None = None
+    stop_result: dict | None = None
+    link = {
+        "chat": MODELS_DIR / "chat_active_model",
+        "intent": MODELS_DIR / "intent_active_model",
+        "small": MODELS_DIR / "small_active_model",
+    }[mode]
+    if link.exists() and not link.is_symlink():
+        raise HTTPException(409, f"active model path is not a managed symlink: {link}")
+    previous_target = _symlink_target(link)
+    if previous_target is None:
+        raise HTTPException(409, f"no active model is loaded for slot '{mode}'")
+    models_root = MODELS_DIR.resolve()
+    if previous_target != models_root and not previous_target.is_relative_to(models_root):
+        raise HTTPException(409, f"active model symlink points outside the managed models directory: {link}")
 
     if should_try_native:
         native_unload_attempted = True
@@ -7027,21 +7741,50 @@ def model_unload(req: ModelUnloadReq):
             detail = str(native_unload.get("detail", "unknown error"))
             raise HTTPException(502, f"tabbyapi native unload failed: {detail}")
 
-    if req.bounce and not native_unload_used:
-        bounce_result = _bounce_engine(mode)
+    if not native_unload_used:
+        if not req.bounce:
+            detail = "selected backend has no successful native unload operation"
+            if isinstance(native_unload, dict):
+                detail = str(native_unload.get("detail") or detail)
+            raise HTTPException(409, f"model was not unloaded: {detail}; set bounce=true to stop the engine")
+        stop_result = _stop_engine(mode)
+
+    try:
+        if link.is_symlink() or link.exists():
+            link.unlink()
+    except Exception as exc:
+        recovery = None
+        if stop_result is not None and previous_target is not None:
+            try:
+                _restore_symlink(link, previous_target)
+                recovery = _bounce_engine(mode)
+            except Exception as recovery_exc:
+                recovery = {"ok": False, "error": str(recovery_exc)}
+        elif native_unload_used and previous_target is not None:
+            try:
+                recovery = _tabbyapi_native_load(mode, previous_target)
+            except Exception as recovery_exc:
+                recovery = {"ok": False, "error": str(recovery_exc)}
+        raise HTTPException(500, {
+            "message": "backend unloaded but active model link could not be cleared",
+            "cause": str(exc),
+            "recovery": recovery,
+        }) from exc
 
     return {
         "ok": True,
         "mode": mode,
         "backend": slot_backend,
         "previous_backend": previous_backend,
-        "active_model": _active_model_name_for_mode(mode),
+        "active_model": None,
         "lifecycle_mode": normalized_lifecycle_mode,
         "native_unload_attempted": native_unload_attempted,
         "native_unload_used": native_unload_used,
         "native_unload": native_unload,
         "bounce": bool(req.bounce),
-        "bounce_result": bounce_result,
+        "bounce_result": stop_result,
+        "unload_method": "tabbyapi_native" if native_unload_used else "engine_stop",
+        "engine_stop": stop_result,
     }
 
 @app.get("/knobs")
@@ -7050,12 +7793,14 @@ def get_knobs():
 
 @app.post("/knobs")
 def set_knobs(k: Knobs):
-    env = read_env()
-    for k_, v in k.dict().items():
+    # Only rewrite the project-local file. Never copy shared/global secrets
+    # into the project fallback file as a side effect of changing a knob.
+    env = _read_env_file(ENV_PATH)
+    for k_, v in k.model_dump().items():
         if v is not None:
             env[k_] = v
     write_env(env)
-    return redacted_env(env)
+    return redacted_env(read_env())
 
 
 def _curated_bucket_rows(doc: dict, provider: str, bucket: str, create_missing: bool = False) -> list[dict] | None:
@@ -7230,6 +7975,7 @@ def providers_models_curated_summary(
 
 
 @app.post("/providers/models/curated-entry")
+@_state_transactional
 def providers_models_curated_entry_update(req: CuratedModelUpdateReq):
     reason = str(req.reason or "").strip()
     if not reason:
@@ -7414,6 +8160,7 @@ def providers_policies_test(req: PoliciesTestReq):
     chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
     if not chain:
         chain = ["local"]
+    chain = _constrain_chain_to_preferred_model(probe, chain, provider_models, policies)
     policy_context = _build_route_policy_context(
         probe,
         env,
@@ -7508,6 +8255,7 @@ def providers_retention_state():
 
 
 @app.post("/providers/state/provider-model-flags")
+@_state_transactional
 def providers_model_flags_update(req: ProviderModelFlagsReq):
     if not str(req.reason or "").strip():
         raise HTTPException(422, {"errors": ["reason is required"]})
@@ -7739,6 +8487,7 @@ def router_route_test(req: RouterRouteTestReq):
     chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
     if not chain:
         chain = ["local"]
+    chain = _constrain_chain_to_preferred_model(probe, chain, provider_models, policies)
     policy_context = _build_route_policy_context(
         probe,
         env,
@@ -7753,7 +8502,16 @@ def router_route_test(req: RouterRouteTestReq):
     candidates = []
     for lane in chain:
         excluded = attempted_by_lane.setdefault(lane, set())
-        provider, model_id = _pick_catalog_model(lane, provider_models, probe, excluded_models=excluded, policies=policies)
+        try:
+            provider, model_id = _pick_catalog_model(lane, provider_models, probe, excluded_models=excluded, policies=policies)
+        except HTTPException as exc:
+            candidates.append({
+                "attempt_order": len(candidates) + 1,
+                "lane": lane,
+                "available": False,
+                "error": exc.detail,
+            })
+            continue
         if model_id in excluded:
             continue
         excluded.add(model_id)
@@ -7880,6 +8638,7 @@ def router_chat(req: RouterChatRequest):
     chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
     if not chain:
         chain = ["local"]
+    chain = _constrain_chain_to_preferred_model(req, chain, provider_models, policies)
     allow_fallbacks = _resolve_bool_pref(
         req.provider_preferences.allow_fallbacks,
         bool(effective_defaults.get("allow_fallbacks", True)),
@@ -7895,7 +8654,22 @@ def router_chat(req: RouterChatRequest):
     raw = None
     for idx, lane in enumerate(chain):
         excluded = attempted_by_lane.setdefault(lane, set())
-        provider, model_id = _pick_catalog_model(lane, provider_models, req, excluded_models=excluded, policies=policies)
+        try:
+            provider, model_id = _pick_catalog_model(lane, provider_models, req, excluded_models=excluded, policies=policies)
+        except HTTPException as exc:
+            selection_error = {"type": "no_capable_catalog_model", "message": exc.detail, "retryable": False}
+            routing_errors.append({"lane": lane, "provider": None, "model": None, "error": selection_error})
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=None,
+                model=None,
+                result="skipped",
+                reason_code="no_capable_catalog_model",
+                error=selection_error,
+                fallback_action="break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate",
+            )
+            continue
         if model_id in excluded:
             _append_route_attempt(
                 attempt_trace,
@@ -7973,29 +8747,30 @@ def router_chat(req: RouterChatRequest):
                     limiter=limiter,
                     policies=policies,
                 )
-                routing_errors.append({
-                    "lane": lane,
-                    "provider": provider,
-                    "model": model_id,
-                    "error": overflow_error,
-                })
-                _append_route_attempt(
-                    attempt_trace,
-                    lane=lane,
-                    provider=provider,
-                    model=model_id,
-                    result="blocked",
-                    reason_code="free_tier_limiter",
-                    error=overflow_error,
-                    fallback_action=(
-                        "break_overflow_policy"
-                        if action == "break"
-                        else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
-                    ),
-                )
-                if action == "break" or idx == len(chain) - 1:
-                    break
-                continue
+                if action != "acquired":
+                    routing_errors.append({
+                        "lane": lane,
+                        "provider": provider,
+                        "model": model_id,
+                        "error": overflow_error,
+                    })
+                    _append_route_attempt(
+                        attempt_trace,
+                        lane=lane,
+                        provider=provider,
+                        model=model_id,
+                        result="blocked",
+                        reason_code="free_tier_limiter",
+                        error=overflow_error,
+                        fallback_action=(
+                            "break_overflow_policy"
+                            if action == "break"
+                            else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
+                        ),
+                    )
+                    if action == "break" or idx == len(chain) - 1:
+                        break
+                    continue
         try:
             _enforce_budget_guardrail(
                 policies,
@@ -8254,6 +9029,7 @@ def router_completions(req: RouterCompletionRequest):
     chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
     if not chain:
         chain = ["local"]
+    chain = _constrain_chain_to_preferred_model(req, chain, provider_models, policies)
     allow_fallbacks = _resolve_bool_pref(
         req.provider_preferences.allow_fallbacks,
         bool(effective_defaults.get("allow_fallbacks", True)),
@@ -8269,7 +9045,22 @@ def router_completions(req: RouterCompletionRequest):
     raw = None
     for idx, lane in enumerate(chain):
         excluded = attempted_by_lane.setdefault(lane, set())
-        provider, model_id = _pick_catalog_model(lane, provider_models, req, excluded_models=excluded, policies=policies)
+        try:
+            provider, model_id = _pick_catalog_model(lane, provider_models, req, excluded_models=excluded, policies=policies)
+        except HTTPException as exc:
+            selection_error = {"type": "no_capable_catalog_model", "message": exc.detail, "retryable": False}
+            routing_errors.append({"lane": lane, "provider": None, "model": None, "error": selection_error})
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=None,
+                model=None,
+                result="skipped",
+                reason_code="no_capable_catalog_model",
+                error=selection_error,
+                fallback_action="break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate",
+            )
+            continue
         if model_id in excluded:
             _append_route_attempt(
                 attempt_trace,
@@ -8347,29 +9138,30 @@ def router_completions(req: RouterCompletionRequest):
                     limiter=limiter,
                     policies=policies,
                 )
-                routing_errors.append({
-                    "lane": lane,
-                    "provider": provider,
-                    "model": model_id,
-                    "error": overflow_error,
-                })
-                _append_route_attempt(
-                    attempt_trace,
-                    lane=lane,
-                    provider=provider,
-                    model=model_id,
-                    result="blocked",
-                    reason_code="free_tier_limiter",
-                    error=overflow_error,
-                    fallback_action=(
-                        "break_overflow_policy"
-                        if action == "break"
-                        else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
-                    ),
-                )
-                if action == "break" or idx == len(chain) - 1:
-                    break
-                continue
+                if action != "acquired":
+                    routing_errors.append({
+                        "lane": lane,
+                        "provider": provider,
+                        "model": model_id,
+                        "error": overflow_error,
+                    })
+                    _append_route_attempt(
+                        attempt_trace,
+                        lane=lane,
+                        provider=provider,
+                        model=model_id,
+                        result="blocked",
+                        reason_code="free_tier_limiter",
+                        error=overflow_error,
+                        fallback_action=(
+                            "break_overflow_policy"
+                            if action == "break"
+                            else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
+                        ),
+                    )
+                    if action == "break" or idx == len(chain) - 1:
+                        break
+                    continue
         try:
             _enforce_budget_guardrail(
                 policies,
@@ -8625,6 +9417,7 @@ def router_embed(req: RouterEmbedRequest):
     chain = list(chain_resolution.get("filtered_chain", [])) if isinstance(chain_resolution.get("filtered_chain", []), list) else []
     if not chain:
         chain = ["local"]
+    chain = _constrain_chain_to_preferred_model(req, chain, provider_models, policies)
     allow_fallbacks = _resolve_bool_pref(
         req.provider_preferences.allow_fallbacks,
         bool(effective_defaults.get("allow_fallbacks", True)),
@@ -8640,7 +9433,22 @@ def router_embed(req: RouterEmbedRequest):
     raw = None
     for idx, lane in enumerate(chain):
         excluded = attempted_by_lane.setdefault(lane, set())
-        provider, model_id = _pick_catalog_model(lane, provider_models, req, excluded_models=excluded, policies=policies)
+        try:
+            provider, model_id = _pick_catalog_model(lane, provider_models, req, excluded_models=excluded, policies=policies)
+        except HTTPException as exc:
+            selection_error = {"type": "no_capable_catalog_model", "message": exc.detail, "retryable": False}
+            routing_errors.append({"lane": lane, "provider": None, "model": None, "error": selection_error})
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=None,
+                model=None,
+                result="skipped",
+                reason_code="no_capable_catalog_model",
+                error=selection_error,
+                fallback_action="break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate",
+            )
+            continue
         if model_id in excluded:
             _append_route_attempt(
                 attempt_trace,
@@ -8718,29 +9526,30 @@ def router_embed(req: RouterEmbedRequest):
                     limiter=limiter,
                     policies=policies,
                 )
-                routing_errors.append({
-                    "lane": lane,
-                    "provider": provider,
-                    "model": model_id,
-                    "error": overflow_error,
-                })
-                _append_route_attempt(
-                    attempt_trace,
-                    lane=lane,
-                    provider=provider,
-                    model=model_id,
-                    result="blocked",
-                    reason_code="free_tier_limiter",
-                    error=overflow_error,
-                    fallback_action=(
-                        "break_overflow_policy"
-                        if action == "break"
-                        else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
-                    ),
-                )
-                if action == "break" or idx == len(chain) - 1:
-                    break
-                continue
+                if action != "acquired":
+                    routing_errors.append({
+                        "lane": lane,
+                        "provider": provider,
+                        "model": model_id,
+                        "error": overflow_error,
+                    })
+                    _append_route_attempt(
+                        attempt_trace,
+                        lane=lane,
+                        provider=provider,
+                        model=model_id,
+                        result="blocked",
+                        reason_code="free_tier_limiter",
+                        error=overflow_error,
+                        fallback_action=(
+                            "break_overflow_policy"
+                            if action == "break"
+                            else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
+                        ),
+                    )
+                    if action == "break" or idx == len(chain) - 1:
+                        break
+                    continue
         try:
             _enforce_budget_guardrail(
                 policies,
@@ -9500,6 +10309,7 @@ def router_evaluation_queue_state(limit: int = Query(100, ge=1, le=500)):
 
 
 @app.post("/router/evaluation-queue/{run_id}/cancel")
+@_state_transactional
 def router_evaluation_queue_cancel(run_id: str):
     state = read_provider_runtime_state()
     queue = state.get("evaluation_queue", []) if isinstance(state.get("evaluation_queue"), list) else []
@@ -9575,6 +10385,7 @@ def router_evaluation_suite_put(suite_name: str, suite_version: str, payload: Ev
 
 
 @app.delete("/router/evaluation-suites/{suite_name}/{suite_version}")
+@_state_transactional
 def router_evaluation_suite_delete(suite_name: str, suite_version: str):
     state = read_provider_runtime_state()
     suites = state.get("evaluation_suites", {}) if isinstance(state.get("evaluation_suites"), dict) else {}
@@ -9718,7 +10529,9 @@ def jobs_list():
         conversion_runs = {}
 
     out = []
-    for j in JOBS.values():
+    with JOB_LOCK:
+        jobs_snapshot = [dict(j) for j in JOBS.values()]
+    for j in jobs_snapshot:
         row = {
             "id": j["id"], "kind": j["kind"], "status": j["status"],
             "start_ts": j["start_ts"], "end_ts": j.get("end_ts"),
@@ -9734,7 +10547,9 @@ def jobs_list():
 
 @app.get("/jobs/{job_id}")
 def jobs_detail(job_id: str, tail: int = 120):
-    j = JOBS.get(job_id)
+    with JOB_LOCK:
+        source = JOBS.get(job_id)
+        j = dict(source) if source else None
     if not j:
         raise HTTPException(404, "job not found")
     payload = {**j, "tail": _tail(Path(j["log"]), n=tail)}
@@ -9749,16 +10564,35 @@ def jobs_start(req: JobStart):
 
 @app.post("/jobs/{job_id}/cancel")
 def jobs_cancel(job_id: str):
-    j = JOBS.get(job_id)
-    if not j:
-        raise HTTPException(404, "job not found")
-    try:
-        os.kill(j["pid"], signal.SIGTERM)
+    duplicated_pidfd = None
+    with JOB_LOCK:
+        j = JOBS.get(job_id)
+        if not j:
+            raise HTTPException(404, "job not found")
+        proc = JOB_PROCESSES.get(job_id)
+        if proc is None or proc.poll() is not None:
+            j["status"] = "ended"
+            raise HTTPException(409, "job process has already ended")
+        managed_pidfd = JOB_PIDFDS.get(job_id)
+        if managed_pidfd is not None:
+            duplicated_pidfd = os.dup(managed_pidfd)
         j["status"] = "cancelling"
-        return {"ok": True}
+    try:
+        if duplicated_pidfd is not None and hasattr(signal, "pidfd_send_signal"):
+            signal.pidfd_send_signal(duplicated_pidfd, signal.SIGTERM)
+        else:
+            # The Popen object, not the persisted PID, is the source of identity on
+            # platforms without pidfds.
+            proc.terminate()
+        return {"ok": True, "status": "cancelling"}
     except ProcessLookupError:
-        j["status"] = "ended"
-        return {"ok": False, "detail": "process already ended"}
+        with JOB_LOCK:
+            if job_id in JOBS:
+                JOBS[job_id]["status"] = "ended"
+        raise HTTPException(409, "job process has already ended")
+    finally:
+        if duplicated_pidfd is not None:
+            os.close(duplicated_pidfd)
 
 
 def _conversion_source_type_alias(value: str) -> str:
@@ -9779,7 +10613,7 @@ def _start_managed_conversion(payload: dict, source_type_value: str, target_form
         repo_id = str(payload.get("repo_id") or "").strip()
         if not repo_id:
             raise HTTPException(422, {"errors": ["repo_id is required when source_type is huggingface_repo"]})
-        payload["repo_id"] = repo_id
+        payload["repo_id"] = _validate_repo_id(repo_id)
         payload["source_type"] = "huggingface_repo"
         kind = f"convert_hf_{target_format}"
     elif source_type == "merged_local_model":
@@ -9792,9 +10626,20 @@ def _start_managed_conversion(payload: dict, source_type_value: str, target_form
         if not model_key:
             raise HTTPException(422, {"errors": ["model_key is required when source_type is merged_local_model"]})
 
-        source_path = Path(source_model_dir) if source_model_dir else (ROOT / "output" / f"merged_{model_key}")
-        if not source_path.exists():
-            raise HTTPException(404, {"message": "merged source directory not found", "source_model_dir": str(source_path)})
+        source_path = _resolve_path_within(
+            source_model_dir or (ROOT / "output" / f"merged_{model_key}"),
+            [ROOT / "output", MODELS_DIR.resolve()],
+            must_exist=True,
+            must_be_dir=True,
+            label="source_model_dir",
+        )
+
+        if str(payload.get("output_dir") or "").strip():
+            payload["output_dir"] = str(_resolve_path_within(
+                str(payload["output_dir"]),
+                [ROOT / "output", MODELS_DIR.resolve()],
+                label="output_dir",
+            ))
 
         payload["model_key"] = model_key
         payload["source_model_dir"] = str(source_path)
@@ -10007,21 +10852,22 @@ def engines_status(request: Request):
 
 @app.post("/engines/tgw-webui/config")
 def engines_tgw_webui_config(req: TgwWebUiConfigReq, request: Request):
-    env = read_env()
-    current = _tgw_webui_config(env)
-    env["TGW_WEBUI_PORT"] = str(req.port if req.port is not None else current["port"])
+    effective_env = read_env()
+    local_env = _read_env_file(ENV_PATH)
+    current = _tgw_webui_config(effective_env)
+    local_env["TGW_WEBUI_PORT"] = str(req.port if req.port is not None else current["port"])
 
     bind_host = (req.bind_host if req.bind_host is not None else current["bind_host"]).strip() or "127.0.0.1"
-    env["TGW_WEBUI_BIND_HOST"] = bind_host
+    local_env["TGW_WEBUI_BIND_HOST"] = bind_host
 
     if req.public_url is not None:
         cleaned_public_url = req.public_url.strip()
         if cleaned_public_url:
-            env["TGW_WEBUI_PUBLIC_URL"] = cleaned_public_url
+            local_env["TGW_WEBUI_PUBLIC_URL"] = cleaned_public_url
         else:
-            env.pop("TGW_WEBUI_PUBLIC_URL", None)
+            local_env.pop("TGW_WEBUI_PUBLIC_URL", None)
 
-    write_env(env)
+    write_env(local_env)
     current_env = read_env()
     return {
         "ok": True,
@@ -10081,7 +10927,6 @@ def engines_action(mode: str, action: str):
 @app.post("/engines/solo/{mode}")
 def engines_solo(mode: str):
     # Stop other units first, then start requested.
-    target = _engine_def(mode)
     units = {
         "chat": os.getenv("SYSTEMD_LLM_A") or "",
         "intent": os.getenv("SYSTEMD_LLM_B") or "",

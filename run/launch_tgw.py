@@ -260,12 +260,18 @@ def main():
 
     _apply_startup_guardrails(int(args.api_port), runtime_env)
 
-    model_path = pathlib.Path(args.model_dir) / args.model
-    if not model_path.exists():
-        raise SystemExit(f"[launch-tgw] model path not found: {model_path}")
+    models_root = pathlib.Path(args.model_dir).resolve()
+    requested_model = pathlib.Path(args.model)
+    model_path = requested_model if requested_model.is_absolute() else models_root / requested_model
     resolved = model_path.resolve()
+    if resolved != models_root and not resolved.is_relative_to(models_root):
+        raise SystemExit(f"[launch-tgw] model path escapes managed root: {model_path}")
+    if not resolved.exists() or not resolved.is_dir():
+        raise SystemExit(f"[launch-tgw] model path not found: {model_path}")
 
     kind = detect_kind(resolved)
+    if kind == "multimodal":
+        raise SystemExit("[launch-tgw] multimodal checkpoints are unsupported in this deployment")
     loader = detect_loader(kind)
 
     print(

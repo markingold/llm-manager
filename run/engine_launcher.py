@@ -112,12 +112,13 @@ def _resolve_model_path(model: str) -> pathlib.Path:
     model_path = pathlib.Path(model_text)
     if not model_path.is_absolute():
         model_path = pathlib.Path(MODELS_DIR) / model_text
-    try:
-        if model_path.exists() or model_path.is_symlink():
-            return model_path.resolve()
-    except Exception:
-        pass
-    return model_path
+    models_root = pathlib.Path(MODELS_DIR).resolve()
+    resolved = model_path.resolve()
+    if resolved != models_root and not resolved.is_relative_to(models_root):
+        raise SystemExit(f"[engine-launcher] model path escapes managed root: {model_path}")
+    if not resolved.exists() or not resolved.is_dir():
+        raise SystemExit(f"[engine-launcher] model path not found: {model_path}")
+    return resolved
 
 
 def _model_kind_for_launch(model: str) -> str:
@@ -134,7 +135,7 @@ def _backend_supports_kind(backend: str, kind: str) -> bool:
     backend_key = str(backend or "").strip().lower()
     model_kind = str(kind or "unknown").strip().lower()
     if backend_key == "tgw":
-        return True
+        return model_kind != "multimodal"
     if backend_key == "tabbyapi":
         if model_kind == "multimodal":
             return False

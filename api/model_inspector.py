@@ -4,7 +4,11 @@ model_inspector.py — Detect model format, loader, and recommended TGW flags.
 Supports: EXL2, EXL3, GGUF, AWQ, GPTQ, FP16/BF16/FP8 safetensors, LoRA adapters.
 """
 
-import json, os, re, pathlib, subprocess
+import json
+import os
+import pathlib
+import re
+import subprocess
 from typing import Optional
 
 MODELS_DIR = os.getenv(
@@ -134,7 +138,7 @@ def recommend_backends(kind: str) -> tuple[str, list[str]]:
         "gptq": ("vllm", ["tabbyapi", "tgw"]),
         "gguf": ("tgw", []),
         "transformers": ("vllm", ["tgw"]),
-        "multimodal": ("tgw", []),
+        "multimodal": ("unsupported", []),
         "lora": ("tgw", ["vllm"]),
         "unknown": ("tgw", []),
     }
@@ -242,8 +246,13 @@ def estimate_vram_mb(model_path: pathlib.Path, kind: str, bpw: Optional[float]) 
 
 def inspect_one(model_name: str) -> dict:
     """Full inspection of a single model directory."""
-    base = pathlib.Path(MODELS_DIR)
-    model_path = base / model_name
+    base = pathlib.Path(MODELS_DIR).resolve()
+    requested = pathlib.Path(str(model_name))
+    model_path = requested.resolve() if requested.is_absolute() else (base / requested).resolve()
+    try:
+        model_path.relative_to(base)
+    except ValueError:
+        model_path = base / "__invalid_model_path__"
     exists = model_path.exists() and model_path.is_dir()
 
     if not exists:

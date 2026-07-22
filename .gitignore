@@ -54,3 +54,8 @@ data/combined_intent_data_*.jsonl
 *.log.*
 .env
 node_modules/
+.coverage
+coverage.xml
+run/state/*.lock
+run/state/*.json
+!run/state/*.example.json

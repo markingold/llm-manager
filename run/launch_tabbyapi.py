@@ -63,37 +63,30 @@ def main():
     parser.add_argument("--cuda-visible-devices", default=None, help="Optional CUDA_VISIBLE_DEVICES override")
     args = parser.parse_args()
 
-    model_name = str(args.model)
-    model_dir = str(args.model_dir)
-    if os.path.isabs(model_name):
-        model_path = pathlib.Path(model_name)
-        model_name = model_path.name
-        model_dir = str(model_path.parent)
-
-    raw_model_path = pathlib.Path(model_dir) / model_name
-    resolved_model_path = raw_model_path
-    try:
-        if raw_model_path.exists() or raw_model_path.is_symlink():
-            resolved_model_path = raw_model_path.resolve()
-    except Exception:
-        resolved_model_path = raw_model_path
-
-    if resolved_model_path.exists():
-        model_dir = str(resolved_model_path.parent)
-        model_name = resolved_model_path.name
+    models_root = pathlib.Path(args.model_dir).resolve()
+    requested_model = pathlib.Path(args.model)
+    model_path = requested_model if requested_model.is_absolute() else models_root / requested_model
+    model_path = model_path.resolve()
+    if model_path != models_root and not model_path.is_relative_to(models_root):
+        raise SystemExit(f"[launch-tabbyapi] model path escapes managed root: {model_path}")
+    if not model_path.exists() or not model_path.is_dir():
+        raise SystemExit(f"[launch-tabbyapi] model path not found: {model_path}")
+    model_dir = str(model_path.parent)
+    model_name = model_path.name
 
     if args.cuda_visible_devices is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_devices)
 
     runtime_env = read_runtime_env()
 
-    model_path = pathlib.Path(model_dir) / model_name
     detected_kind = detect_kind(model_path)
     backend = ""
     if detected_kind == "exl3":
         backend = "exllamav3"
     elif detected_kind in {"exl2", "awq", "gptq"}:
         backend = "exllamav2"
+    else:
+        raise SystemExit(f"[launch-tabbyapi] unsupported model kind: {detected_kind}")
 
     base_cmd = str(runtime_env.get("TABBYAPI_CMD") or os.getenv("TABBYAPI_CMD") or "python -m tabbyapi").strip()
     cmd = shlex.split(base_cmd)

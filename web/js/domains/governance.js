@@ -1,5 +1,5 @@
 import { api } from "../api.js";
-import { $, setOut } from "../ui-core.js";
+import { $, escapeHtml, setOut } from "../ui-core.js";
 
 const DOCS = {
   models: null,
@@ -41,15 +41,6 @@ function parseEditorDoc() {
   return parsed;
 }
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
 function renderAudit(rows) {
   const body = $("govAuditBody");
   if (!body) return;
@@ -66,13 +57,13 @@ function renderAudit(rows) {
   for (const e of entries) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td class="mono">${e.ts || "-"}</td>
-      <td>${e.resource || "-"}</td>
-      <td>${e.action || "-"}</td>
-      <td>${e.actor || "-"}</td>
-      <td>${e.outcome || "-"}</td>
-      <td>${e.reason || "-"}</td>
-      <td class="mono">${e.before_version || "-"} -> ${e.after_version || "-"}</td>
+      <td class="mono">${escapeHtml(e.ts || "-")}</td>
+      <td>${escapeHtml(e.resource || "-")}</td>
+      <td>${escapeHtml(e.action || "-")}</td>
+      <td>${escapeHtml(e.actor || "-")}</td>
+      <td>${escapeHtml(e.outcome || "-")}</td>
+      <td>${escapeHtml(e.reason || "-")}</td>
+      <td class="mono">${escapeHtml(e.before_version || "-")} -> ${escapeHtml(e.after_version || "-")}</td>
     `;
     body.appendChild(tr);
   }

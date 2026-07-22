@@ -1,12 +1,33 @@
 <!--
 id: PLAN-NEXT-PUSH
-version: 2.4
-last_updated: 2026-05-19
+version: 3.0
+last_updated: 2026-07-22
 title: Next Push Recommendations
 purpose:
   Fresh status scan, near-term priorities, and TGW WebUI direction for the next implementation push.
 -->
 # LLM Manager - Next Push
+
+## Refreshed backlog after the 2026-07-22 hardening pass
+
+The immediate audit findings are closed. Recommended next options, in order:
+
+1. **Add authoritative slot capability metadata and a real local embeddings lane — medium.** Routing now fails closed, which is safe, but the current local slot catalog only declares chat/classification. This is the strongest planned feature candidate because it unlocks local `/router/embed` and makes tool/structured/reasoning support explicit rather than inferred.
+2. **Add post-lifecycle readiness verification — medium.** A successful systemd/PM2 restart proves the control command ran, not that the requested model became healthy. Poll the slot model/health endpoint, verify the active model identity, and include bounded rollback on readiness failure.
+3. **Persist and reconcile the generic job registry — medium.** Cancellation is now process-identity-safe, but `JOBS` is still in memory. On API restart, running training/conversion children and their logs should be rediscovered or marked orphaned deterministically.
+4. **Move high-churn runtime state to SQLite — medium/large.** Atomic writes and interprocess transactions have removed lost-update/corruption races on one host. SQLite would reduce full-file rewrite cost, provide indexed retention queries, and prepare for larger histories; this is no longer an emergency fix.
+5. **Raise coverage around full router endpoints and provider adapters — medium.** The new suite establishes a 20% gate and covers every closed audit finding. Next add FastAPI integration tests for chat/completion/embed fallbacks, provider HTTP error bodies, governance rollback, and evaluation worker recovery, then ratchet the threshold upward.
+6. **Validate the packaged service on a clean host and add deployment assets — medium.** The wheel/CLI now build, but systemd unit templates, static dashboard installation, config bootstrap/migrations, and the generic top-level `api` package name still need a production packaging decision.
+7. **Add schema versions and migrations for catalogs/policies/runtime state — medium.** Defaults repair missing runtime keys, but operator-edited catalog and policy documents need explicit versioned migrations and compatibility diagnostics.
+8. **Split hardware-specific training locks/profiles — small/medium.** The API/dev locks are hash-verified and the Linux training lock is exact. CUDA/ROCm/CPU profiles and a lightweight conversion smoke job would make training installs more portable and reproducible.
+9. **Restrict browser origins and add authentication when ready — medium.** Authentication was intentionally deferred for this pass. Before exposing the control plane beyond the trusted reverse proxy, replace wildcard CORS and protect lifecycle, jobs, governance, state, and secret-setting routes.
+
+Planned features that remain valid but are less urgent:
+
+- Direct llama.cpp integration for GGUF is a good isolated backend project once capability metadata and lifecycle readiness are complete.
+- The full end-to-end evaluation gate across every deployed local model/lane remains the final upgrade sign-off task and requires live GPU/model availability.
+- A raw-Transformers fallback backend should remain experiment-driven; it adds another lifecycle surface and is not currently justified.
+- Broader ComfyUI/Home Assistant orchestration should stay parked unless the project scope intentionally expands beyond LLM serving.
 
 ## Docs sweep update (2026-05-17)
 

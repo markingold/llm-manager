@@ -48,7 +48,7 @@ Source-plan status update (2026-05-15):
 - [x] Add a TabbyAPI launcher path. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_ (launcher wrapper shipped and integrated into backend-aware slot lane resolution)
 - [x] Treat EXL2 and EXL3 as first-class backends through the ExLlama lane. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md, docs/plans/EXLLAMA_CONVERSION_PLAN.md_ (local lane dispatch and endpoint selection now honor slot backend and slot model alias instead of chat-only routing)
 - [x] Add an EXL3 conversion path once the ExLlamaV3 toolchain is installed and validated on the host. - _source: docs/plans/EXLLAMA_CONVERSION_PLAN.md_ (host toolchain install + first successful managed run complete: `job_id=aa060e774ece`, `artifact_id=6dab1cbca58468eb`, preservation checks `ok=true`)
-- [ ] Decide whether TabbyAPI switching should remain symlink-based or gain backend-native load and unload operations. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
+- [x] Add backend-native TabbyAPI load/unload operations with transactional symlink/restart fallback. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_ (native lifecycle attempts plus serialized rollback-safe fallback are implemented; steady-traffic host validation remains)
 - [x] Refresh upstream OpenRouter metadata and intersect it with the curated free allowlist. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_
 - [x] Normalize OpenRouter errors into actionable routing states. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_ (status/body-aware classification with provider code/type metadata)
 - [x] Persist cooldowns, degraded states, and manual-review flags for provider models. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_

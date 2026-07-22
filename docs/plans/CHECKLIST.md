@@ -14,6 +14,21 @@ Source-plan retirement update (2026-05-15):
 - `EVALUATION_PLAN.md`, `OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md`, and `PROVIDER_ROUTER_PLAN.md` are now retired under `docs/plans/retired/`.
 - Existing checklist items keep source citations pointing at the retired paths for audit traceability.
 
+## Reliability and security hardening (2026-07-22)
+
+- [x] Constrain explicit model selection to enabled curated catalogs, allowed lanes, capability checks, and the normal budget guardrails.
+- [x] Escape stored governance/evaluation values before dashboard HTML rendering and add a JavaScript regression test.
+- [x] Enforce managed filesystem roots for model selection, job inputs/outputs, conversion scripts, and Hugging Face repository identifiers.
+- [x] Restore fail-fast rejection for unsupported local multimodal checkpoints across TGW, vLLM, and TabbyAPI.
+- [x] Serialize model lifecycle changes and roll back symlink/backend state on failed loads.
+- [x] Make `/models/load` and `/models/unload` reject staged or already-complete no-op cases.
+- [x] Implement the OpenRouter `wait` policy as a functional priority queue with capacity claims, timeouts, eviction, and cleanup.
+- [x] Make capability routing fail closed when model/slot support is missing or unknown.
+- [x] Protect runtime state with atomic writes plus thread/process read-modify-write locks; stop tracking live runtime state in Git.
+- [x] Cancel jobs through live child-process identity (pidfd where available) instead of a reusable numeric PID.
+- [x] Establish an isolated `tests/` suite, canonical `pytest` command, dashboard regression test, and 20% coverage gate.
+- [x] Add installable packaging, exact dependency locks, secret scanning, and GitHub Actions CI.
+
 ## Must Do (blocking or high-value)
 - [x] Extend `api/model_inspector.py` to emit `recommended_backend` and `fallback_backends`. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [x] Add backend selection to slot or switch configuration. - effort: small | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md

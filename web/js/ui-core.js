@@ -2,6 +2,15 @@ export function $(id) {
   return document.getElementById(id);
 }
 
+export function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function setStatus(msg, tone = "info") {
   const box = $("statusBox");
   box.textContent = msg;

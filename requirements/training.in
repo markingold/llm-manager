@@ -1,0 +1,9 @@
+-r api.in
+accelerate>=0.34,<2
+bitsandbytes>=0.43,<1
+datasets>=2.21,<5
+huggingface-hub>=0.24,<2
+peft>=0.12,<1
+safetensors>=0.4,<1
+torch>=2.4,<3
+transformers>=4.44,<6

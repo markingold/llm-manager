@@ -47,6 +47,8 @@ Baseline quality reports:
 cd /srv/2bananas/projects/llm-manager
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
+# For training/conversion hosts, also install the exact GPU/training lock:
+# pip install -r requirements/training.lock
 
 # 2. Create config
 cp config/settings.example.env secrets/.env
@@ -70,6 +72,9 @@ python api/server.py
 - The dashboard is the static UI in `web/index.html` with domain modules under `web/js/domains/`
 - Operations UI now surfaces per-slot backend, model format (`kind`), and inspector recommendation/fallback context, and disables unsupported slot test actions with explicit reason hints
 - Provider routing policies now support optional dynamic lane ranking (cost/availability/quality weighted) within each strategy
+- Explicit model requests are constrained to enabled catalog entries in policy-permitted lanes; capability and budget checks are never bypassed
+- OpenRouter `wait` overflow behavior is a real priority queue: requests wait for capacity, time out cleanly, and do not persist arbitrary metadata
+- Runtime JSON and local secret files use atomic, permission-restricted writes and are intentionally not tracked by Git
 - Runtime serving stays in `text-generation-webui`; the API manages it rather than serving models itself
 - The deployed systemd engine units launch through `run/engine_launcher.py`
 
@@ -142,6 +147,7 @@ Notes:
 | `CUDA_VISIBLE_DEVICES` | GPU(s) for training/conversion | `0` |
 | `PM2_CHAT` / `PM2_INTENT` / `PM2_SMALL` | Legacy PM2 process names | `llm_a_8500` etc. |
 | `WEBUI_ROOT` | text-generation-webui install dir | `/srv/2bananas/engines/text-generation-webui` |
+| `LLM_MANAGER_ENGINES_ROOT` | Allowed root for managed engine/conversion paths | `/srv/2bananas/engines` |
 | `WEBUI_MODELS_DIR` | Shared models directory | `/srv/2bananas/engines/models` |
 | `TABBYAPI_CMD` | Optional explicit TabbyAPI startup command for `run/launch_tabbyapi.py` | `python -m tabbyapi` |
 | `EXLLAMA_ROOT` | ExLlamaV2 install dir | `/srv/2bananas/engines/exllamav2` |
@@ -184,8 +190,8 @@ Process/service environment commonly used in deployment:
 | GET | `/system` | CPU load, RAM, disk |
 | GET | `/models` | List all models + active links + slot visibility + metadata (`slot_endpoints` includes resolved backend/base/port info) |
 | POST | `/switch` | Switch model: `{ mode, model_dir, bounce, backend?, lifecycle_mode?, native_max_seq_len? }` |
-| POST | `/models/load` | Explicit model load wrapper over switch flow with lifecycle controls |
-| POST | `/models/unload` | Explicit model unload endpoint with TabbyAPI native unload attempts |
+| POST | `/models/load` | Verified lifecycle load; requires native load or engine restart and rolls back failures |
+| POST | `/models/unload` | Verified native unload/engine stop; rejects already-unloaded no-ops |
 | POST | `/bounce/{mode}` | Restart engine (chat/intent/small) |
 | GET/POST | `/knobs` | Read/write .env settings |
 | GET | `/providers/models` | Read provider model catalog config |
@@ -293,6 +299,7 @@ Process/service environment commonly used in deployment:
 Notes:
 - All test endpoints also accept `no_thinking=1`
 - Generic job process state is tracked in memory only and does not survive an API restart
+- Cancellation uses the live managed child-process handle (Linux pidfd when available), never a stale persisted PID
 - Job logs are written to `run/logs/`
 - Managed EXL2/EXL3 conversion metadata persists in `run/state/provider_runtime_state.json`
 - `/models.meta` includes `recommended_backend` and `fallback_backends`
@@ -349,11 +356,26 @@ Notes:
   - `intent_active_model`
   - `small_active_model`
 - `POST /switch` is the canonical switch entrypoint
+- Model lifecycle changes are serialized across workers and restore the previous symlink/backend on failure
 - Engine control is systemd-first via `SYSTEMD_LLM_A`, `SYSTEMD_LLM_B`, and `SYSTEMD_LLM_C`
 - `POST /bounce/{mode}` can still fall back to legacy PM2 names when systemd unit env vars are absent
 - The dashboard hides slots when `ENABLE_CHAT`, `ENABLE_INTENT`, or `ENABLE_SMALL` is set to `0`
 - The currently deployed engine units launch `run/engine_launcher.py`, which now dispatches to backend-specific launchers (`run/launch_tgw.py`, `run/launch_vllm.py`, `run/launch_tabbyapi.py`) based on slot backend preference
 - `run/launch_tgw.py` now applies startup guardrails by default to clean stale TGW port owners and stale ExLlama lock files before launch
+
+## Development and CI
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements/dev.lock
+pip install --no-deps -e .
+pytest
+ruff check api tests scripts
+python -m build
+python scripts/check_secrets.py
+```
+
+`pytest` is the canonical test command. It runs Python and dashboard escaping regressions, enforces branch-aware coverage at 20%, and writes `coverage.xml`. GitHub Actions performs the same locked install, tests, static checks, secret scan, and package build. `requirements/api.lock` and `requirements/dev.lock` are hash-verified; `requirements/training.lock` is an exact Linux GPU/training environment lock.
 
 ## Supported Model Formats
 
@@ -367,6 +389,7 @@ The inspector auto-detects and recommends the correct loader:
 | **AWQ** | `quantization_config.quant_method == "awq"` | exllamav2 |
 | **GPTQ** | `quantization_config.quant_method == "gptq"` | exllamav2 |
 | **FP16/BF16/FP8** | safetensors + config.json torch_dtype | transformers |
+| **Multimodal** | vision/image/video fields in config.json | unsupported (rejected before local launch) |
 | **LoRA** | `adapter_config.json` present | transformers |
 
 ## Multi-GPU Notes

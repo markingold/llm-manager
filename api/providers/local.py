@@ -1,7 +1,11 @@
 from typing import Any
+
 import requests
 
-from providers.base import ProviderAdapter
+try:
+    from .base import ProviderAdapter
+except ImportError:  # Support legacy api/ working-directory imports.
+    from providers.base import ProviderAdapter
 
 
 class LocalProviderAdapter(ProviderAdapter):

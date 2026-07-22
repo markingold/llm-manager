@@ -8,6 +8,9 @@ import os
 import pathlib
 import sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "api"))
+from model_inspector import detect_kind
+
 MODELS_DIR = os.getenv(
     "SERVER_MODELS_DIR",
     os.getenv("MODELS_DIR", "/srv/2bananas/engines/models"),
@@ -54,9 +57,18 @@ def main():
     parser.add_argument("--cuda-visible-devices", default=None, help="Optional CUDA_VISIBLE_DEVICES override")
     args = parser.parse_args()
 
-    model_arg = args.model
-    if not os.path.isabs(model_arg):
-        model_arg = str(pathlib.Path(args.model_dir) / model_arg)
+    models_root = pathlib.Path(args.model_dir).resolve()
+    requested_model = pathlib.Path(args.model)
+    model_path = requested_model if requested_model.is_absolute() else models_root / requested_model
+    model_path = model_path.resolve()
+    if model_path != models_root and not model_path.is_relative_to(models_root):
+        raise SystemExit(f"[launch-vllm] model path escapes managed root: {model_path}")
+    if not model_path.exists() or not model_path.is_dir():
+        raise SystemExit(f"[launch-vllm] model path not found: {model_path}")
+    model_kind = detect_kind(model_path)
+    if model_kind not in {"transformers", "awq", "gptq", "lora"}:
+        raise SystemExit(f"[launch-vllm] unsupported model kind: {model_kind}")
+    model_arg = str(model_path)
 
     if args.cuda_visible_devices is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_devices)

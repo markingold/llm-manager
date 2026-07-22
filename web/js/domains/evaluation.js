@@ -1,5 +1,5 @@
 import { api } from "../api.js";
-import { $, setOut } from "../ui-core.js";
+import { $, escapeHtml, setOut } from "../ui-core.js";
 
 const API_FILTER_KEYS = [
   "status",
@@ -304,12 +304,12 @@ function renderDrawerFailedRows(results) {
   for (const r of rows) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${String(r.case_id || "-")}</td>
-      <td>${String(r.variant_id || "-")}</td>
-      <td>${r.provider || "-"} / ${r.lane || "-"} / ${r.model || "-"}</td>
+      <td>${escapeHtml(String(r.case_id || "-"))}</td>
+      <td>${escapeHtml(String(r.variant_id || "-"))}</td>
+      <td>${escapeHtml(r.provider || "-")} / ${escapeHtml(r.lane || "-")} / ${escapeHtml(r.model || "-")}</td>
       <td>case_pass=${String(r.case_pass)} ok=${String(r.ok)}</td>
-      <td class="mono">${(String(r.output_text || "").replace(/\s+/g, " ").trim() || "-").slice(0, 180)}</td>
-      <td class="mono">${r.error ? (typeof r.error === "string" ? r.error : JSON.stringify(r.error)) : "-"}</td>
+      <td class="mono">${escapeHtml((String(r.output_text || "").replace(/\s+/g, " ").trim() || "-").slice(0, 180))}</td>
+      <td class="mono">${escapeHtml(r.error ? (typeof r.error === "string" ? r.error : JSON.stringify(r.error)) : "-")}</td>
     `;
     body.appendChild(tr);
   }
@@ -468,13 +468,13 @@ function renderRunsTable(runs) {
   for (const r of rows) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td class="mono" title="${r.run_id || ""}">${shortRunId(r.run_id || "")}</td>
-      <td>${r.suite_name || "-"}</td>
-      <td>${r.suite_version || "-"}</td>
-      <td>${r.target_mode || "-"}</td>
-      <td>${r.status || "-"}</td>
+      <td class="mono" title="${escapeHtml(r.run_id || "")}">${escapeHtml(shortRunId(r.run_id || ""))}</td>
+      <td>${escapeHtml(r.suite_name || "-")}</td>
+      <td>${escapeHtml(r.suite_version || "-")}</td>
+      <td>${escapeHtml(r.target_mode || "-")}</td>
+      <td>${escapeHtml(r.status || "-")}</td>
       <td>${runPassPill(r)}</td>
-      <td class="mono">${r.created_ts || "-"}</td>
+      <td class="mono">${escapeHtml(r.created_ts || "-")}</td>
       <td class="row"></td>
     `;
 
@@ -551,9 +551,9 @@ function renderLaneSufficiencyRows(groups) {
       ? `ref ${fmtUsd(ref.avg_estimated_cost_usd)} | cheap ${fmtUsd(cheap.avg_estimated_cost_usd)}`
       : `ref ${fmtUsd(ref.avg_estimated_cost_usd)}`;
     tr.innerHTML = `
-      <td>${g.task_group || "-"}<div class="muted">modes:${taskModes}</div></td>
-      <td>${laneLabel(ref)}</td>
-      <td>${cheap ? laneLabel(cheap) : "-"}</td>
+      <td>${escapeHtml(g.task_group || "-")}<div class="muted">modes:${escapeHtml(taskModes)}</div></td>
+      <td>${escapeHtml(laneLabel(ref))}</td>
+      <td>${escapeHtml(cheap ? laneLabel(cheap) : "-")}</td>
       <td>${passRateText}</td>
       <td>${costText}</td>
       <td>${savingsText(g)}</td>
@@ -584,7 +584,7 @@ function setLaneSufficiencyPills(report) {
 function renderLaneSufficiencyError(message) {
   const body = $("evalLaneBody");
   if (body) {
-    body.innerHTML = `<tr><td colspan="7" class="muted">${message}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" class="muted">${escapeHtml(message)}</td></tr>`;
   }
   const groupsPill = $("evalLaneGroupPill");
   if (groupsPill) {
@@ -638,11 +638,11 @@ function renderSuitesTable(suites) {
   for (const s of rows) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${s.suite_name || "-"}</td>
-      <td>${s.suite_version || "-"}</td>
-      <td>${s.target_mode || "-"}</td>
+      <td>${escapeHtml(s.suite_name || "-")}</td>
+      <td>${escapeHtml(s.suite_version || "-")}</td>
+      <td>${escapeHtml(s.target_mode || "-")}</td>
       <td>${Array.isArray(s.cases) ? s.cases.length : 0}</td>
-      <td class="mono">${s.updated_ts || s.created_ts || "-"}</td>
+      <td class="mono">${escapeHtml(s.updated_ts || s.created_ts || "-")}</td>
       <td class="row"></td>
     `;
 
