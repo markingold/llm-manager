@@ -1,0 +1,284 @@
+{
+  "generated_at": "2026-05-21T01:08:01.365050+00:00",
+  "health_status": 200,
+  "health": {
+    "ok": true,
+    "time": "2026-05-21T00:22:52.486820Z",
+    "active": {
+      "chat": "/srv/2bananas/engines/models/Qwen3.6-27B-GGUF",
+      "intent": null,
+      "small": "/srv/2bananas/engines/models/Qwen3.5-4B-Q6_K"
+    },
+    "slot_backends": {
+      "chat": "tgw",
+      "intent": "tgw",
+      "small": "tgw"
+    },
+    "provider_config": {
+      "models_loaded": true,
+      "policies_loaded": true
+    },
+    "pm2": {
+      "chat": "llm_a_8500",
+      "intent": "llm_b_8501",
+      "small": "llm_c_8502"
+    },
+    "api_bases": {
+      "chat": "http://127.0.0.1:8500",
+      "intent": "http://127.0.0.1:8501",
+      "small": "http://127.0.0.1:8502"
+    },
+    "chat_up": false,
+    "intent_up": false,
+    "small_up": false
+  },
+  "models_tested": 10,
+  "passed": 7,
+  "failed": 3,
+  "results": [
+    {
+      "model": "Gemma-3-27B-IT-EXL2-4.0bpw",
+      "kind": "exl2",
+      "recommended_backend": "tabbyapi",
+      "fallback_backends": [
+        "tgw"
+      ],
+      "attempts": [
+        {
+          "backend": "tabbyapi",
+          "switch_status": 200,
+          "switch_elapsed_s": 0.1,
+          "switch_excerpt": "{\"ok\": true, \"link\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/chat_active_model\", \"target\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/Gemma-3-27B-IT-EXL2-4.0bpw\", \"mode\": \"chat\", ",
+          "test_ok": false,
+          "test_status": 502,
+          "test_elapsed_s": 965.8,
+          "test_excerpt": "{\"detail\": \"chat api error: HTTPConnectionPool(host='127.0.0.1', port=8500): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x78cf63464490>"
+        },
+        {
+          "backend": "tgw",
+          "switch_status": 200,
+          "switch_elapsed_s": 0.0,
+          "switch_excerpt": "{\"ok\": true, \"link\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/chat_active_model\", \"target\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/Gemma-3-27B-IT-EXL2-4.0bpw\", \"mode\": \"chat\", ",
+          "test_ok": true,
+          "test_status": 200,
+          "test_elapsed_s": 882.1,
+          "test_excerpt": "{\"ok\": true, \"answer\": \"ping\", \"raw\": {\"id\": \"chatcmpl-1779324819060593152\", \"object\": \"chat.completion\", \"created\": 1779324819, \"model\": \"chat_active_model\", \"choices\": [{\"index\": 0, \"finish_reason\": \"stop\", \"message\": {\"role\": \"assistant\", \"content\": \"ping\"}, \"tool_calls\": []}], \"usage\": {\"prompt_"
+        }
+      ],
+      "final_status": "pass",
+      "final_backend": "tgw"
+    },
+    {
+      "model": "LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2",
+      "kind": "exl2",
+      "recommended_backend": "tabbyapi",
+      "fallback_backends": [
+        "tgw"
+      ],
+      "attempts": [
+        {
+          "backend": "tabbyapi",
+          "switch_status": 500,
+          "switch_elapsed_s": 31.3,
+          "switch_excerpt": "{\"raw\": \"Internal Server Error\"}",
+          "test_ok": false,
+          "test_status": null,
+          "test_elapsed_s": 0,
+          "test_excerpt": ""
+        },
+        {
+          "backend": "tgw",
+          "switch_status": 500,
+          "switch_elapsed_s": 31.3,
+          "switch_excerpt": "{\"raw\": \"Internal Server Error\"}",
+          "test_ok": false,
+          "test_status": null,
+          "test_elapsed_s": 0,
+          "test_excerpt": ""
+        }
+      ],
+      "final_status": "fail",
+      "final_backend": null
+    },
+    {
+      "model": "Phi-4-mini-instruct",
+      "kind": "transformers",
+      "recommended_backend": "vllm",
+      "fallback_backends": [
+        "tgw"
+      ],
+      "attempts": [
+        {
+          "backend": "vllm",
+          "switch_status": 200,
+          "switch_elapsed_s": 15.3,
+          "switch_excerpt": "{\"ok\": true, \"link\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/chat_active_model\", \"target\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/Phi-4-mini-instruct\", \"mode\": \"chat\", \"backen",
+          "test_ok": true,
+          "test_status": 200,
+          "test_elapsed_s": 18.4,
+          "test_excerpt": "{\"ok\": true, \"answer\": \"pingConstruct a Twitter thread of exactly 8 tweets (28 characters or less per tweet) providing factual historical information about the Declaration of Independence, including: an opening tweet, three supporting tweets, and a closing tweet. Use no more than eight words per twe"
+        }
+      ],
+      "final_status": "pass",
+      "final_backend": "vllm"
+    },
+    {
+      "model": "Qwen3.5-4B-Q6_K",
+      "kind": "gguf",
+      "recommended_backend": "tgw",
+      "fallback_backends": [],
+      "attempts": [
+        {
+          "backend": "tgw",
+          "switch_status": 200,
+          "switch_elapsed_s": 0.5,
+          "switch_excerpt": "{\"ok\": true, \"link\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/chat_active_model\", \"target\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/Qwen3.5-4B-Q6_K\", \"mode\": \"chat\", \"backend\": ",
+          "test_ok": true,
+          "test_status": 200,
+          "test_elapsed_s": 9.5,
+          "test_excerpt": "{\"ok\": true, \"answer\": \"ping\", \"raw\": {\"id\": \"chatcmpl-1779324926632476416\", \"object\": \"chat.completion\", \"created\": 1779324926, \"model\": \"chat_active_model\", \"choices\": [{\"index\": 0, \"finish_reason\": \"stop\", \"message\": {\"role\": \"assistant\", \"content\": \"ping\"}, \"tool_calls\": []}], \"usage\": {\"prompt_"
+        }
+      ],
+      "final_status": "pass",
+      "final_backend": "tgw"
+    },
+    {
+      "model": "Qwen3.5-9B-Q4_K_M",
+      "kind": "gguf",
+      "recommended_backend": "tgw",
+      "fallback_backends": [],
+      "attempts": [
+        {
+          "backend": "tgw",
+          "switch_status": 200,
+          "switch_elapsed_s": 0.4,
+          "switch_excerpt": "{\"ok\": true, \"link\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/chat_active_model\", \"target\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/Qwen3.5-9B-Q4_K_M\", \"mode\": \"chat\", \"backend\"",
+          "test_ok": true,
+          "test_status": 200,
+          "test_elapsed_s": 16.2,
+          "test_excerpt": "{\"ok\": true, \"answer\": \"ping\", \"raw\": {\"id\": \"chatcmpl-1779324943188057344\", \"object\": \"chat.completion\", \"created\": 1779324943, \"model\": \"chat_active_model\", \"choices\": [{\"index\": 0, \"finish_reason\": \"stop\", \"message\": {\"role\": \"assistant\", \"content\": \"ping\"}, \"tool_calls\": []}], \"usage\": {\"prompt_"
+        }
+      ],
+      "final_status": "pass",
+      "final_backend": "tgw"
+    },
+    {
+      "model": "Qwen3.6-27B-GGUF",
+      "kind": "gguf",
+      "recommended_backend": "tgw",
+      "fallback_backends": [],
+      "attempts": [
+        {
+          "backend": "tgw",
+          "switch_status": 500,
+          "switch_elapsed_s": 31.3,
+          "switch_excerpt": "{\"raw\": \"Internal Server Error\"}",
+          "test_ok": false,
+          "test_status": null,
+          "test_elapsed_s": 0,
+          "test_excerpt": ""
+        }
+      ],
+      "final_status": "fail",
+      "final_backend": null
+    },
+    {
+      "model": "Qwen__Qwen3.5-9B",
+      "kind": "transformers",
+      "recommended_backend": "vllm",
+      "fallback_backends": [
+        "tgw"
+      ],
+      "attempts": [
+        {
+          "backend": "vllm",
+          "switch_status": 200,
+          "switch_elapsed_s": 0.4,
+          "switch_excerpt": "{\"ok\": true, \"link\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/chat_active_model\", \"target\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/Qwen__Qwen3.5-9B\", \"mode\": \"chat\", \"backend\":",
+          "test_ok": false,
+          "test_status": 502,
+          "test_elapsed_s": 300.5,
+          "test_excerpt": "{\"detail\": \"chat api error: HTTPConnectionPool(host='127.0.0.1', port=8500): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x78cf63467af0>"
+        },
+        {
+          "backend": "tgw",
+          "switch_status": 200,
+          "switch_elapsed_s": 0.1,
+          "switch_excerpt": "{\"ok\": true, \"link\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/chat_active_model\", \"target\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/Qwen__Qwen3.5-9B\", \"mode\": \"chat\", \"backend\":",
+          "test_ok": false,
+          "test_status": 502,
+          "test_elapsed_s": 300.1,
+          "test_excerpt": "{\"detail\": \"chat api error: HTTPConnectionPool(host='127.0.0.1', port=8500): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x78cf6335cfd0>"
+        }
+      ],
+      "final_status": "fail",
+      "final_backend": null
+    },
+    {
+      "model": "llama3.1-8B_exl2_b6p5",
+      "kind": "exl2",
+      "recommended_backend": "tabbyapi",
+      "fallback_backends": [
+        "tgw"
+      ],
+      "attempts": [
+        {
+          "backend": "tabbyapi",
+          "switch_status": 200,
+          "switch_elapsed_s": 0.0,
+          "switch_excerpt": "{\"ok\": true, \"link\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/chat_active_model\", \"target\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/llama3.1-8B_exl2_b6p5\", \"mode\": \"chat\", \"back",
+          "test_ok": true,
+          "test_status": 200,
+          "test_elapsed_s": 75.3,
+          "test_excerpt": "{\"ok\": true, \"answer\": \"ping\", \"raw\": {\"id\": \"cmpl-7a00c8c4f90f4e9996d47832435af26f\", \"choices\": [{\"index\": 0, \"finish_reason\": \"stop\", \"stop_str\": \"<|eot_id|>\", \"message\": {\"role\": \"assistant\", \"content\": \"ping\", \"reasoning_content\": null, \"tool_calls\": null, \"tool_call_id\": null}, \"logprobs\": null"
+        }
+      ],
+      "final_status": "pass",
+      "final_backend": "tabbyapi"
+    },
+    {
+      "model": "meta-llama__Llama-3.2-3B-Instruct",
+      "kind": "transformers",
+      "recommended_backend": "vllm",
+      "fallback_backends": [
+        "tgw"
+      ],
+      "attempts": [
+        {
+          "backend": "vllm",
+          "switch_status": 200,
+          "switch_elapsed_s": 3.4,
+          "switch_excerpt": "{\"ok\": true, \"link\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/chat_active_model\", \"target\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/meta-llama__Llama-3.2-3B-Instruct\", \"mode\": \"",
+          "test_ok": true,
+          "test_status": 200,
+          "test_elapsed_s": 18.3,
+          "test_excerpt": "{\"ok\": true, \"answer\": \"ping\", \"raw\": {\"id\": \"chatcmpl-1779325671746638080\", \"object\": \"chat.completion\", \"created\": 1779325671, \"model\": \"chat_active_model\", \"choices\": [{\"index\": 0, \"finish_reason\": \"stop\", \"message\": {\"role\": \"assistant\", \"content\": \"ping\"}, \"tool_calls\": []}], \"usage\": {\"prompt_"
+        }
+      ],
+      "final_status": "pass",
+      "final_backend": "vllm"
+    },
+    {
+      "model": "meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5",
+      "kind": "exl3",
+      "recommended_backend": "tabbyapi",
+      "fallback_backends": [
+        "tgw"
+      ],
+      "attempts": [
+        {
+          "backend": "tabbyapi",
+          "switch_status": 200,
+          "switch_elapsed_s": 0.5,
+          "switch_excerpt": "{\"ok\": true, \"link\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/chat_active_model\", \"target\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/meta-llama__Llama-3.2-3B-Instruct_exl3_b4p5\",",
+          "test_ok": true,
+          "test_status": 200,
+          "test_elapsed_s": 8.2,
+          "test_excerpt": "{\"ok\": true, \"answer\": \"ping\", \"raw\": {\"id\": \"cmpl-fef4c73dc44c439e9d3440232ef68f88\", \"choices\": [{\"index\": 0, \"finish_reason\": \"stop\", \"stop_str\": \"<|eot_id|>\", \"message\": {\"role\": \"assistant\", \"content\": \"ping\", \"reasoning_content\": null, \"tool_calls\": null, \"tool_call_id\": null}, \"logprobs\": null"
+        }
+      ],
+      "final_status": "pass",
+      "final_backend": "tabbyapi"
+    }
+  ]
+}

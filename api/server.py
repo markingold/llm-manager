@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os, json, subprocess, time, uuid, threading, signal, shutil, re, hashlib, sys
+import os, json, subprocess, time, uuid, threading, signal, shutil, re, hashlib, sys, importlib.util
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
@@ -59,6 +59,7 @@ SUPPORTED_BACKENDS = {"tgw", "vllm", "tabbyapi"}
 DEFAULT_SLOT_BACKENDS = {"chat": "tgw", "intent": "tgw", "small": "tgw"}
 SLOT_DEFAULT_PORTS = {"chat": 8500, "intent": 8501, "small": 8502}
 SWITCH_LIFECYCLE_MODES = {"legacy", "auto", "native"}
+DEFAULT_TABBYAPI_NATIVE_MAX_SEQ_LEN = 16384
 SENSITIVE_ENV_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD")
 POLICY_TASK_TYPES = {"chat", "completion", "embed"}
 ROUTING_STRATEGIES = {"local_first", "free_first", "paid_first", "best_available", "strict_provider"}
@@ -5641,6 +5642,31 @@ def _normalize_switch_lifecycle_mode(value: str | None) -> str:
     return mode
 
 
+def _backend_supports_model_kind(backend: str, model_kind: str) -> bool:
+    backend_key = str(backend or "").strip().lower()
+    kind = str(model_kind or "unknown").strip().lower()
+
+    if backend_key == "tgw":
+        return True
+    if backend_key == "tabbyapi":
+        if kind == "multimodal":
+            return False
+        return kind in {"exl2", "exl3", "awq", "gptq"}
+    if backend_key == "vllm":
+        if kind == "multimodal":
+            return False
+        return kind in {"transformers", "awq", "gptq", "lora"}
+    return False
+
+
+def _vllm_backend_available() -> bool:
+    env = read_env()
+    configured = str(env.get("VLLM_PYTHON_BIN", "") or os.getenv("VLLM_PYTHON_BIN", "")).strip()
+    if configured:
+        return Path(configured).exists()
+    return importlib.util.find_spec("vllm") is not None
+
+
 def _tabbyapi_native_base_for_mode(mode: str) -> tuple[str, str]:
     env = read_env()
     provider_models = read_provider_models()
@@ -5648,26 +5674,54 @@ def _tabbyapi_native_base_for_mode(mode: str) -> tuple[str, str]:
     return str(base).rstrip("/"), base_source
 
 
+def _tabbyapi_native_max_seq_len_for_mode(mode: str, requested: int | None = None) -> int:
+    if requested is not None:
+        return int(requested)
+
+    mode_key = _normalize_slot_mode(mode)
+    env = read_env()
+    for key in (
+        f"LLM_{mode_key.upper()}_NATIVE_MAX_SEQ_LEN",
+        f"LLM_{mode_key.upper()}_MAX_SEQ_LEN",
+        "TABBYAPI_NATIVE_MAX_SEQ_LEN",
+    ):
+        raw = str(env.get(key, "") or "").strip()
+        if not raw:
+            continue
+        try:
+            value = int(raw)
+            if value > 0:
+                return value
+        except Exception:
+            continue
+
+    return DEFAULT_TABBYAPI_NATIVE_MAX_SEQ_LEN
+
+
 def _tabbyapi_native_load(mode: str, model_path: Path, max_seq_len: int | None = None) -> dict:
     mode_key = _normalize_slot_mode(mode)
     base, base_source = _tabbyapi_native_base_for_mode(mode_key)
+    effective_max_seq_len = _tabbyapi_native_max_seq_len_for_mode(mode_key, max_seq_len)
 
     path_candidates = ["/v1/model/load", "/model/load"]
-    payload_key_candidates = ("name", "model_name", "model", "model_path")
-    model_value_candidates = [str(model_path), model_path.name]
+    model_name = model_path.name
+    detected_kind = detect_kind(model_path)
+    preferred_backend = ""
+    if detected_kind == "exl3":
+        preferred_backend = "exllamav3"
+    elif detected_kind in {"exl2", "awq", "gptq"}:
+        preferred_backend = "exllamav2"
 
-    payloads: list[dict] = []
-    seen_payloads: set[str] = set()
-    for payload_key in payload_key_candidates:
-        for model_value in model_value_candidates:
-            payload: dict[str, object] = {payload_key: model_value}
-            if max_seq_len is not None:
-                payload["max_seq_len"] = int(max_seq_len)
-            signature = json.dumps(payload, sort_keys=True)
-            if signature in seen_payloads:
-                continue
-            seen_payloads.add(signature)
-            payloads.append(payload)
+    base_payload: dict[str, object] = {"model_name": model_name}
+    if effective_max_seq_len > 0:
+        base_payload["max_seq_len"] = int(effective_max_seq_len)
+
+    payloads: list[dict[str, object]] = []
+    if preferred_backend:
+        payloads.append({**base_payload, "backend": preferred_backend})
+    payloads.append(base_payload)
+    # Fallback for installs that expect full model paths for model_name.
+    payloads.append({**base_payload, "model_name": str(model_path)})
 
     errors: list[dict] = []
     for path in path_candidates:
@@ -5692,6 +5746,9 @@ def _tabbyapi_native_load(mode: str, model_path: Path, max_seq_len: int | None =
                     "mode": mode_key,
                     "base": base,
                     "base_source": base_source,
+                    "model_kind": detected_kind,
+                    "preferred_backend": preferred_backend or None,
+                    "effective_max_seq_len": effective_max_seq_len,
                     "url": url,
                     "status_code": int(response.status_code),
                     "payload": payload,
@@ -5719,6 +5776,75 @@ def _tabbyapi_native_load(mode: str, model_path: Path, max_seq_len: int | None =
     return {
         "ok": False,
         "method": "tabbyapi_native_load",
+        "mode": mode_key,
+        "base": base,
+        "base_source": base_source,
+        "model_kind": detected_kind,
+        "preferred_backend": preferred_backend or None,
+        "effective_max_seq_len": effective_max_seq_len,
+        "detail": detail,
+        "attempts": len(errors),
+        "errors": errors[-3:],
+    }
+
+
+def _tabbyapi_native_unload(mode: str) -> dict:
+    mode_key = _normalize_slot_mode(mode)
+    base, base_source = _tabbyapi_native_base_for_mode(mode_key)
+
+    path_candidates = ["/v1/model/unload", "/model/unload"]
+    payloads = [{}, {"force": True}]
+
+    errors: list[dict] = []
+    for path in path_candidates:
+        url = f"{base}{path}"
+        for payload in payloads:
+            try:
+                response = requests.post(url, json=payload, timeout=30)
+            except Exception as exc:
+                errors.append({"url": url, "payload": payload, "error": str(exc)})
+                continue
+
+            parsed_body: object
+            try:
+                parsed_body = response.json()
+            except Exception:
+                parsed_body = (response.text or "")[:500]
+
+            if response.ok:
+                return {
+                    "ok": True,
+                    "method": "tabbyapi_native_unload",
+                    "mode": mode_key,
+                    "base": base,
+                    "base_source": base_source,
+                    "url": url,
+                    "status_code": int(response.status_code),
+                    "payload": payload,
+                    "response": parsed_body,
+                }
+
+            errors.append(
+                {
+                    "url": url,
+                    "payload": payload,
+                    "status_code": int(response.status_code),
+                    "response": parsed_body,
+                }
+            )
+
+    detail = "tabbyapi native unload endpoint unavailable"
+    if errors:
+        last = errors[-1]
+        status_code = last.get("status_code")
+        if isinstance(status_code, int):
+            detail = f"tabbyapi native unload failed with status {status_code}"
+        elif last.get("error"):
+            detail = f"tabbyapi native unload request error: {last.get('error')}"
+
+    return {
+        "ok": False,
+        "method": "tabbyapi_native_unload",
         "mode": mode_key,
         "base": base,
         "base_source": base_source,
@@ -5758,11 +5884,27 @@ def switch_model(
     inspection = inspect_one(model_dir)
     model_kind = str(inspection.get("kind", "unknown") or "unknown")
     recommended_backend = str(inspection.get("recommended_backend", "") or "").strip().lower()
+    unsupported_reason = str(inspection.get("unsupported_reason", "") or "").strip() or None
     fallback_backends = [
         str(b).strip().lower()
         for b in (inspection.get("fallback_backends", []) if isinstance(inspection.get("fallback_backends", []), list) else [])
         if str(b).strip()
     ]
+    compatible_backends = [
+        candidate
+        for candidate in ("tgw", "vllm", "tabbyapi")
+        if _backend_supports_model_kind(candidate, model_kind)
+    ]
+
+    if not compatible_backends:
+        detail = (
+            unsupported_reason
+            or f"model kind '{model_kind}' has no compatible local backend"
+        )
+        raise HTTPException(
+            422,
+            f"model '{model_dir}' cannot be loaded in this deployment: {detail}",
+        )
 
     link = {
         "chat":   MODELS_DIR / "chat_active_model",
@@ -5775,10 +5917,41 @@ def switch_model(
     chosen_backend = backend
     backend_source = "request" if backend is not None else "existing"
     auto_backend_applied = False
-    if chosen_backend is None and recommended_backend in {"vllm", "tabbyapi"} and recommended_backend != previous_backend:
+    if chosen_backend is None and recommended_backend in SUPPORTED_BACKENDS:
         chosen_backend = recommended_backend
         backend_source = "auto_recommended"
-        auto_backend_applied = True
+        auto_backend_applied = recommended_backend != previous_backend
+
+    if chosen_backend is None:
+        chosen_backend = previous_backend
+
+    # Avoid selecting backends for incompatible model formats.
+    if not _backend_supports_model_kind(chosen_backend, model_kind):
+        if backend is not None:
+            raise HTTPException(
+                400,
+                f"backend '{chosen_backend}' is incompatible with model kind '{model_kind}'. "
+                f"Use backend '{recommended_backend or 'tgw'}' for this model.",
+            )
+        if recommended_backend in SUPPORTED_BACKENDS and _backend_supports_model_kind(recommended_backend, model_kind):
+            chosen_backend = recommended_backend
+        else:
+            chosen_backend = "tgw"
+        backend_source = "auto_compatible_fallback"
+        auto_backend_applied = chosen_backend != previous_backend
+
+    # Guard vllm lanes when vllm is not available in runtime.
+    if chosen_backend == "vllm" and not _vllm_backend_available():
+        if backend is not None:
+            raise HTTPException(400, "backend 'vllm' is not available in the current runtime (missing vllm module)")
+        fallback_choice = None
+        for candidate in fallback_backends:
+            if candidate in SUPPORTED_BACKENDS and candidate != "vllm" and _backend_supports_model_kind(candidate, model_kind):
+                fallback_choice = candidate
+                break
+        chosen_backend = fallback_choice or "tgw"
+        backend_source = "auto_vllm_unavailable_fallback"
+        auto_backend_applied = chosen_backend != previous_backend
 
     _make_symlink(link, target)
     if chosen_backend is not None:
@@ -5818,6 +5991,8 @@ def switch_model(
         "auto_backend_applied": auto_backend_applied,
         "previous_backend": previous_backend,
         "model_kind": model_kind,
+        "compatible_backends": compatible_backends,
+        "unsupported_reason": unsupported_reason,
         "recommended_backend": recommended_backend if recommended_backend in SUPPORTED_BACKENDS else None,
         "fallback_backends": fallback_backends,
         "lifecycle_mode": normalized_lifecycle_mode,
@@ -6489,6 +6664,24 @@ class SwitchReq(BaseModel):
     lifecycle_mode: str | None = None  # legacy|auto|native
     native_max_seq_len: int | None = None
 
+
+class ModelLoadReq(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    mode: str            # chat|intent|small|util
+    model_dir: str
+    bounce: bool = False
+    backend: str | None = None  # tgw|vllm|tabbyapi
+    lifecycle_mode: str | None = "auto"  # legacy|auto|native
+    native_max_seq_len: int | None = None
+
+
+class ModelUnloadReq(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    mode: str            # chat|intent|small|util
+    bounce: bool = False
+    backend: str | None = None  # tgw|vllm|tabbyapi
+    lifecycle_mode: str | None = "auto"  # legacy|auto|native
+
 class Knobs(BaseModel):
     model_config = {"protected_namespaces": ()}
     LLM_CHAT_API_BASE: str | None = None
@@ -6784,6 +6977,72 @@ def switch(req: SwitchReq):
         req.lifecycle_mode,
         req.native_max_seq_len,
     )
+
+
+@app.post("/models/load")
+def model_load(req: ModelLoadReq):
+    return switch_model(
+        req.mode,
+        req.model_dir,
+        req.bounce,
+        req.backend,
+        req.lifecycle_mode,
+        req.native_max_seq_len,
+    )
+
+
+@app.post("/models/unload")
+def model_unload(req: ModelUnloadReq):
+    mode = _normalize_slot_mode(req.mode, default="")
+    if mode not in ("chat", "intent", "small"):
+        raise HTTPException(400, "mode must be chat|intent|small|util")
+
+    if req.backend is not None and req.backend not in SUPPORTED_BACKENDS:
+        raise HTTPException(400, f"backend must be one of: {', '.join(sorted(SUPPORTED_BACKENDS))}")
+
+    normalized_lifecycle_mode = _normalize_switch_lifecycle_mode(req.lifecycle_mode)
+    previous_backend = str(read_slot_backends().get(mode, DEFAULT_SLOT_BACKENDS.get(mode, "tgw")) or "tgw")
+    if req.backend is not None:
+        set_slot_backend(mode, req.backend)
+    slot_backend = str(read_slot_backends().get(mode, DEFAULT_SLOT_BACKENDS.get(mode, "tgw")) or "tgw")
+
+    if normalized_lifecycle_mode == "native" and slot_backend != "tabbyapi":
+        raise HTTPException(400, "lifecycle_mode=native requires backend=tabbyapi for the selected slot")
+
+    should_try_native = normalized_lifecycle_mode == "native" or (
+        normalized_lifecycle_mode == "auto" and slot_backend == "tabbyapi"
+    )
+
+    native_unload_attempted = False
+    native_unload_used = False
+    native_unload: dict | None = None
+    bounce_result: dict | None = None
+
+    if should_try_native:
+        native_unload_attempted = True
+        native_unload = _tabbyapi_native_unload(mode)
+        if native_unload.get("ok"):
+            native_unload_used = True
+        elif normalized_lifecycle_mode == "native":
+            detail = str(native_unload.get("detail", "unknown error"))
+            raise HTTPException(502, f"tabbyapi native unload failed: {detail}")
+
+    if req.bounce and not native_unload_used:
+        bounce_result = _bounce_engine(mode)
+
+    return {
+        "ok": True,
+        "mode": mode,
+        "backend": slot_backend,
+        "previous_backend": previous_backend,
+        "active_model": _active_model_name_for_mode(mode),
+        "lifecycle_mode": normalized_lifecycle_mode,
+        "native_unload_attempted": native_unload_attempted,
+        "native_unload_used": native_unload_used,
+        "native_unload": native_unload,
+        "bounce": bool(req.bounce),
+        "bounce_result": bounce_result,
+    }
 
 @app.get("/knobs")
 def get_knobs():

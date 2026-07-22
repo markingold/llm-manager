@@ -53,12 +53,28 @@ Current deployed unit wiring on this host:
   - backend can be tgw, vllm, or tabbyapi
   - Updates the active symlink, then optionally bounces the target engine
   - If backend is provided, updates per-slot backend preference state
-  - If backend is omitted and the model inspector recommends `vllm` or `tabbyapi`, switch auto-applies that backend
+  - If backend is omitted, switch auto-applies the model inspector's recommended backend (`tgw`, `vllm`, or `tabbyapi`)
+  - If the selected backend is incompatible with the model kind, `/switch` returns HTTP 400 when backend was explicit, or auto-falls back to a compatible backend when backend was omitted
+  - If no local backend supports the detected model kind, `/switch` returns HTTP 422 without mutating symlinks/backend state
+  - If `vllm` is selected but unavailable in the current runtime, `/switch` returns HTTP 400 when explicit, or auto-falls back when omitted
   - lifecycle_mode controls backend-native behavior: `legacy` (default), `auto`, or `native`
   - `auto` attempts TabbyAPI native load for tabbyapi-backed slots and falls back to symlink+bounce when native load is unavailable
   - `native` requires the slot backend to be `tabbyapi` and returns HTTP 502 when native load fails
   - native_max_seq_len optionally forwards a context length hint during native TabbyAPI loads
-  - Response includes backend recommendation context (`backend_source`, `auto_backend_applied`, `model_kind`, fallback list) plus lifecycle diagnostics (`native_load_attempted`, `native_load_used`, `native_load`, `bounce_result`)
+  - If native_max_seq_len is omitted, native Tabby loads resolve it via env (`LLM_<MODE>_NATIVE_MAX_SEQ_LEN`, then `LLM_<MODE>_MAX_SEQ_LEN`, then `TABBYAPI_NATIVE_MAX_SEQ_LEN`) and finally default to `16384`
+  - Response includes backend recommendation context (`backend_source`, `auto_backend_applied`, `model_kind`, `compatible_backends`, `unsupported_reason`, fallback list) plus lifecycle diagnostics (`native_load_attempted`, `native_load_used`, `native_load`, `bounce_result`)
+
+### Model Lifecycle
+- POST /models/load
+  - Body: { mode, model_dir, bounce?, backend?, lifecycle_mode?, native_max_seq_len? }
+  - Explicit lifecycle-oriented alias for `/switch` that defaults to `bounce=false`
+  - Reuses the same TabbyAPI native load behavior and fallback diagnostics as `/switch`
+- POST /models/unload
+  - Body: { mode, bounce?, backend?, lifecycle_mode? }
+  - Attempts TabbyAPI native unload (`/v1/model/unload` then `/model/unload`) when backend and lifecycle mode permit
+  - `native` mode requires tabbyapi backend and returns HTTP 502 on native unload failure
+  - `auto` mode attempts native unload for tabbyapi-backed slots and falls back to optional bounce
+  - Response includes lifecycle diagnostics (`native_unload_attempted`, `native_unload_used`, `native_unload`, `bounce_result`)
 
 ### Knobs
 - GET /knobs
@@ -106,7 +122,8 @@ Current deployed unit wiring on this host:
 Engine endpoints require SYSTEMD_LLM_A, SYSTEMD_LLM_B, and SYSTEMD_LLM_C to be configured for their respective slots.
 Standalone TGW WebUI endpoints use SYSTEMD_TGW_WEBUI and default to llm-tgw-webui.service.
 
-On the deployed host, the corresponding units invoke run/engine_launcher.py, which forwards to run/launch_tgw.py and forces API-only mode (`--no-webui`) for slot services.
+On the deployed host, the corresponding units invoke run/engine_launcher.py, which dispatches to backend-specific launchers (`run/launch_tgw.py`, `run/launch_vllm.py`, `run/launch_tabbyapi.py`) based on slot backend preference.
+TGW launches remain API-only by default (`--no-webui`) for slot services.
 `run/launch_tgw.py` applies startup guardrails by default to reduce restart wedges:
 - stale TGW-like listeners on the target API port are terminated before launch
 - stale ExLlama torch-extension lock files are cleaned before launch

@@ -12,6 +12,34 @@ MODELS_DIR = os.getenv(
     "SERVER_MODELS_DIR",
     os.getenv("MODELS_DIR", "/srv/2bananas/engines/models"),
 )
+DEFAULT_VLLM_PYTHON_CANDIDATES = (
+    "/srv/2bananas/engines/vllm-env/bin/python3",
+    "/srv/2bananas/engines/vllm-env/bin/python",
+    "/srv/2bananas/engines/llm-env/bin/python3",
+    "/srv/2bananas/engines/llm-env/bin/python",
+)
+
+
+def _resolve_vllm_python_bin() -> str:
+    configured = str(os.getenv("VLLM_PYTHON_BIN", "") or "").strip()
+    candidates = []
+    if configured:
+        candidates.append(configured)
+    candidates.extend(DEFAULT_VLLM_PYTHON_CANDIDATES)
+
+    seen = set()
+    for candidate in candidates:
+        if not candidate:
+            continue
+        path = pathlib.Path(candidate)
+        candidate_path = str(path)
+        if candidate_path in seen:
+            continue
+        seen.add(candidate_path)
+        if path.exists() and os.access(candidate_path, os.X_OK):
+            return candidate_path
+
+    return sys.executable
 
 
 def main():
@@ -33,8 +61,10 @@ def main():
     if args.cuda_visible_devices is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_devices)
 
+    vllm_python = _resolve_vllm_python_bin()
+
     cmd = [
-        sys.executable,
+        vllm_python,
         "-m",
         "vllm.entrypoints.openai.api_server",
         "--host",
@@ -52,11 +82,11 @@ def main():
     ]
 
     print(
-        f"[launch-vllm] model={model_arg} port={args.api_port} tp={args.tensor_parallel_size}",
+        f"[launch-vllm] model={model_arg} port={args.api_port} tp={args.tensor_parallel_size} python={vllm_python}",
         flush=True,
     )
 
-    os.execv(sys.executable, cmd)
+    os.execv(vllm_python, cmd)
 
 
 if __name__ == "__main__":

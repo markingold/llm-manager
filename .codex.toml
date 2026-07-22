@@ -82,3 +82,38 @@ exclude_paths = [
 sources = [
   { id = "repo", path = ".", enabled = true },
 ]
+
+# Backup excludes: keep large / generated files out of snapshots
+excludes = [
+    "venv/",
+    ".venv/",
+    "__pycache__/**",
+    "*.pyc",
+    ".pytest_cache/",
+    "secrets/",
+    "secrets/*",
+    ".env",
+    "data/outputs/",
+    "data/outputs/**",
+    "logs/",
+    ".vscode/",
+    ".idea/",
+    ".git/",
+    "node_modules/",
+    "dist/",
+    "build/",
+    "out/",
+    ".cache/",
+    "*.tmp",
+    "*.mp4",
+    "*.mov",
+    "*.mkv",
+    "*.exr",
+    "*.pt",
+    "*.ckpt",
+    "models/",
+    "*.tar.gz",
+    "*.zip",
+    "*.tgz",
+    ".DS_Store",
+]

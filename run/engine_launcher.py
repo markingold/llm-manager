@@ -8,9 +8,177 @@ definitions and forwards to launch_tgw.py.
 """
 
 import argparse
+import json
 import os
 import pathlib
+import subprocess
 import sys
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+STATE_DIR = ROOT / "run" / "state"
+SLOT_BACKENDS_PATH = STATE_DIR / "slot_backends.json"
+MODELS_DIR = os.getenv(
+    "SERVER_MODELS_DIR",
+    os.getenv("MODELS_DIR", "/srv/2bananas/engines/models"),
+)
+SUPPORTED_BACKENDS = {"tgw", "vllm", "tabbyapi"}
+DEFAULT_SLOT_BACKENDS = {"chat": "tgw", "intent": "tgw", "small": "tgw"}
+PORT_TO_MODE = {"8500": "chat", "8501": "intent", "8502": "small"}
+DEFAULT_VLLM_PYTHON_CANDIDATES = (
+    "/srv/2bananas/engines/vllm-env/bin/python3",
+    "/srv/2bananas/engines/vllm-env/bin/python",
+    "/srv/2bananas/engines/llm-env/bin/python3",
+    "/srv/2bananas/engines/llm-env/bin/python",
+)
+MODEL_TO_MODE = {
+    "chat_active_model": "chat",
+    "intent_active_model": "intent",
+    "small_active_model": "small",
+}
+
+sys.path.insert(0, str(ROOT / "api"))
+try:
+    from model_inspector import detect_kind as _detect_kind
+except Exception:
+    _detect_kind = None
+
+
+def _read_slot_backends() -> dict[str, str]:
+    data = dict(DEFAULT_SLOT_BACKENDS)
+    if not SLOT_BACKENDS_PATH.exists():
+        return data
+    try:
+        raw = json.loads(SLOT_BACKENDS_PATH.read_text())
+    except Exception:
+        return data
+    if not isinstance(raw, dict):
+        return data
+    for mode in ("chat", "intent", "small"):
+        backend = str(raw.get(mode, "") or "").strip().lower()
+        if backend in SUPPORTED_BACKENDS:
+            data[mode] = backend
+    return data
+
+
+def _normalize_mode(mode: str | None) -> str:
+    text = str(mode or "").strip().lower()
+    if text == "util":
+        return "small"
+    return text if text in {"chat", "intent", "small"} else "chat"
+
+
+def _mode_for_launch(api_port: str, model: str) -> str:
+    from_port = PORT_TO_MODE.get(str(api_port).strip())
+    if from_port:
+        return from_port
+
+    model_text = str(model or "").strip()
+    from_model = MODEL_TO_MODE.get(model_text)
+    if from_model:
+        return from_model
+    if ":" in model_text:
+        left = model_text.split(":", 1)[0].strip().lower()
+        if left in {"chat", "intent", "small", "util"}:
+            return _normalize_mode(left)
+    return "chat"
+
+
+def _backend_for_mode(mode: str) -> str:
+    mode_key = _normalize_mode(mode)
+    env_key = f"LLM_{mode_key.upper()}_BACKEND"
+    env_backend = str(os.getenv(env_key, "") or "").strip().lower()
+    if env_backend in SUPPORTED_BACKENDS:
+        return env_backend
+    backends = _read_slot_backends()
+    backend = str(backends.get(mode_key, DEFAULT_SLOT_BACKENDS[mode_key]) or "tgw").strip().lower()
+    return backend if backend in SUPPORTED_BACKENDS else "tgw"
+
+
+def _launcher_path_for_backend(backend: str) -> pathlib.Path:
+    run_dir = pathlib.Path(__file__).resolve().parent
+    name = {
+        "tgw": "launch_tgw.py",
+        "vllm": "launch_vllm.py",
+        "tabbyapi": "launch_tabbyapi.py",
+    }.get(backend, "launch_tgw.py")
+    path = run_dir / name
+    if not path.exists() and backend != "tgw":
+        return run_dir / "launch_tgw.py"
+    return path
+
+
+def _resolve_model_path(model: str) -> pathlib.Path:
+    model_text = str(model or "").strip()
+    model_path = pathlib.Path(model_text)
+    if not model_path.is_absolute():
+        model_path = pathlib.Path(MODELS_DIR) / model_text
+    try:
+        if model_path.exists() or model_path.is_symlink():
+            return model_path.resolve()
+    except Exception:
+        pass
+    return model_path
+
+
+def _model_kind_for_launch(model: str) -> str:
+    model_path = _resolve_model_path(model)
+    if _detect_kind is None:
+        return "unknown"
+    try:
+        return str(_detect_kind(model_path) or "unknown").strip().lower() or "unknown"
+    except Exception:
+        return "unknown"
+
+
+def _backend_supports_kind(backend: str, kind: str) -> bool:
+    backend_key = str(backend or "").strip().lower()
+    model_kind = str(kind or "unknown").strip().lower()
+    if backend_key == "tgw":
+        return True
+    if backend_key == "tabbyapi":
+        if model_kind == "multimodal":
+            return False
+        return model_kind in {"exl2", "exl3", "awq", "gptq"}
+    if backend_key == "vllm":
+        if model_kind == "multimodal":
+            return False
+        return model_kind in {"transformers", "awq", "gptq", "lora"}
+    return False
+
+
+def _vllm_available() -> bool:
+    configured = str(os.getenv("VLLM_PYTHON_BIN", "") or "").strip()
+    candidates: list[str] = []
+    if configured:
+        candidates.append(configured)
+    candidates.extend(DEFAULT_VLLM_PYTHON_CANDIDATES)
+
+    seen: set[str] = set()
+    for candidate in candidates:
+        if not candidate:
+            continue
+        path = pathlib.Path(candidate)
+        candidate_path = str(path)
+        if candidate_path in seen:
+            continue
+        seen.add(candidate_path)
+        if not path.exists() or not os.access(candidate_path, os.X_OK):
+            continue
+        try:
+            probe = subprocess.run(
+                [candidate_path, "-c", "import vllm"],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=10,
+            )
+        except Exception:
+            continue
+        if probe.returncode == 0:
+            os.environ["VLLM_PYTHON_BIN"] = candidate_path
+            return True
+
+    return False
 
 
 def main():
@@ -22,10 +190,39 @@ def main():
     parser.add_argument("--webui", action="store_true", help="Enable TGW WebUI for this launch")
     args = parser.parse_args()
 
-    launch_tgw = pathlib.Path(__file__).resolve().parent / "launch_tgw.py"
+    mode = _mode_for_launch(args.api_port, args.model)
+    backend = _backend_for_mode(mode)
+    model_kind = _model_kind_for_launch(args.model)
+
+    if not _backend_supports_kind(backend, model_kind):
+        fallback = next(
+            (candidate for candidate in ("tgw", "vllm", "tabbyapi") if _backend_supports_kind(candidate, model_kind)),
+            None,
+        )
+        if fallback is None:
+            raise SystemExit(
+                f"[engine-launcher] no compatible backend for model_kind={model_kind}; configured_backend={backend}"
+            )
+        print(
+            f"[engine-launcher] backend={backend} incompatible with model_kind={model_kind}; falling back to {fallback}",
+            flush=True,
+        )
+        backend = fallback
+
+    if backend == "vllm":
+        if not _vllm_available():
+            print("[engine-launcher] backend=vllm unavailable (missing module); falling back to tgw", flush=True)
+            backend = "tgw"
+        else:
+            vllm_python = str(os.getenv("VLLM_PYTHON_BIN", "") or "").strip()
+            if vllm_python:
+                print(f"[engine-launcher] backend=vllm using python={vllm_python}", flush=True)
+
+    launcher = _launcher_path_for_backend(backend)
+
     cmd = [
         sys.executable,
-        str(launch_tgw),
+        str(launcher),
         "--api-port",
         args.api_port,
         "--model", args.model,
@@ -34,10 +231,21 @@ def main():
         "--listen-host",
         args.listen_host,
     ]
-    if args.webui:
-        cmd.append("--webui")
+
+    if backend == "tgw":
+        if args.webui:
+            cmd.append("--webui")
+        else:
+            cmd.append("--no-webui")
     else:
-        cmd.append("--no-webui")
+        cuda_visible_devices = str(os.getenv("CUDA_VISIBLE_DEVICES", "") or "").strip()
+        if cuda_visible_devices:
+            cmd += ["--cuda-visible-devices", cuda_visible_devices]
+
+    print(
+        f"[engine-launcher] mode={mode} backend={backend} kind={model_kind} launcher={launcher.name} model={args.model} port={args.api_port}",
+        flush=True,
+    )
     os.execv(sys.executable, cmd)
 
 

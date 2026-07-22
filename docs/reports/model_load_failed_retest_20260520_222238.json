@@ -1,0 +1,82 @@
+{
+  "generated_at": "2026-05-21T03:25:35.913968+00:00",
+  "base_url": "http://127.0.0.1:8101",
+  "prompt": "Reply with exactly: ping",
+  "cases": [
+    {
+      "mode": "chat",
+      "model": "LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2",
+      "backend_requested": "tabbyapi",
+      "switch_status": 200,
+      "switch_backend_effective": "tabbyapi",
+      "switch_response_excerpt": "{\"ok\": true, \"link\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/chat_active_model\", \"target\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/LoneStriker_Hermes-3-Llama-3.1-8B-4.0bpw-h6-exl2\", \"mode\": \"chat\", \"backend\": \"tabbyapi\", \"backend_source\": \"request\", \"auto_backend_applied\": false, \"previous_backend\": \"tgw\", \"model_kind\": \"exl2\", \"compatible_backends\": [\"tgw\", \"tabbyapi\"], \"unsupported_reason\": null, \"recommended_backend\": \"tabbyapi\", \"fallback_backends\"",
+      "chat_ok": true,
+      "chat_probe_statuses": [
+        502,
+        502,
+        502,
+        200
+      ],
+      "answer_excerpt": "ping",
+      "elapsed_ms": 12627
+    },
+    {
+      "mode": "chat",
+      "model": "Qwen3.6-27B-GGUF",
+      "backend_requested": "tgw",
+      "switch_status": 200,
+      "switch_backend_effective": "tgw",
+      "switch_response_excerpt": "{\"ok\": true, \"link\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/chat_active_model\", \"target\": \"/srv/2bananas/engines/text-generation-webui/user_data/models/Qwen3.6-27B-GGUF\", \"mode\": \"chat\", \"backend\": \"tgw\", \"backend_source\": \"request\", \"auto_backend_applied\": false, \"previous_backend\": \"tabbyapi\", \"model_kind\": \"gguf\", \"compatible_backends\": [\"tgw\"], \"unsupported_reason\": null, \"recommended_backend\": \"tgw\", \"fallback_backends\": [], \"lifecycle_mode\": \"legacy\", \"native_load_at",
+      "chat_ok": false,
+      "chat_probe_statuses": [
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502,
+        502
+      ],
+      "answer_excerpt": null,
+      "elapsed_ms": 127619
+    },
+    {
+      "mode": "chat",
+      "model": "Qwen__Qwen3.5-9B",
+      "backend_requested": "vllm",
+      "switch_status": 422,
+      "switch_backend_effective": null,
+      "switch_response_excerpt": "{\"detail\": \"model 'Qwen__Qwen3.5-9B' cannot be loaded in this deployment: Multimodal checkpoints are not currently supported by local backends (tgw, vllm, tabbyapi) in this deployment.\"}",
+      "chat_ok": false,
+      "chat_probe_statuses": [],
+      "answer_excerpt": null,
+      "elapsed_ms": 7,
+      "failure_reason": "model 'Qwen__Qwen3.5-9B' cannot be loaded in this deployment: Multimodal checkpoints are not currently supported by local backends (tgw, vllm, tabbyapi) in this deployment."
+    }
+  ],
+  "pass_count": 1,
+  "fail_count": 2
+}

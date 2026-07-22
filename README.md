@@ -143,6 +143,7 @@ Notes:
 | `PM2_CHAT` / `PM2_INTENT` / `PM2_SMALL` | Legacy PM2 process names | `llm_a_8500` etc. |
 | `WEBUI_ROOT` | text-generation-webui install dir | `/srv/2bananas/engines/text-generation-webui` |
 | `WEBUI_MODELS_DIR` | Shared models directory | `/srv/2bananas/engines/models` |
+| `TABBYAPI_CMD` | Optional explicit TabbyAPI startup command for `run/launch_tabbyapi.py` | `python -m tabbyapi` |
 | `EXLLAMA_ROOT` | ExLlamaV2 install dir | `/srv/2bananas/engines/exllamav2` |
 | `EXLLAMA_V3_ROOT` | ExLlamaV3 install dir used by managed EXL3 conversion | `/srv/2bananas/engines/exllamav3` |
 | `EXL3_CONVERT_SCRIPT` | Optional explicit ExLlamaV3 convert script path | (none) |
@@ -182,7 +183,9 @@ Process/service environment commonly used in deployment:
 | GET | `/health` | Service health + engine pings |
 | GET | `/system` | CPU load, RAM, disk |
 | GET | `/models` | List all models + active links + slot visibility + metadata (`slot_endpoints` includes resolved backend/base/port info) |
-| POST | `/switch` | Switch model: `{ mode, model_dir, bounce, backend? }` (auto-applies recommended vLLM/Tabby backend when omitted for compatible model kinds) |
+| POST | `/switch` | Switch model: `{ mode, model_dir, bounce, backend?, lifecycle_mode?, native_max_seq_len? }` |
+| POST | `/models/load` | Explicit model load wrapper over switch flow with lifecycle controls |
+| POST | `/models/unload` | Explicit model unload endpoint with TabbyAPI native unload attempts |
 | POST | `/bounce/{mode}` | Restart engine (chat/intent/small) |
 | GET/POST | `/knobs` | Read/write .env settings |
 | GET | `/providers/models` | Read provider model catalog config |
@@ -349,7 +352,7 @@ Notes:
 - Engine control is systemd-first via `SYSTEMD_LLM_A`, `SYSTEMD_LLM_B`, and `SYSTEMD_LLM_C`
 - `POST /bounce/{mode}` can still fall back to legacy PM2 names when systemd unit env vars are absent
 - The dashboard hides slots when `ENABLE_CHAT`, `ENABLE_INTENT`, or `ENABLE_SMALL` is set to `0`
-- The currently deployed engine units launch `run/engine_launcher.py`, which auto-detects the loader from the selected model contents
+- The currently deployed engine units launch `run/engine_launcher.py`, which now dispatches to backend-specific launchers (`run/launch_tgw.py`, `run/launch_vllm.py`, `run/launch_tabbyapi.py`) based on slot backend preference
 - `run/launch_tgw.py` now applies startup guardrails by default to clean stale TGW port owners and stale ExLlama lock files before launch
 
 ## Supported Model Formats

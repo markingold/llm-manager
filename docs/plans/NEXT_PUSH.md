@@ -156,7 +156,7 @@ Interpretation:
 ## Biggest remaining value gaps
 
 1. TabbyAPI lane lifecycle production hardening
-- Initial `/switch` lifecycle prototype is now in place (`legacy|auto|native` with TabbyAPI native-load attempts and fallback diagnostics); next step is host-level runtime validation once TabbyAPI is installed and wired.
+- `/switch` lifecycle prototype is in place (`legacy|auto|native`) and explicit lifecycle endpoints now exist (`/models/load`, `/models/unload`); remaining work is host-level runtime stability validation under steady traffic.
 
 2. Slot capability metadata
 - Add optional slot metadata for embeddings/classification/structured-output/tool-calling/multimodal capability routing.

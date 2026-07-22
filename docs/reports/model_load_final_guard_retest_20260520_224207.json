@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-05-21T03:42:07.889157+00:00",
+  "focus_model": "Qwen__Qwen3.5-9B",
+  "switch_attempt": {
+    "status": 422,
+    "response": {
+      "detail": "model 'Qwen__Qwen3.5-9B' cannot be loaded in this deployment: Multimodal checkpoints are not currently supported by local backends (tgw, vllm, tabbyapi) in this deployment."
+    }
+  },
+  "state_before": {
+    "active_chat": "/srv/2bananas/engines/models/Qwen3.5-4B-Q6_K",
+    "chat_backend": "tgw"
+  },
+  "state_after": {
+    "active_chat": "/srv/2bananas/engines/models/Qwen3.5-4B-Q6_K",
+    "chat_backend": "tgw"
+  },
+  "post_check": {
+    "test_chat_status": 200,
+    "answer": "ping"
+  }
+}

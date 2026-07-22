@@ -49,7 +49,7 @@ def _read_json(path: pathlib.Path) -> Optional[dict]:
 def detect_kind(model_path: pathlib.Path) -> str:
     """
     Detect the model format/kind.  Returns one of:
-    exl2, exl3, gguf, awq, gptq, transformers, lora, unknown
+    exl2, exl3, gguf, awq, gptq, transformers, multimodal, lora, unknown
     """
     name_lower = model_path.name.lower()
 
@@ -70,6 +70,13 @@ def detect_kind(model_path: pathlib.Path) -> str:
     # --- Check config.json for quant method ---
     config = _read_json(model_path / "config.json")
     if config:
+        # Vision-capable checkpoints are currently treated as multimodal lanes.
+        if any(
+            key in config
+            for key in ("vision_config", "image_token_id", "video_token_id", "vision_start_token_id", "vision_end_token_id")
+        ):
+            return "multimodal"
+
         qc = config.get("quantization_config", {})
         quant_method = qc.get("quant_method", "").lower()
         if quant_method == "awq":
@@ -105,6 +112,7 @@ def detect_loader(kind: str) -> str:
         "awq":          "exllamav2",    # exllamav2 supports AWQ natively
         "gptq":         "exllamav2",    # exllamav2 supports GPTQ natively
         "transformers": "transformers",
+        "multimodal":   "transformers",
         "lora":         "transformers",
         "unknown":      "transformers",
     }.get(kind, "transformers")
@@ -126,6 +134,7 @@ def recommend_backends(kind: str) -> tuple[str, list[str]]:
         "gptq": ("vllm", ["tabbyapi", "tgw"]),
         "gguf": ("tgw", []),
         "transformers": ("vllm", ["tgw"]),
+        "multimodal": ("tgw", []),
         "lora": ("tgw", ["vllm"]),
         "unknown": ("tgw", []),
     }
@@ -246,6 +255,7 @@ def inspect_one(model_name: str) -> dict:
             "loader": None,
             "recommended_backend": "tgw",
             "fallback_backends": [],
+            "unsupported_reason": None,
             "bpw": None,
             "dtype": None,
             "chat_template_mode": "auto",
@@ -257,6 +267,12 @@ def inspect_one(model_name: str) -> dict:
     kind = detect_kind(model_path)
     loader = detect_loader(kind)
     recommended_backend, fallback_backends = recommend_backends(kind)
+    unsupported_reason = None
+    if kind == "multimodal":
+        unsupported_reason = (
+            "Multimodal checkpoints are not currently supported by local backends "
+            "(tgw, vllm, tabbyapi) in this deployment."
+        )
     bpw = detect_bpw(model_path)
     dtype = detect_dtype(model_path, kind)
     tpl_mode, tpl_raw = guess_chat_template(model_name, model_path)
@@ -283,6 +299,7 @@ def inspect_one(model_name: str) -> dict:
         "loader": loader,
         "recommended_backend": recommended_backend,
         "fallback_backends": fallback_backends,
+        "unsupported_reason": unsupported_reason,
         "bpw": bpw,
         "dtype": dtype,
         "chat_template_mode": tpl_mode,
