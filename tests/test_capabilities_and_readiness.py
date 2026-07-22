@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
@@ -17,6 +19,17 @@ class _Response:
 
     def json(self):
         return {"data": [{"id": model_id} for model_id in self._model_ids]}
+
+
+class _CurrentModelResponse:
+    status_code = 200
+    ok = True
+
+    def __init__(self, model_id: str):
+        self._model_id = model_id
+
+    def json(self):
+        return {"id": self._model_id, "object": "model"}
 
 
 def _model(name: str, config: dict | None = None) -> Path:
@@ -80,6 +93,16 @@ def test_embedding_slot_fails_when_vllm_is_unavailable(monkeypatch: pytest.Monke
     assert "available vllm runtime" in str(exc.value.detail)
 
 
+def test_vllm_availability_requires_a_successful_module_import(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(server, "read_env", lambda: {"VLLM_PYTHON_BIN": sys.executable})
+    monkeypatch.setattr(server.subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(returncode=1))
+    monkeypatch.setattr(server.importlib.util, "find_spec", lambda _name: None)
+    assert server._vllm_backend_available() is False
+
+    monkeypatch.setattr(server.subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(returncode=0))
+    assert server._vllm_backend_available() is True
+
+
 def test_models_lists_supported_chat_models_for_unloaded_intent_slot():
     chat = _model("general-chat")
     lora = _model("lora_legacy-intent")
@@ -92,7 +115,7 @@ def test_models_lists_supported_chat_models_for_unloaded_intent_slot():
 
     result = server.models()
 
-    expected_text_models = ["general-chat", "lora_legacy-intent"]
+    expected_text_models = ["general-chat"]
     assert result["chat"] == expected_text_models
     assert result["intent"] == expected_text_models
     assert result["small"] == expected_text_models
@@ -106,6 +129,25 @@ def test_models_lists_supported_chat_models_for_unloaded_intent_slot():
         "lora_legacy-intent",
         "vision",
     }
+    assert result["meta"]["lora_legacy-intent"]["capabilities"] == []
+    assert result["meta"]["lora_legacy-intent"]["recommended_backend"] == "unsupported"
+    assert "base model" in result["meta"]["lora_legacy-intent"]["unsupported_reason"]
+    assert result["meta"]["lora_legacy-intent"]["tgw_args"] == []
+
+
+def test_inspector_uses_authoritative_exllama_metadata_and_current_tgw_loaders():
+    exl2 = _model("opaque-exl2", {"quantization_config": {"quant_method": "exl2"}})
+    exl3 = _model("opaque-exl3", {"quantization_config": {"quant_method": "exl3"}})
+
+    assert model_inspector.detect_kind(exl2) == "exl2"
+    assert model_inspector.detect_loader("exl2") is None
+    assert model_inspector.detect_kind(exl3) == "exl3"
+    assert model_inspector.detect_loader("exl3") == "ExLlamav3"
+    assert model_inspector.detect_loader("transformers") == "Transformers"
+    assert server._backend_supports_model_kind("tabbyapi", "exl2") is True
+    assert server._backend_supports_model_kind("tgw", "exl2") is False
+    assert server._backend_supports_model_kind("vllm", "awq") is True
+    assert server._backend_supports_model_kind("tgw", "awq") is False
 
 
 def test_readiness_poll_requires_an_exact_reported_model(monkeypatch: pytest.MonkeyPatch):
@@ -116,6 +158,24 @@ def test_readiness_poll_requires_an_exact_reported_model(monkeypatch: pytest.Mon
     assert result["ok"] is True
     assert result["attempts"] == 2
     assert result["matched_model_id"] == str(expected.resolve())
+
+
+def test_tabby_readiness_uses_current_model_instead_of_inventory(monkeypatch: pytest.MonkeyPatch):
+    expected = _model("expected")
+    responses = iter([_CurrentModelResponse("other"), _CurrentModelResponse("expected")])
+    requested_urls = []
+
+    def get(url, **_kwargs):
+        requested_urls.append(url)
+        return next(responses)
+
+    monkeypatch.setattr(server.requests, "get", get)
+    result = server._wait_for_model_readiness("chat", expected, "tabbyapi", timeout_seconds=0.2)
+
+    assert result["ok"] is True
+    assert result["attempts"] == 2
+    assert result["matched_model_id"] == "expected"
+    assert requested_urls == ["http://127.0.0.1:8500/v1/model"] * 2
 
 
 def test_readiness_timeout_rolls_back_model_and_backend(monkeypatch: pytest.MonkeyPatch):

@@ -1,4 +1,4 @@
-import { api } from "../api.js?v=20260722_1";
+import { api } from "../api.js?v=20260722_2";
 import {
   $,
   setStatus,
@@ -9,11 +9,11 @@ import {
   fmtEngineMeta,
   setSelectOptions,
   setEngineButtonStates,
-} from "../ui-core.js?v=20260722_1";
-import { refreshEvalPanel } from "./evaluation.js?v=20260722_1";
-import { refreshRouterPanel } from "./router.js?v=20260722_1";
+} from "../ui-core.js?v=20260722_2";
+import { refreshEvalPanel } from "./evaluation.js?v=20260722_2";
+import { refreshRouterPanel } from "./router.js?v=20260722_2";
 
-const UI_BUILD = "phase-a-ops-v5";
+const UI_BUILD = "phase-a-ops-v6";
 const MAX_CONVERSION_ROWS = 30;
 
 let MODEL_CACHE = null;
@@ -339,10 +339,11 @@ function applySlotOperationGating(slotMode, models, engines) {
 
   const disableMutations = !slotEnabled;
   const disableReason = "Slot disabled by ENABLE_* setting.";
-  applyOptionalDisable(`${ui.prefix}Start`, disableMutations, disableReason);
+  const missingModelReason = "Choose and switch a model before starting this slot.";
+  applyOptionalDisable(`${ui.prefix}Start`, disableMutations || !activeModelName, disableMutations ? disableReason : missingModelReason);
   applyOptionalDisable(`${ui.prefix}Stop`, disableMutations, disableReason);
-  applyOptionalDisable(`${ui.prefix}Restart`, disableMutations, disableReason);
-  applyOptionalDisable(`${ui.prefix}Solo`, disableMutations, disableReason);
+  applyOptionalDisable(`${ui.prefix}Restart`, disableMutations || !activeModelName, disableMutations ? disableReason : missingModelReason);
+  applyOptionalDisable(`${ui.prefix}Solo`, disableMutations || !activeModelName, disableMutations ? disableReason : missingModelReason);
   applyOptionalDisable(`${ui.prefix}Logs`, disableMutations, disableReason);
 
   const backendSelect = $(ui.backendSelectId);

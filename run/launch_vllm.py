@@ -4,6 +4,7 @@ launch_vllm.py - Normalize and launch vLLM OpenAI-compatible API server.
 """
 
 import argparse
+import json
 import os
 import pathlib
 import sys
@@ -45,6 +46,21 @@ def _resolve_vllm_python_bin() -> str:
     return sys.executable
 
 
+def _effective_max_model_len(model_path: pathlib.Path, requested: str, task: str) -> str | None:
+    """Clamp embedding context to checkpoint metadata or let vLLM infer it."""
+    if task != "embed":
+        return str(requested)
+    try:
+        config = json.loads((model_path / "config.json").read_text(encoding="utf-8"))
+        declared = int(config.get("max_position_embeddings", 0) or 0)
+        requested_int = int(str(requested))
+    except Exception:
+        return None
+    if declared <= 0 or requested_int <= 0:
+        return None
+    return str(min(declared, requested_int))
+
+
 def main():
     parser = argparse.ArgumentParser(description="Launch vLLM API server")
     parser.add_argument("--api-port", required=True, help="OpenAI API port")
@@ -67,9 +83,10 @@ def main():
     if not model_path.exists() or not model_path.is_dir():
         raise SystemExit(f"[launch-vllm] model path not found: {model_path}")
     model_kind = detect_kind(model_path)
-    if model_kind not in {"transformers", "awq", "gptq", "lora"}:
+    if model_kind not in {"transformers", "awq", "gptq"}:
         raise SystemExit(f"[launch-vllm] unsupported model kind: {model_kind}")
     model_arg = str(model_path)
+    served_model_name = model_path.name
 
     if args.cuda_visible_devices is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_devices)
@@ -86,8 +103,8 @@ def main():
         str(args.api_port),
         "--model",
         model_arg,
-        "--max-model-len",
-        str(args.max_seq_len),
+        "--served-model-name",
+        served_model_name,
         "--gpu-memory-utilization",
         str(args.gpu_memory_utilization),
         "--tensor-parallel-size",
@@ -95,6 +112,9 @@ def main():
         "--task",
         args.task,
     ]
+    effective_max_model_len = _effective_max_model_len(model_path, str(args.max_seq_len), args.task)
+    if effective_max_model_len is not None:
+        cmd += ["--max-model-len", effective_max_model_len]
 
     print(
         f"[launch-vllm] model={model_arg} port={args.api_port} tp={args.tensor_parallel_size} python={vllm_python}",

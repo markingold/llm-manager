@@ -83,6 +83,11 @@ def _configure(catalog: dict, policies: dict) -> None:
     server._write_json(server.PROVIDER_MODELS_PATH, catalog)
     server._write_json(server.PROVIDER_POLICIES_PATH, policies)
     server.write_slot_backends({**server.DEFAULT_SLOT_BACKENDS, "embed": "vllm"})
+    for mode in ("chat", "embed"):
+        model = server.MODELS_DIR / f"{mode}-checkpoint"
+        model.mkdir(exist_ok=True)
+        (model / "config.json").write_text("{}")
+        (server.MODELS_DIR / f"{mode}_active_model").symlink_to(model, target_is_directory=True)
 
 
 def test_embed_endpoint_uses_authoritative_local_embedding_slot(monkeypatch: pytest.MonkeyPatch):
@@ -159,6 +164,39 @@ def test_embed_http_flow_falls_back_through_real_provider_adapter(monkeypatch: p
         "http://local.test:8503/v1/embeddings",
         "https://router.test/api/v1/embeddings",
     ]
+
+
+def test_local_dispatch_routes_by_alias_but_sends_actual_served_model(monkeypatch: pytest.MonkeyPatch):
+    catalog = _catalog()
+    _configure(catalog, _policies(["local"]))
+    server.write_env({"LLM_CHAT_API_BASE": "http://local.test:8500"})
+    captured = {}
+
+    class Response:
+        status_code = 200
+        ok = True
+
+        def json(self):
+            return {"choices": [{"message": {"content": "ok"}}]}
+
+        def raise_for_status(self):
+            return None
+
+    def post(url, **kwargs):
+        captured.update({"url": url, "payload": kwargs["json"]})
+        return Response()
+
+    monkeypatch.setattr(requests, "post", post)
+    result = server._dispatch_provider_chat(
+        "local",
+        server.read_env(),
+        {"model": "chat_active_model", "messages": [{"role": "user", "content": "hello"}]},
+        provider_models=catalog,
+    )
+
+    assert result["choices"][0]["message"]["content"] == "ok"
+    assert captured["url"] == "http://local.test:8500/v1/chat/completions"
+    assert captured["payload"]["model"] == "chat-checkpoint"
 
 
 def test_chat_endpoint_records_local_error_then_falls_back_to_openai(monkeypatch: pytest.MonkeyPatch):

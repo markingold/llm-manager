@@ -5,6 +5,7 @@ import subprocess
 
 import pytest
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
 
 from llm_manager import server
 
@@ -65,6 +66,34 @@ def test_model_unload_rejects_noop_and_clears_link_after_engine_stop(monkeypatch
     assert result["ok"] is True
     assert result["unload_method"] == "engine_stop"
     assert not link.exists() and not link.is_symlink()
+
+
+def test_solo_preflights_target_before_stopping_other_engines(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("SYSTEMD_LLM_A", "llm-a.service")
+    monkeypatch.setenv("SYSTEMD_LLM_B", "llm-b.service")
+    stops = []
+    monkeypatch.setattr(server, "_systemctl_stop", lambda unit: stops.append(unit))
+
+    with pytest.raises(HTTPException) as exc:
+        server.engines_solo("intent")
+
+    assert exc.value.status_code == 409
+    assert "choose and switch" in str(exc.value.detail)
+    assert stops == []
+
+
+def test_solo_http_route_is_not_shadowed_by_generic_engine_action(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("SYSTEMD_LLM_A", "llm-a.service")
+    monkeypatch.setenv("SYSTEMD_LLM_B", "llm-b.service")
+    stops = []
+    monkeypatch.setattr(server, "_systemctl_stop", lambda unit: stops.append(unit))
+
+    with TestClient(server.app) as client:
+        response = client.post("/engines/solo/intent")
+
+    assert response.status_code == 409
+    assert "choose and switch" in response.json()["detail"]
+    assert stops == []
 
 
 def test_job_cancellation_uses_managed_process_identity_not_stored_pid():

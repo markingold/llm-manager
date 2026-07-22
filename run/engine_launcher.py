@@ -138,15 +138,11 @@ def _backend_supports_kind(backend: str, kind: str) -> bool:
     backend_key = str(backend or "").strip().lower()
     model_kind = str(kind or "unknown").strip().lower()
     if backend_key == "tgw":
-        return model_kind != "multimodal"
+        return model_kind in {"exl3", "gguf", "transformers"}
     if backend_key == "tabbyapi":
-        if model_kind == "multimodal":
-            return False
-        return model_kind in {"exl2", "exl3", "awq", "gptq"}
+        return model_kind in {"exl2", "exl3"}
     if backend_key == "vllm":
-        if model_kind == "multimodal":
-            return False
-        return model_kind in {"transformers", "awq", "gptq", "lora"}
+        return model_kind in {"transformers", "awq", "gptq"}
     return False
 
 
@@ -198,30 +194,20 @@ def main():
     backend = _backend_for_mode(mode)
     model_kind = _model_kind_for_launch(args.model)
     if mode == "embed" and backend != "vllm":
-        print(f"[engine-launcher] embedding slot requires vllm; overriding backend={backend}", flush=True)
-        backend = "vllm"
+        raise SystemExit(
+            f"[engine-launcher] embedding slot requires vllm; configured_backend={backend}; "
+            "persist the correct backend before starting the slot"
+        )
 
     if not _backend_supports_kind(backend, model_kind):
-        fallback = next(
-            (candidate for candidate in ("tgw", "vllm", "tabbyapi") if _backend_supports_kind(candidate, model_kind)),
-            None,
+        raise SystemExit(
+            f"[engine-launcher] backend={backend} incompatible with model_kind={model_kind}; "
+            "select and persist a compatible backend before starting the slot"
         )
-        if fallback is None:
-            raise SystemExit(
-                f"[engine-launcher] no compatible backend for model_kind={model_kind}; configured_backend={backend}"
-            )
-        print(
-            f"[engine-launcher] backend={backend} incompatible with model_kind={model_kind}; falling back to {fallback}",
-            flush=True,
-        )
-        backend = fallback
 
     if backend == "vllm":
         if not _vllm_available():
-            if mode == "embed":
-                raise SystemExit("[engine-launcher] embedding slot requires an available vllm runtime")
-            print("[engine-launcher] backend=vllm unavailable (missing module); falling back to tgw", flush=True)
-            backend = "tgw"
+            raise SystemExit("[engine-launcher] configured vllm backend is unavailable (module import failed)")
         else:
             vllm_python = str(os.getenv("VLLM_PYTHON_BIN", "") or "").strip()
             if vllm_python:

@@ -259,6 +259,9 @@ def main():
         runtime_env.get("TGW_WEBUI_BIND_HOST", runtime_env.get("TGW_CHAT_WEBUI_BIND_HOST"))
         or args.listen_host
     ).strip() or args.listen_host
+    # A public WebUI setting must never leak into API-only engine slots.  The
+    # slot unit's --listen-host is authoritative unless WebUI mode is explicit.
+    effective_listen_host = tgw_webui_bind_host if tgw_webui_enabled else args.listen_host
 
     _apply_startup_guardrails(int(args.api_port), runtime_env)
 
@@ -276,6 +279,33 @@ def main():
     if kind == "multimodal":
         raise SystemExit("[launch-tgw] multimodal checkpoints are unsupported in this deployment")
     loader = detect_loader(kind)
+    if not loader:
+        raise SystemExit(f"[launch-tgw] model kind {kind!r} has no supported TGW loader")
+
+    webui_root = pathlib.Path(
+        str(runtime_env.get("WEBUI_ROOT") or "/srv/2bananas/engines/text-generation-webui")
+    ).expanduser().resolve()
+    server_path = webui_root / "server.py"
+    if not server_path.is_file():
+        raise SystemExit(f"[launch-tgw] text-generation-webui server not found: {server_path}")
+
+    configured_python = str(runtime_env.get("TGW_PYTHON_BIN") or "").strip()
+    python_candidates = [configured_python] if configured_python else []
+    python_candidates.extend((
+        str(webui_root / "venv" / "bin" / "python"),
+        str(webui_root / "env" / "bin" / "python"),
+        sys.executable,
+    ))
+    tgw_python = next(
+        (
+            candidate
+            for candidate in dict.fromkeys(python_candidates)
+            if pathlib.Path(candidate).is_file() and os.access(candidate, os.X_OK)
+        ),
+        "",
+    )
+    if not tgw_python:
+        raise SystemExit("[launch-tgw] no executable TGW Python interpreter was found")
 
     print(
         f"[launch-tgw] model={model_arg} alias={args.model} kind={kind} loader={loader} webui={'on' if tgw_webui_enabled else 'off'}",
@@ -283,14 +313,14 @@ def main():
     )
 
     cmd = [
-        sys.executable,
-        "server.py",
+        tgw_python,
+        str(server_path),
         "--api",
         "--api-port",
         str(int(args.api_port)),
         "--listen",
         "--listen-host",
-        tgw_webui_bind_host,
+        effective_listen_host,
         "--extensions",
         "openai",
         "--old-colors",
@@ -312,7 +342,8 @@ def main():
     else:
         cmd += ["--max_seq_len", str(args.max_seq_len)]
 
-    os.execv(sys.executable, cmd)
+    os.chdir(webui_root)
+    os.execve(tgw_python, cmd, runtime_env)
 
 
 if __name__ == "__main__":

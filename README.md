@@ -1,13 +1,14 @@
 # LLM Manager
 
 Production control plane for multi-slot LLM serving on dual-GPU systems.
-Manages **text-generation-webui** instances via systemd, with model switching, format auto-detection, LoRA training pipeline, and a web dashboard.
+Manages **TabbyAPI**, **text-generation-webui**, and **vLLM** instances via systemd, with model switching, format auto-detection, a LoRA training pipeline, and a web dashboard.
 
 Additional local docs:
 - `docs/API.md`
 - `docs/CLI_SYSOP_GUIDE.md` (historical filename; this is the llm-manager CLI operations guide, including recovery procedures for manual-review/quarantine flags and GPU/TGW wedges)
 - `docs/guides/EXTERNAL_INTEGRATION.md`
 - `docs/guides/RB-ENGINES-LAYOUT.md` (canonical `/srv/2bananas/engines` filesystem layout and migration checklist)
+- `docs/MODEL_HOSTING.md` (backend/format matrix, tradeoffs, and future runtime candidates)
 
 Baseline quality reports:
 - `python run/baseline_local_models.py`
@@ -35,7 +36,7 @@ Baseline quality reports:
   │ GPU 0 · :8500   │  │ GPU 1 · :8501│  │ GPU 1 · :8502│
   │ chat slot        │  │ intent slot  │  │ small slot   │
   └──────────────────┘  └──────────────┘  └──────────────┘
-        text-generation-webui (exllamav2 loader)
+        per-slot backend: TabbyAPI, TGW, or vLLM
 ```
 
 **Hardware:** 2× NVIDIA RTX 3090 (24 GB each)
@@ -79,7 +80,7 @@ For a packaged host, `llm-manager-deploy doctor` validates the installed wheel a
 - OpenRouter `wait` overflow behavior is a real priority queue: requests wait for capacity, time out cleanly, and do not persist arbitrary metadata
 - High-churn runtime sections and managed jobs are stored in versioned SQLite at `run/state/runtime.db`; legacy runtime JSON is imported once
 - Runtime SQLite, its parent directory, and local secret files are permission-restricted and intentionally not tracked by Git
-- Runtime serving stays in `text-generation-webui`; the API manages it rather than serving models itself
+- Model inference stays in a selected backend (TabbyAPI, TGW, or vLLM); the API is the control plane and router, not the inference server
 - The deployed systemd engine units launch through `run/engine_launcher.py`
 
 Typical slot layout:
@@ -153,9 +154,10 @@ Notes:
 | `CUDA_VISIBLE_DEVICES` | GPU(s) for training/conversion | `0` |
 | `PM2_CHAT` / `PM2_INTENT` / `PM2_SMALL` / `PM2_EMBED` | Legacy PM2 process names | slot-specific |
 | `WEBUI_ROOT` | text-generation-webui install dir | `/srv/2bananas/engines/text-generation-webui` |
+| `TGW_PYTHON_BIN` | Optional TGW interpreter override; otherwise `<WEBUI_ROOT>/venv/bin/python` is preferred | (auto) |
 | `LLM_MANAGER_ENGINES_ROOT` | Allowed root for managed engine/conversion paths | `/srv/2bananas/engines` |
 | `WEBUI_MODELS_DIR` | Shared models directory | `/srv/2bananas/engines/models` |
-| `TABBYAPI_CMD` | Optional explicit TabbyAPI startup command for `run/launch_tabbyapi.py` | `python -m tabbyapi` |
+| `TABBYAPI_CMD` | Explicit TabbyAPI startup command for source checkouts/non-module installs | install-specific |
 | `EXLLAMA_ROOT` | ExLlamaV2 install dir | `/srv/2bananas/engines/exllamav2` |
 | `EXLLAMA_V3_ROOT` | ExLlamaV3 install dir used by managed EXL3 conversion | `/srv/2bananas/engines/exllamav3` |
 | `EXL3_CONVERT_SCRIPT` | Optional explicit ExLlamaV3 convert script path | (none) |
@@ -365,7 +367,7 @@ Notes:
   - `small_active_model`
   - `embed_active_model`
 - `POST /switch` is the canonical switch entrypoint
-- Model lifecycle changes are serialized, poll `/v1/models` for the exact requested identity, and restore the previous model/backend when readiness fails
+- Model lifecycle changes are serialized, use backend-specific authoritative readiness endpoints, and restore the previous model/backend when readiness fails
 - Engine control is systemd-first via `SYSTEMD_LLM_A`, `SYSTEMD_LLM_B`, `SYSTEMD_LLM_C`, and `SYSTEMD_LLM_D`
 - `POST /bounce/{mode}` can still fall back to legacy PM2 names when systemd unit env vars are absent
 - The dashboard hides slots when `ENABLE_CHAT`, `ENABLE_INTENT`, or `ENABLE_SMALL` is set to `0`
@@ -392,14 +394,14 @@ The inspector auto-detects and recommends the correct loader:
 
 | Format | Detection | Recommended Loader |
 |--------|-----------|-------------------|
-| **EXL2** | `.exl2` files or name contains `-exl2` | exllamav2 |
-| **EXL3** | `.exl3` files | exllamav2 (≥0.3) |
-| **GGUF** | `.gguf` files | llama.cpp |
-| **AWQ** | `quantization_config.quant_method == "awq"` | exllamav2 |
-| **GPTQ** | `quantization_config.quant_method == "gptq"` | exllamav2 |
-| **FP16/BF16/FP8** | safetensors + config.json torch_dtype | transformers |
+| **EXL2** | `.exl2`, name, or `quantization_config` | TabbyAPI / ExLlamaV2 |
+| **EXL3** | `.exl3`, name, or `quantization_config` | TabbyAPI; TGW `ExLlamav3` fallback |
+| **GGUF** | `.gguf` files | TGW `llama.cpp` |
+| **AWQ** | `quantization_config.quant_method == "awq"` | vLLM |
+| **GPTQ** | `quantization_config.quant_method == "gptq"` | vLLM |
+| **FP16/BF16/FP8** | safetensors + config.json torch_dtype | vLLM; TGW `Transformers` fallback |
 | **Multimodal** | vision/image/video fields in config.json | unsupported (rejected before local launch) |
-| **LoRA** | `adapter_config.json` present | transformers |
+| **LoRA adapter-only** | `adapter_config.json` present | unsupported until base-model + adapter lifecycle is implemented |
 
 ## Multi-GPU Notes
 

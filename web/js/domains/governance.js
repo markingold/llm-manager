@@ -1,5 +1,5 @@
-import { api } from "../api.js?v=20260722_1";
-import { $, escapeHtml, setOut } from "../ui-core.js?v=20260722_1";
+import { api } from "../api.js?v=20260722_2";
+import { $, escapeHtml, setOut } from "../ui-core.js?v=20260722_2";
 
 const DOCS = {
   models: null,

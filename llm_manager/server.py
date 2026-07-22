@@ -3656,6 +3656,7 @@ def _pick_catalog_model(
         }.get(task_type, "chat")
 
         slot_backends = read_slot_backends()
+        runtime_env = read_env()
         candidates: list[dict] = []
         for row in slot_rows:
             if not isinstance(row, dict):
@@ -3665,11 +3666,14 @@ def _pick_catalog_model(
                 continue
             if not bool(row.get("enabled", True)):
                 continue
+            if runtime_env.get(f"ENABLE_{slot_mode.upper()}", "1") != "1":
+                continue
 
             capabilities_raw = row.get("capabilities", []) if isinstance(row.get("capabilities", []), list) else []
             capabilities = {str(cap).strip().lower() for cap in capabilities_raw if str(cap).strip()}
             alias = _slot_alias_for_mode(slot_mode)
-            if not alias or alias in excluded_models:
+            active_model = _active_model_name_for_mode(slot_mode)
+            if not alias or alias in excluded_models or not active_model:
                 continue
 
             runtime_backend = str(slot_backends.get(slot_mode, row.get("backend") or DEFAULT_SLOT_BACKENDS.get(slot_mode, "tgw")) or "").strip().lower()
@@ -3684,7 +3688,7 @@ def _pick_catalog_model(
             candidates.append({
                 "slot_mode": slot_mode,
                 "alias": alias,
-                "active_model": _active_model_name_for_mode(slot_mode),
+                "active_model": active_model,
                 "backend": runtime_backend,
                 "capabilities": capabilities,
                 "priority": priority,
@@ -3871,6 +3875,17 @@ def _build_embed_payload(req: RouterEmbedRequest, selected_model: str) -> dict:
     }
 
 
+def _local_serving_payload(payload: dict, endpoint: dict) -> dict:
+    """Replace a logical slot alias with the backend's actual served model ID."""
+    active_model = str(endpoint.get("active_model", "") or "").strip()
+    mode = str(endpoint.get("mode", "chat") or "chat")
+    if not active_model:
+        raise RuntimeError(f"local {mode} slot has no active model")
+    outbound = dict(payload)
+    outbound["model"] = active_model
+    return outbound
+
+
 def _dispatch_provider_chat(provider: str, env: dict, payload: dict, provider_models: dict | None = None) -> dict:
     if provider == "local":
         adapter = LocalProviderAdapter()
@@ -3880,7 +3895,7 @@ def _dispatch_provider_chat(provider: str, env: dict, payload: dict, provider_mo
             provider_models=provider_models,
             fallback_mode="chat",
         )
-        return adapter.chat({"base": local_endpoint["base"], "payload": payload})
+        return adapter.chat({"base": local_endpoint["base"], "payload": _local_serving_payload(payload, local_endpoint)})
     if provider == "openrouter":
         adapter = OpenRouterProviderAdapter()
         return adapter.chat({
@@ -3909,7 +3924,10 @@ def _dispatch_provider_completions(provider: str, env: dict, payload: dict, prov
             provider_models=provider_models,
             fallback_mode="chat",
         )
-        return adapter.completions({"base": local_endpoint["base"], "payload": payload})
+        return adapter.completions({
+            "base": local_endpoint["base"],
+            "payload": _local_serving_payload(payload, local_endpoint),
+        })
     if provider == "openrouter":
         adapter = OpenRouterProviderAdapter()
         return adapter.completions({
@@ -3938,7 +3956,10 @@ def _dispatch_provider_embeddings(provider: str, env: dict, payload: dict, provi
             provider_models=provider_models,
             fallback_mode="embed",
         )
-        return adapter.embeddings({"base": local_endpoint["base"], "payload": payload})
+        return adapter.embeddings({
+            "base": local_endpoint["base"],
+            "payload": _local_serving_payload(payload, local_endpoint),
+        })
     if provider == "openrouter":
         adapter = OpenRouterProviderAdapter()
         return adapter.embeddings({
@@ -6135,6 +6156,12 @@ def _run_local_evaluation(req: LocalEvalRequest, run_id: str | None = None, queu
                 if variant.stop:
                     payload["stop"] = variant.stop
 
+                if provider == "local":
+                    active_model = _active_model_name_for_mode(eval_mode)
+                    if not active_model:
+                        raise HTTPException(409, f"local {eval_mode} slot has no active model")
+                    payload["model"] = active_model
+
                 start = time.time()
                 row = {
                     "run_id": run_id,
@@ -6405,23 +6432,42 @@ def _backend_supports_model_kind(backend: str, model_kind: str) -> bool:
     kind = str(model_kind or "unknown").strip().lower()
 
     if backend_key == "tgw":
-        return kind != "multimodal"
+        return kind in {"exl3", "gguf", "transformers"}
     if backend_key == "tabbyapi":
-        if kind == "multimodal":
-            return False
-        return kind in {"exl2", "exl3", "awq", "gptq"}
+        return kind in {"exl2", "exl3"}
     if backend_key == "vllm":
-        if kind == "multimodal":
-            return False
-        return kind in {"transformers", "awq", "gptq", "lora"}
+        return kind in {"transformers", "awq", "gptq"}
     return False
 
 
 def _vllm_backend_available() -> bool:
     env = read_env()
     configured = str(env.get("VLLM_PYTHON_BIN", "") or os.getenv("VLLM_PYTHON_BIN", "")).strip()
-    if configured:
-        return Path(configured).exists()
+    candidates = [configured] if configured else []
+    candidates.extend((
+        "/srv/2bananas/engines/vllm-env/bin/python3",
+        "/srv/2bananas/engines/vllm-env/bin/python",
+        "/srv/2bananas/engines/llm-env/bin/python3",
+        "/srv/2bananas/engines/llm-env/bin/python",
+    ))
+    for candidate in dict.fromkeys(candidates):
+        if not candidate:
+            continue
+        path = Path(candidate)
+        if not path.is_file() or not os.access(path, os.X_OK):
+            continue
+        try:
+            probe = subprocess.run(
+                [str(path), "-c", "import vllm"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+                timeout=10,
+            )
+        except Exception:
+            continue
+        if probe.returncode == 0:
+            return True
     return importlib.util.find_spec("vllm") is not None
 
 
@@ -6632,7 +6678,12 @@ def _wait_for_model_readiness(
     env = read_env()
     provider_models = read_provider_models()
     base, base_source = _local_base_for_mode(mode, env, backend=backend, provider_models=provider_models)
-    url = str(base).rstrip("/") + "/v1/models"
+    backend_key = str(backend or "").strip().lower()
+    # TabbyAPI's OpenAI-compatible /v1/models route is an inventory endpoint:
+    # it lists every model in model_dir, not the model currently resident in
+    # memory. Its singular route is the authoritative current-model endpoint.
+    readiness_path = "/v1/model" if backend_key == "tabbyapi" else "/v1/models"
+    url = str(base).rstrip("/") + readiness_path
     relative_name = str(expected_model.resolve().relative_to(MODELS_DIR.resolve()))
     accepted_ids = {str(expected_model.resolve()), relative_name, expected_model.name}
     deadline = time.monotonic() + timeout
@@ -6649,12 +6700,16 @@ def _wait_for_model_readiness(
             last_status = int(response.status_code)
             if response.ok:
                 body = response.json()
-                rows = body.get("data", []) if isinstance(body, dict) else []
-                last_model_ids = [
-                    str(row.get("id", ""))
-                    for row in rows
-                    if isinstance(row, dict) and str(row.get("id", ""))
-                ]
+                if backend_key == "tabbyapi":
+                    current_id = str(body.get("id", "") or "") if isinstance(body, dict) else ""
+                    last_model_ids = [current_id] if current_id else []
+                else:
+                    rows = body.get("data", []) if isinstance(body, dict) else []
+                    last_model_ids = [
+                        str(row.get("id", ""))
+                        for row in rows
+                        if isinstance(row, dict) and str(row.get("id", ""))
+                    ]
                 matched = next((model_id for model_id in last_model_ids if model_id in accepted_ids), None)
                 if matched is not None:
                     return {
@@ -6810,7 +6865,13 @@ def switch_model(
             if candidate in SUPPORTED_BACKENDS and candidate != "vllm" and _backend_supports_model_kind(candidate, model_kind):
                 fallback_choice = candidate
                 break
-        chosen_backend = fallback_choice or "tgw"
+        if fallback_choice is None:
+            raise HTTPException(
+                400,
+                f"no available local backend can load model kind '{model_kind}'; "
+                "install/configure its recommended runtime before switching",
+            )
+        chosen_backend = fallback_choice
         backend_source = "auto_vllm_unavailable_fallback"
         auto_backend_applied = chosen_backend != previous_backend
 
@@ -11042,7 +11103,10 @@ def test_chat(q: str = "What is the capital of France?", no_thinking: bool = Fal
     provider_models = read_provider_models()
     base = _engine_def("chat", env=env, provider_models=provider_models).get("base")
     try:
-        return _test_openai(str(base or env["LLM_CHAT_API_BASE"]), "chat_active_model", q, max_tokens=64, no_thinking=no_thinking)
+        model = _active_model_name_for_mode("chat")
+        if not model:
+            raise RuntimeError("local chat slot has no active model")
+        return _test_openai(str(base or env["LLM_CHAT_API_BASE"]), model, q, max_tokens=64, no_thinking=no_thinking)
     except Exception as e:
         raise HTTPException(502, f"chat api error: {e}")
 
@@ -11052,7 +11116,10 @@ def test_intent(q: str = "Return ONLY the word OK.", no_thinking: bool = False):
     provider_models = read_provider_models()
     base = _engine_def("intent", env=env, provider_models=provider_models).get("base")
     try:
-        return _test_openai(str(base or env["LLM_INTENT_API_BASE"]), "intent_active_model", q, max_tokens=32, no_thinking=no_thinking)
+        model = _active_model_name_for_mode("intent")
+        if not model:
+            raise RuntimeError("local intent slot has no active model")
+        return _test_openai(str(base or env["LLM_INTENT_API_BASE"]), model, q, max_tokens=32, no_thinking=no_thinking)
     except Exception as e:
         raise HTTPException(502, f"intent api error: {e}")
 
@@ -11062,7 +11129,10 @@ def test_util(q: str = "Say OK and nothing else.", no_thinking: bool = False):
     provider_models = read_provider_models()
     base = _engine_def("small", env=env, provider_models=provider_models).get("base")
     try:
-        return _test_openai(str(base or env["LLM_SMALL_API_BASE"]), "small_active_model", q, max_tokens=32, no_thinking=no_thinking)
+        model = _active_model_name_for_mode("small")
+        if not model:
+            raise RuntimeError("local small slot has no active model")
+        return _test_openai(str(base or env["LLM_SMALL_API_BASE"]), model, q, max_tokens=32, no_thinking=no_thinking)
     except Exception as e:
         raise HTTPException(502, f"small api error: {e}")
 
@@ -11466,12 +11536,39 @@ def engines_tgw_webui_logs(lines: int = 160):
         raise HTTPException(400, "SYSTEMD unit not configured for TGW WebUI (SYSTEMD_TGW_WEBUI)")
     return {"ok": True, "mode": "tgw-webui", "unit": unit, "tail": _journal_tail(unit, lines=lines)}
 
+
+def _preflight_engine_start(mode: str) -> dict:
+    mode_key = _normalize_slot_mode(mode, default="")
+    if mode_key not in SLOT_MODES:
+        raise HTTPException(400, "mode must be chat|intent|small|embed")
+    active_path = str(current_links().get(mode_key, "") or "").strip()
+    if not active_path:
+        raise HTTPException(409, f"{mode_key} has no active model; choose and switch a model first")
+    target = _resolve_path_within(Path(active_path), [MODELS_DIR], must_exist=True, must_be_dir=True)
+    kind = detect_kind(target)
+    backend = str(read_slot_backends().get(mode_key, DEFAULT_SLOT_BACKENDS[mode_key]) or "").strip().lower()
+    if not _backend_supports_model_kind(backend, kind):
+        raise HTTPException(409, f"backend '{backend}' cannot load active {mode_key} model kind '{kind}'")
+    if backend == "vllm" and not _vllm_backend_available():
+        raise HTTPException(409, "configured vllm backend is unavailable (module import failed)")
+    return {"mode": mode_key, "model": target.name, "backend": backend, "kind": kind}
+
+
 @app.post("/engines/{mode}/{action}")
 def engines_action(mode: str, action: str):
+    # This parameterized route is registered before /engines/solo/{mode} and
+    # therefore receives that path in Starlette. Delegate it explicitly so the
+    # public Solo endpoint cannot be shadowed by route order.
+    if mode == "solo":
+        return engines_solo(action)
+
     e = _engine_def(mode)
     unit = e["unit"]
     if not unit:
         raise HTTPException(400, f"SYSTEMD unit not configured for {mode} (SYSTEMD_LLM_*)")
+
+    if action in {"start", "restart"}:
+        _preflight_engine_start(mode)
 
     if action == "start":
         _systemctl_start(unit)
@@ -11487,7 +11584,6 @@ def engines_action(mode: str, action: str):
 
 @app.post("/engines/solo/{mode}")
 def engines_solo(mode: str):
-    # Stop other units first, then start requested.
     units = {
         "chat": os.getenv("SYSTEMD_LLM_A") or "",
         "intent": os.getenv("SYSTEMD_LLM_B") or "",
@@ -11496,6 +11592,10 @@ def engines_solo(mode: str):
     }
     if not units.get(mode):
         raise HTTPException(400, f"SYSTEMD unit not configured for {mode}")
+
+    # Validate the requested lane before touching healthy peers.  This avoids
+    # turning a missing/dangling model selection into a multi-engine outage.
+    _preflight_engine_start(mode)
 
     for m, u in units.items():
         if m != mode and u:

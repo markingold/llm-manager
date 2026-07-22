@@ -83,6 +83,10 @@ def detect_kind(model_path: pathlib.Path) -> str:
 
         qc = config.get("quantization_config", {})
         quant_method = qc.get("quant_method", "").lower()
+        if quant_method in {"exl2", "exllamav2"}:
+            return "exl2"
+        if quant_method in {"exl3", "exllamav3"}:
+            return "exl3"
         if quant_method == "awq":
             return "awq"
         if quant_method in ("gptq", "auto-gptq"):
@@ -107,19 +111,24 @@ def detect_kind(model_path: pathlib.Path) -> str:
     return "unknown"
 
 
-def detect_loader(kind: str) -> str:
-    """Map model kind to the recommended TGW --loader flag."""
+def detect_loader(kind: str) -> Optional[str]:
+    """Map a model kind to a current text-generation-webui loader.
+
+    ``None`` means that TGW is not a supported standalone serving lane for
+    the format.  EXL2 is intentionally TabbyAPI-only in this deployment:
+    current TGW releases no longer expose the ExLlamaV2 loader.
+    """
     return {
-        "exl2":         "exllamav2",
-        "exl3":         "exllamav2",    # exllamav2 >= 0.3 handles exl3
+        "exl2":         None,
+        "exl3":         "ExLlamav3",
         "gguf":         "llama.cpp",
-        "awq":          "exllamav2",    # exllamav2 supports AWQ natively
-        "gptq":         "exllamav2",    # exllamav2 supports GPTQ natively
-        "transformers": "transformers",
-        "multimodal":   "transformers",
-        "lora":         "transformers",
-        "unknown":      "transformers",
-    }.get(kind, "transformers")
+        "awq":          None,
+        "gptq":         None,
+        "transformers": "Transformers",
+        "multimodal":   None,
+        "lora":         None,
+        "unknown":      None,
+    }.get(kind)
 
 
 def detect_capabilities(model_path: pathlib.Path, kind: str) -> list[str]:
@@ -155,7 +164,12 @@ def detect_capabilities(model_path: pathlib.Path, kind: str) -> list[str]:
         or any(architecture.endswith(("bertmodel", "robertamodel", "xlmrobertamodel")) for architecture in architectures)
     ):
         return ["embeddings"]
-    if kind in {"exl2", "exl3", "gguf", "awq", "gptq", "transformers", "lora"}:
+    # A PEFT adapter is not a standalone checkpoint.  It needs its base model
+    # plus backend-specific LoRA arguments, which the launchers do not yet
+    # implement, so it must fail closed instead of appearing loadable.
+    if kind == "lora":
+        return []
+    if kind in {"exl2", "exl3", "gguf", "awq", "gptq", "transformers"}:
         return ["chat", "completions"]
     return []
 
@@ -170,15 +184,15 @@ def recommend_backends(kind: str) -> tuple[str, list[str]]:
     - tabbyapi: ExLlama lane for EXL2/EXL3
     """
     mapping = {
-        "exl2": ("tabbyapi", ["tgw"]),
+        "exl2": ("tabbyapi", []),
         "exl3": ("tabbyapi", ["tgw"]),
-        "awq": ("vllm", ["tgw"]),
-        "gptq": ("vllm", ["tabbyapi", "tgw"]),
+        "awq": ("vllm", []),
+        "gptq": ("vllm", []),
         "gguf": ("tgw", []),
         "transformers": ("vllm", ["tgw"]),
         "multimodal": ("unsupported", []),
-        "lora": ("tgw", ["vllm"]),
-        "unknown": ("tgw", []),
+        "lora": ("unsupported", []),
+        "unknown": ("unsupported", []),
     }
     return mapping.get(kind, ("tgw", []))
 
@@ -322,22 +336,31 @@ def inspect_one(model_name: str) -> dict:
             "Multimodal checkpoints are not currently supported by local backends "
             "(tgw, vllm, tabbyapi) in this deployment."
         )
+    elif kind == "lora":
+        unsupported_reason = (
+            "Standalone PEFT/LoRA adapter directories are not loadable until a base "
+            "model and backend-specific adapter lifecycle are configured."
+        )
+    elif kind == "unknown":
+        unsupported_reason = "The model format could not be identified from checkpoint metadata."
     bpw = detect_bpw(model_path)
     dtype = detect_dtype(model_path, kind)
     tpl_mode, tpl_raw = guess_chat_template(model_name, model_path)
     vram = estimate_vram_mb(model_path, kind, bpw)
 
     # Build recommended TGW args
-    tgw_args = [
-        "--extensions", "openai",
-        "--nowebui",
-        "--listen", "--listen-host", "127.0.0.1",
-        "--model-dir", str(base),
-        "--model", model_name,
-        "--loader", loader,
-    ]
+    tgw_args = []
+    if loader:
+        tgw_args = [
+            "--extensions", "openai",
+            "--nowebui",
+            "--listen", "--listen-host", "127.0.0.1",
+            "--model-dir", str(base),
+            "--model", model_name,
+            "--loader", loader,
+        ]
 
-    if tpl_mode and tpl_mode != "auto":
+    if tgw_args and tpl_mode and tpl_mode != "auto":
         tgw_args += ["--chat-template", tpl_mode if tpl_mode != "tokenizer" else "auto"]
 
     return {
