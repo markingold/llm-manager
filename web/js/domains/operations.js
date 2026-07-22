@@ -1,4 +1,4 @@
-import { api } from "../api.js";
+import { api } from "../api.js?v=20260722_1";
 import {
   $,
   setStatus,
@@ -9,9 +9,9 @@ import {
   fmtEngineMeta,
   setSelectOptions,
   setEngineButtonStates,
-} from "../ui-core.js";
-import { refreshEvalPanel } from "./evaluation.js";
-import { refreshRouterPanel } from "./router.js";
+} from "../ui-core.js?v=20260722_1";
+import { refreshEvalPanel } from "./evaluation.js?v=20260722_1";
+import { refreshRouterPanel } from "./router.js?v=20260722_1";
 
 const UI_BUILD = "phase-a-ops-v5";
 const MAX_CONVERSION_ROWS = 30;
