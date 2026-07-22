@@ -80,6 +80,34 @@ def test_embedding_slot_fails_when_vllm_is_unavailable(monkeypatch: pytest.Monke
     assert "available vllm runtime" in str(exc.value.detail)
 
 
+def test_models_lists_supported_chat_models_for_unloaded_intent_slot():
+    chat = _model("general-chat")
+    lora = _model("lora_legacy-intent")
+    (lora / "adapter_config.json").write_text("{}")
+    _model("classifier", {"architectures": ["BertForSequenceClassification"]})
+    _model("embedder", {"llm_manager_capabilities": ["embeddings"]})
+    _model("vision", {"vision_config": {}})
+    (server.MODELS_DIR / "chat_active_model").symlink_to(chat, target_is_directory=True)
+    (server.MODELS_DIR / "webui_active_model").symlink_to(chat, target_is_directory=True)
+
+    result = server.models()
+
+    expected_text_models = ["general-chat", "lora_legacy-intent"]
+    assert result["chat"] == expected_text_models
+    assert result["intent"] == expected_text_models
+    assert result["small"] == expected_text_models
+    assert result["embed"] == ["embedder"]
+    assert result["active"]["intent"] is None
+    assert not (server.MODELS_DIR / "intent_active_model").is_symlink()
+    assert set(result["meta"]) == {
+        "classifier",
+        "embedder",
+        "general-chat",
+        "lora_legacy-intent",
+        "vision",
+    }
+
+
 def test_readiness_poll_requires_an_exact_reported_model(monkeypatch: pytest.MonkeyPatch):
     expected = _model("expected")
     responses = iter([_Response(["expected-but-wrong"]), _Response([str(expected.resolve())])])

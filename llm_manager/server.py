@@ -606,19 +606,52 @@ def _tgw_webui_action(action: str):
         raise HTTPException(400, "action must be start|stop|restart")
     return unit
 
-def list_intent_models():
-    if not MODELS_DIR.exists():
-        return []
-    return sorted([p.name for p in MODELS_DIR.iterdir() if p.is_dir() and p.name.startswith("lora_")])
+MANAGED_MODEL_ALIASES = {
+    "chat_active_model",
+    "intent_active_model",
+    "small_active_model",
+    "embed_active_model",
+    "webui_active_model",
+}
 
-def list_non_intent_models():
+
+def list_local_model_directories():
     if not MODELS_DIR.exists():
         return []
-    ignore = {"intent_active_model", "chat_active_model", "small_active_model", "embed_active_model"}
     return sorted([
         p.name for p in MODELS_DIR.iterdir()
-        if p.is_dir() and p.name not in ignore and not p.name.startswith("lora_")
+        if p.is_dir() and p.name not in MANAGED_MODEL_ALIASES and not p.name.startswith(".")
     ])
+
+
+def _model_names_for_slot(names: list[str], metadata: dict, mode: str) -> list[str]:
+    required_capability = "embeddings" if mode == "embed" else "chat"
+    candidates = []
+    for name in names:
+        inspected = metadata.get(name, {}) if isinstance(metadata.get(name), dict) else {}
+        capabilities = {
+            str(value).strip().lower()
+            for value in inspected.get("capabilities", [])
+            if str(value).strip()
+        }
+        if required_capability not in capabilities:
+            continue
+
+        model_kind = str(inspected.get("kind", "unknown") or "unknown")
+        compatible_backends = ("vllm",) if mode == "embed" else ("tgw", "vllm", "tabbyapi")
+        if any(_backend_supports_model_kind(backend, model_kind) for backend in compatible_backends):
+            candidates.append(name)
+    return candidates
+
+
+def list_intent_models():
+    names = list_local_model_directories()
+    return _model_names_for_slot(names, inspect_batch(names), "intent")
+
+
+def list_non_intent_models():
+    names = list_local_model_directories()
+    return _model_names_for_slot(names, inspect_batch(names), "chat")
 
 def _make_symlink(link: Path, target: Path):
     link.parent.mkdir(parents=True, exist_ok=True)
@@ -8136,9 +8169,12 @@ def system():
 
 @app.get("/models")
 def models():
-    chat_list = list_non_intent_models()
-    intent_list = list_intent_models()
-    small_list = list_non_intent_models()
+    all_names = list_local_model_directories()
+    meta = inspect_batch(all_names)
+    chat_list = _model_names_for_slot(all_names, meta, "chat")
+    intent_list = _model_names_for_slot(all_names, meta, "intent")
+    small_list = _model_names_for_slot(all_names, meta, "small")
+    embed_list = _model_names_for_slot(all_names, meta, "embed")
     active = current_links()
     env = read_env()
     provider_models = read_provider_models()
@@ -8151,14 +8187,6 @@ def models():
         "embed":  env.get("ENABLE_EMBED", "1") == "1",
     }
 
-    # Per-model metadata (kind, loader, bpw)
-    all_names = sorted(set(chat_list + intent_list + small_list))
-    meta = inspect_batch(all_names)
-    embed_list = [
-        name
-        for name in all_names
-        if "embeddings" in set(meta.get(name, {}).get("capabilities", []))
-    ]
     slot_endpoints = {
         mode: _local_endpoint_for_model(
             _slot_alias_for_mode(mode),
@@ -10980,8 +11008,7 @@ def inspect_model(model_name: str):
 @app.get("/inspect")
 def inspect_all_models():
     """Inspect all models in the models directory."""
-    all_names = list_non_intent_models() + list_intent_models()
-    return inspect_batch(all_names)
+    return inspect_batch(list_local_model_directories())
 
 @app.get("/vram")
 def vram():

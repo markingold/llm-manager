@@ -38,6 +38,8 @@ Current deployed unit wiring on this host:
 ### Models
 - GET /models
   - Returns available model lists for chat, intent, and small
+  - Intent remains unloaded when no active model is selected, while its choices include every installed chat-capable model supported by a local backend
+  - Candidate lists are derived from inspector capabilities rather than model-directory naming conventions; unsupported and embedding-only checkpoints are excluded from text slots
   - Includes active symlink targets
   - Includes slot_backends
   - Includes `slot_endpoints` with resolved local slot mode/backend/base/port/base source metadata
