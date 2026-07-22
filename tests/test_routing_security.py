@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 from fastapi import HTTPException
 
-from api import server
-from api.router.contracts import RouterChatRequest, RouterModelPreferences
+from llm_manager import server
+from llm_manager.router.contracts import RouterChatRequest, RouterModelPreferences
 
 
 def _catalog() -> dict:
@@ -12,18 +12,18 @@ def _catalog() -> dict:
         "local": {
             "slots": [
                 {"id": "chat", "enabled": True, "capabilities": ["chat"]},
-                {"id": "small", "enabled": True, "capabilities": ["chat", "structured_outputs"]},
+                {"id": "small", "enabled": True, "capabilities": ["chat", "completions", "structured_output"]},
             ]
         },
         "openrouter": {
-            "free": [{"id": "vendor/free", "enabled": True, "supports_tools": True}],
-            "paid": [{"id": "vendor/paid", "enabled": True, "supports_tools": True}],
+            "free": [{"id": "vendor/free", "enabled": True, "capabilities": ["chat", "completions", "tool_calling"]}],
+            "paid": [{"id": "vendor/paid", "enabled": True, "capabilities": ["chat", "completions", "tool_calling"]}],
         },
         "openai": {
             "allowed": [{
                 "id": "approved-model",
                 "enabled": True,
-                "supports_tools": True,
+                "capabilities": ["chat", "completions", "tool_calling"],
                 "input_cost_usd_per_1k": 2.0,
                 "output_cost_usd_per_1k": 4.0,
             }]
@@ -50,8 +50,10 @@ def test_explicit_model_cannot_jump_from_free_to_paid_lane():
 
 def test_capability_routing_fails_closed_for_unknown_values():
     assert server._row_supports_requirements({}, {"tools": True}) is False
-    assert server._row_supports_requirements({"supports_tools": False}, {"tools": True}) is False
-    assert server._row_supports_requirements({"supports_tools": True}, {"tools": True}) is True
+    assert server._row_supports_requirements({"capabilities": ["chat"]}, {"task": "chat", "tools": True}) is False
+    assert server._row_supports_requirements(
+        {"capabilities": ["chat", "tool_calling"]}, {"task": "chat", "tools": True}
+    ) is True
 
     req = RouterChatRequest(messages=[{"role": "user", "content": "hi"}], tools=[{"type": "function"}])
     with pytest.raises(HTTPException) as exc:
@@ -95,7 +97,12 @@ def test_sensitive_request_metadata_is_redacted_before_persistence():
 
 
 def test_governance_version_check_reloads_document_inside_transaction():
-    stale = {"local": {"slots": []}, "openrouter": {"free": [], "paid": []}, "openai": {"allowed": []}}
+    stale = {
+        "schema_version": 2,
+        "local": {"slots": [{"id": "embed", "enabled": True, "capabilities": ["embeddings"]}]},
+        "openrouter": {"free": [], "paid": []},
+        "openai": {"allowed": []},
+    }
     current = {**stale, "revision": 2}
     server._write_json(server.PROVIDER_MODELS_PATH, current)
 

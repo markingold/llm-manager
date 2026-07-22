@@ -25,7 +25,8 @@
         "backend": "tgw",
         "base_env": "LLM_CHAT_API_BASE",
         "capabilities": [
-          "chat"
+          "chat",
+          "completions"
         ],
         "enabled": true,
         "id": "chat",
@@ -36,7 +37,8 @@
         "base_env": "LLM_INTENT_API_BASE",
         "capabilities": [
           "chat",
-          "classification"
+          "classification",
+          "completions"
         ],
         "enabled": true,
         "id": "intent",
@@ -46,17 +48,54 @@
         "backend": "tgw",
         "base_env": "LLM_SMALL_API_BASE",
         "capabilities": [
-          "chat"
+          "chat",
+          "completions"
         ],
         "enabled": true,
         "id": "small",
         "label": "Local Small Slot"
+      },
+      {
+        "backend": "vllm",
+        "base_env": "LLM_EMBED_API_BASE",
+        "capabilities": [
+          "embeddings"
+        ],
+        "enabled": true,
+        "id": "embed",
+        "label": "Local Embedding Slot"
       }
     ]
   },
   "openai": {
     "allowed": [
       {
+        "capabilities": [
+          "embeddings"
+        ],
+        "enabled": true,
+        "family": "openai-embedding",
+        "id": "text-embedding-3-small",
+        "input_cost_usd_per_1k": 2e-05,
+        "label": "OpenAI Text Embedding 3 Small",
+        "notes": "Low-cost direct OpenAI embedding fallback",
+        "output_cost_usd_per_1k": 0.0,
+        "priority": 5,
+        "routing_tier": "low",
+        "tags": [
+          "embedding",
+          "budget"
+        ]
+      },
+      {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling",
+          "vision"
+        ],
         "enabled": true,
         "family": "gpt",
         "id": "gpt-4o-mini",
@@ -76,6 +115,14 @@
         ]
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling",
+          "vision"
+        ],
         "enabled": true,
         "family": "gpt",
         "id": "gpt-4.1-mini",
@@ -97,6 +144,14 @@
         ]
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling",
+          "vision"
+        ],
         "enabled": true,
         "family": "gpt",
         "id": "gpt-4.1",
@@ -123,6 +178,12 @@
   "openrouter": {
     "free": [
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "structured_output",
+          "tool_calling"
+        ],
         "enabled": true,
         "family": "llama",
         "id": "meta-llama/llama-3.3-8b-instruct:free",
@@ -139,6 +200,13 @@
         "tier": "free"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling"
+        ],
         "enabled": true,
         "family": "step",
         "id": "stepfun/step-3.5-flash:free",
@@ -155,6 +223,13 @@
         "tier": "free"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling"
+        ],
         "enabled": true,
         "family": "nvidia",
         "id": "nvidia/nemotron-3-super-120b-a12b:free",
@@ -171,6 +246,13 @@
         "tier": "free"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling"
+        ],
         "enabled": true,
         "family": "nvidia",
         "id": "nvidia/nemotron-3-nano-30b-a3b:free",
@@ -187,6 +269,13 @@
         "tier": "free"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling"
+        ],
         "enabled": true,
         "family": "minimax",
         "id": "minimax/minimax-m2.5:free",
@@ -203,6 +292,13 @@
         "tier": "free"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling"
+        ],
         "enabled": true,
         "family": "qwen",
         "id": "qwen/qwen3-coder:free",
@@ -219,6 +315,13 @@
         "tier": "free"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling"
+        ],
         "enabled": true,
         "family": "qwen",
         "id": "qwen/qwen3-next-80b-a3b-instruct:free",
@@ -235,6 +338,13 @@
         "tier": "free"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling"
+        ],
         "enabled": true,
         "family": "openai",
         "id": "openai/gpt-oss-120b:free",
@@ -251,6 +361,13 @@
         "tier": "free"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling"
+        ],
         "enabled": true,
         "family": "meta-llama",
         "id": "meta-llama/llama-3.3-70b-instruct:free",
@@ -267,6 +384,13 @@
         "tier": "free"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling"
+        ],
         "enabled": true,
         "family": "google",
         "id": "google/gemma-3-27b-it:free",
@@ -283,6 +407,13 @@
         "tier": "free"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling"
+        ],
         "enabled": true,
         "family": "nousresearch",
         "id": "nousresearch/hermes-3-llama-3.1-405b:free",
@@ -301,6 +432,33 @@
     ],
     "paid": [
       {
+        "capabilities": [
+          "embeddings"
+        ],
+        "enabled": true,
+        "family": "openai-embedding",
+        "id": "openai/text-embedding-3-small",
+        "input_cost_usd_per_1k": 2e-05,
+        "label": "OpenAI Text Embedding 3 Small via OpenRouter",
+        "notes": "Low-cost OpenRouter embedding fallback",
+        "output_cost_usd_per_1k": 0.0,
+        "priority": 5,
+        "routing_tier": "low",
+        "tags": [
+          "embedding",
+          "budget"
+        ],
+        "tier": "paid"
+      },
+      {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling",
+          "vision"
+        ],
         "enabled": true,
         "family": "gpt",
         "id": "openai/gpt-4o-mini",
@@ -321,6 +479,13 @@
         "tier": "paid"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling"
+        ],
         "enabled": true,
         "family": "deepseek",
         "id": "deepseek/deepseek-v4-pro",
@@ -344,6 +509,13 @@
         "tier": "paid"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling"
+        ],
         "enabled": true,
         "family": "qwen",
         "id": "qwen/qwen3-235b-a22b-2507",
@@ -367,6 +539,13 @@
         "tier": "paid"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling"
+        ],
         "enabled": true,
         "family": "deepseek",
         "id": "deepseek/deepseek-chat-v3-0324",
@@ -389,6 +568,14 @@
         "tier": "paid"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling",
+          "vision"
+        ],
         "enabled": true,
         "family": "gpt",
         "id": "openai/gpt-4.1-mini",
@@ -411,6 +598,14 @@
         "tier": "paid"
       },
       {
+        "capabilities": [
+          "chat",
+          "completions",
+          "reasoning",
+          "structured_output",
+          "tool_calling",
+          "vision"
+        ],
         "enabled": true,
         "family": "gpt",
         "id": "openai/gpt-4.1",
@@ -434,5 +629,6 @@
         "tier": "paid"
       }
     ]
-  }
+  },
+  "schema_version": 2
 }

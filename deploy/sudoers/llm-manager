@@ -1,0 +1,3 @@
+Cmnd_Alias LLM_MANAGER_SYSTEMCTL = /bin/systemctl start llm-*.service, /bin/systemctl stop llm-*.service, /bin/systemctl restart llm-*.service, /bin/systemctl show llm-*.service *
+Cmnd_Alias LLM_MANAGER_JOURNAL = /bin/journalctl -u llm-*.service *
+llm-manager ALL=(root) NOPASSWD: LLM_MANAGER_SYSTEMCTL, LLM_MANAGER_JOURNAL

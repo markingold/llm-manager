@@ -1,91 +1,144 @@
 {
-  "defaults": {
-    "strategy": "local_first",
-    "service_tier": "default",
-    "free_only": false,
-    "paid_allowed": true,
-    "allow_fallbacks": true,
-    "preferred_provider": "local"
-  },
-  "openrouter": {
-    "free_rate_limit_rpm": 20,
-    "max_queue_depth": 100,
-    "max_queue_wait_ms": 15000,
-    "queue_behavior": "wait",
-    "enforce_upstream_free_status": true,
-    "quarantine_failure_count_24h": 6,
-    "retire_failure_count_7d": 20,
-    "cooldown_seconds_rate_limited": 30,
-    "cooldown_seconds_quota_exhausted": 300,
-    "cooldown_seconds_not_free_anymore": 900,
-    "cooldown_seconds_model_unavailable": 120,
-    "cooldown_seconds_provider_error": 20,
-    "cooldown_seconds_retryable_default": 10,
-    "auth_error_manual_review_threshold": 1
-  },
   "budget": {
     "daily_usd_limit": 10.0,
+    "hard_fail_on_budget_exceeded": true,
     "monthly_usd_limit": 200.0,
     "per_request_usd_limit": 1.0,
-    "warn_threshold_pct": 0.8,
-    "hard_fail_on_budget_exceeded": true,
     "providers": {
       "local": false,
-      "openrouter": true,
-      "openai": true
-    }
+      "openai": true,
+      "openrouter": true
+    },
+    "warn_threshold_pct": 0.8
   },
-  "selection": {
-    "free_first": ["openrouter.free", "local", "openrouter.paid", "openai"],
-    "local_first": ["local", "openrouter.free", "openrouter.paid", "openai"],
-    "paid_first": ["openrouter.paid", "openai", "local", "openrouter.free"],
-    "best_available": ["local", "openrouter.paid", "openai", "openrouter.free"],
-    "strict_provider": []
+  "defaults": {
+    "allow_fallbacks": true,
+    "free_only": false,
+    "paid_allowed": true,
+    "preferred_provider": "local",
+    "service_tier": "default",
+    "strategy": "local_first"
   },
   "dynamic_ranking": {
     "enabled": true,
-    "strategies": ["free_first", "paid_first", "best_available"],
-    "weights": {
-      "cost": 0.6,
-      "availability": 0.3,
-      "quality": 0.1
-    },
+    "strategies": [
+      "free_first",
+      "paid_first",
+      "best_available"
+    ],
     "token_estimate": {
-      "prompt_tokens": 500,
-      "completion_tokens": 256
+      "completion_tokens": 256,
+      "prompt_tokens": 500
     },
-    "unknown_cost_score": 0.35
+    "unknown_cost_score": 0.35,
+    "weights": {
+      "availability": 0.3,
+      "cost": 0.6,
+      "quality": 0.1
+    }
   },
+  "openrouter": {
+    "auth_error_manual_review_threshold": 1,
+    "cooldown_seconds_model_unavailable": 120,
+    "cooldown_seconds_not_free_anymore": 900,
+    "cooldown_seconds_provider_error": 20,
+    "cooldown_seconds_quota_exhausted": 300,
+    "cooldown_seconds_rate_limited": 30,
+    "cooldown_seconds_retryable_default": 10,
+    "enforce_upstream_free_status": true,
+    "free_rate_limit_rpm": 20,
+    "max_queue_depth": 100,
+    "max_queue_wait_ms": 15000,
+    "quarantine_failure_count_24h": 6,
+    "queue_behavior": "wait",
+    "retire_failure_count_7d": 20
+  },
+  "project_overrides": {},
   "retention": {
-    "request_logs_max": 200,
-    "usage_logs_max": 1000,
-    "spend_logs_max": 2000,
-    "governance_audit_max": 500,
+    "budget_daily_history_days": 60,
+    "budget_monthly_history_months": 24,
     "failure_events_max": 500,
     "failure_events_retention_days": 30,
+    "governance_audit_max": 500,
     "promotion_transitions_max": 50,
+    "request_logs_max": 200,
     "smoke_checks_max": 30,
-    "budget_daily_history_days": 60,
-    "budget_monthly_history_months": 24
+    "spend_logs_max": 2000,
+    "usage_logs_max": 1000
   },
-  "task_overrides": {},
+  "schema_version": 2,
+  "selection": {
+    "best_available": [
+      "local",
+      "openrouter.paid",
+      "openai",
+      "openrouter.free"
+    ],
+    "free_first": [
+      "openrouter.free",
+      "local",
+      "openrouter.paid",
+      "openai"
+    ],
+    "local_first": [
+      "local",
+      "openrouter.free",
+      "openrouter.paid",
+      "openai"
+    ],
+    "paid_first": [
+      "openrouter.paid",
+      "openai",
+      "local",
+      "openrouter.free"
+    ],
+    "strict_provider": []
+  },
   "service_tiers": {
+    "high": {
+      "chain": [
+        "openrouter.paid",
+        "openai"
+      ],
+      "preferred_model_tags": [
+        "high"
+      ]
+    },
     "local": {
-      "chain": ["local"],
+      "chain": [
+        "local"
+      ],
       "preferred_model_tags": []
     },
     "low": {
-      "chain": ["openrouter.free"],
-      "preferred_model_tags": ["free"]
+      "chain": [
+        "openrouter.free"
+      ],
+      "preferred_model_tags": [
+        "free"
+      ]
     },
     "medium": {
-      "chain": ["openrouter.paid"],
-      "preferred_model_tags": ["medium"]
-    },
-    "high": {
-      "chain": ["openrouter.paid", "openai"],
-      "preferred_model_tags": ["high"]
+      "chain": [
+        "openrouter.paid"
+      ],
+      "preferred_model_tags": [
+        "medium"
+      ]
     }
   },
-  "project_overrides": {}
+  "task_overrides": {
+    "embed": {
+      "defaults": {
+        "strategy": "local_first"
+      },
+      "selection": {
+        "local_first": [
+          "local",
+          "openrouter.paid",
+          "openai"
+        ]
+      }
+    }
+  }
 }

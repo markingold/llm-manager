@@ -15,15 +15,17 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-STATE_DIR = ROOT / "run" / "state"
+RUNTIME_HOME = pathlib.Path(os.getenv("LLM_MANAGER_HOME", str(ROOT)))
+STATE_DIR = pathlib.Path(os.getenv("LLM_MANAGER_STATE_DIR", str(RUNTIME_HOME / "run" / "state")))
 SLOT_BACKENDS_PATH = STATE_DIR / "slot_backends.json"
 MODELS_DIR = os.getenv(
     "SERVER_MODELS_DIR",
     os.getenv("MODELS_DIR", "/srv/2bananas/engines/models"),
 )
 SUPPORTED_BACKENDS = {"tgw", "vllm", "tabbyapi"}
-DEFAULT_SLOT_BACKENDS = {"chat": "tgw", "intent": "tgw", "small": "tgw"}
-PORT_TO_MODE = {"8500": "chat", "8501": "intent", "8502": "small"}
+SLOT_MODES = ("chat", "intent", "small", "embed")
+DEFAULT_SLOT_BACKENDS = {"chat": "tgw", "intent": "tgw", "small": "tgw", "embed": "vllm"}
+PORT_TO_MODE = {"8500": "chat", "8501": "intent", "8502": "small", "8503": "embed"}
 DEFAULT_VLLM_PYTHON_CANDIDATES = (
     "/srv/2bananas/engines/vllm-env/bin/python3",
     "/srv/2bananas/engines/vllm-env/bin/python",
@@ -34,11 +36,12 @@ MODEL_TO_MODE = {
     "chat_active_model": "chat",
     "intent_active_model": "intent",
     "small_active_model": "small",
+    "embed_active_model": "embed",
 }
 
-sys.path.insert(0, str(ROOT / "api"))
+sys.path.insert(0, str(ROOT))
 try:
-    from model_inspector import detect_kind as _detect_kind
+    from llm_manager.model_inspector import detect_kind as _detect_kind
 except Exception:
     _detect_kind = None
 
@@ -53,7 +56,7 @@ def _read_slot_backends() -> dict[str, str]:
         return data
     if not isinstance(raw, dict):
         return data
-    for mode in ("chat", "intent", "small"):
+    for mode in SLOT_MODES:
         backend = str(raw.get(mode, "") or "").strip().lower()
         if backend in SUPPORTED_BACKENDS:
             data[mode] = backend
@@ -64,7 +67,7 @@ def _normalize_mode(mode: str | None) -> str:
     text = str(mode or "").strip().lower()
     if text == "util":
         return "small"
-    return text if text in {"chat", "intent", "small"} else "chat"
+    return text if text in SLOT_MODES else "chat"
 
 
 def _mode_for_launch(api_port: str, model: str) -> str:
@@ -78,7 +81,7 @@ def _mode_for_launch(api_port: str, model: str) -> str:
         return from_model
     if ":" in model_text:
         left = model_text.split(":", 1)[0].strip().lower()
-        if left in {"chat", "intent", "small", "util"}:
+        if left in {*SLOT_MODES, "util"}:
             return _normalize_mode(left)
     return "chat"
 
@@ -194,6 +197,9 @@ def main():
     mode = _mode_for_launch(args.api_port, args.model)
     backend = _backend_for_mode(mode)
     model_kind = _model_kind_for_launch(args.model)
+    if mode == "embed" and backend != "vllm":
+        print(f"[engine-launcher] embedding slot requires vllm; overriding backend={backend}", flush=True)
+        backend = "vllm"
 
     if not _backend_supports_kind(backend, model_kind):
         fallback = next(
@@ -212,6 +218,8 @@ def main():
 
     if backend == "vllm":
         if not _vllm_available():
+            if mode == "embed":
+                raise SystemExit("[engine-launcher] embedding slot requires an available vllm runtime")
             print("[engine-launcher] backend=vllm unavailable (missing module); falling back to tgw", flush=True)
             backend = "tgw"
         else:
@@ -242,6 +250,8 @@ def main():
         cuda_visible_devices = str(os.getenv("CUDA_VISIBLE_DEVICES", "") or "").strip()
         if cuda_visible_devices:
             cmd += ["--cuda-visible-devices", cuda_visible_devices]
+        if backend == "vllm" and mode == "embed":
+            cmd += ["--task", "embed"]
 
     print(
         f"[engine-launcher] mode={mode} backend={backend} kind={model_kind} launcher={launcher.name} model={args.model} port={args.api_port}",

@@ -146,7 +146,7 @@ curl -X POST http://localhost:8101/router/evaluate/local \
 ```
 
 Candidate model syntax accepted today:
-- local model alias/name: `chat_active_model`, `intent_active_model`, `small_active_model`, or a local model directory
+- local model alias/name: `chat_active_model`, `intent_active_model`, `small_active_model`, `embed_active_model`, or a local model directory
 - explicit local mode target: `local:chat:chat_active_model`
 - OpenRouter model: `openrouter:<model_id>`
 - OpenAI model: `openai:<model_id>`

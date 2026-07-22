@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from fastapi import HTTPException
 
-from api import model_inspector, server
+from llm_manager import model_inspector, server
 
 
 def _load_engine_launcher():

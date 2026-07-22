@@ -32,7 +32,7 @@ Source-plan status update (2026-05-15):
 ## Phase 2: Local Backends And Remote Providers (Near-term)
 - [x] Add vLLM slot launching and unit support. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_ (launcher wrapper plus backend-aware slot base resolution are now wired into routing and engine status surfaces)
 - [x] Route AWQ and GPTQ models to vLLM by default where supported. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_ (`/switch` now auto-applies recommended vLLM backend for compatible model kinds when backend is omitted)
-- [ ] Add optional embeddings and classification-capable slot metadata. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
+- [x] Add optional embeddings and classification-capable slot metadata. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_ (authoritative v2 capability lists plus dedicated vLLM embedding slot)
 - [x] Implement OpenRouter and OpenAI provider adapters. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_ (chat adapter slice)
 - [x] Support explicit provider selection and explicit model selection from client projects. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_ (`provider_preferences.preferred_provider` + `model_preferences.preferred_model` contract and strict-provider execution path are implemented)
 - [x] Add curated free and paid provider catalogs editable without code changes. - _source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md_ (config-driven catalogs + governance endpoints)

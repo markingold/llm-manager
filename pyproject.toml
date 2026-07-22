@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "llm-manager"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local control plane and policy router for multi-slot LLM serving"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -30,27 +30,53 @@ training = [
 ]
 dev = [
   "build>=1.2,<2",
+  "httpx2>=2,<3",
   "pytest>=8.3,<10",
   "pytest-cov>=5,<8",
   "ruff>=0.9,<1",
 ]
 
 [project.scripts]
-llm-manager-api = "api.server:main"
+llm-manager-api = "llm_manager.server:main"
+llm-manager-deploy = "llm_manager.deployment:main"
 
 [tool.setuptools]
-packages = ["api", "api.evaluation", "api.providers", "api.router"]
+packages = ["llm_manager", "llm_manager.evaluation", "llm_manager.providers", "llm_manager.router"]
+
+[tool.setuptools.data-files]
+"share/llm-manager/config" = [
+  "config/provider_models.json",
+  "config/provider_policies.json",
+  "config/settings.example.env",
+  "config/engine-chat.env",
+  "config/engine-intent.env",
+  "config/engine-small.env",
+  "config/engine-embed.env",
+]
+"share/llm-manager/web" = ["web/index.html", "web/app.js", "web/lab.meta.json", "web/package.json"]
+"share/llm-manager/web/js" = ["web/js/api.js", "web/js/ui-core.js"]
+"share/llm-manager/web/js/domains" = [
+  "web/js/domains/evaluation.js",
+  "web/js/domains/governance.js",
+  "web/js/domains/operations.js",
+  "web/js/domains/providers-budget.js",
+  "web/js/domains/router.js",
+  "web/js/domains/shell.js",
+]
+"share/llm-manager/systemd" = ["deploy/systemd/llm-manager-api.service", "deploy/systemd/llm-manager-engine@.service"]
+"share/llm-manager/sudoers" = ["deploy/sudoers/llm-manager"]
+"share/llm-manager/run" = ["run/engine_launcher.py", "run/launch_tgw.py", "run/launch_vllm.py", "run/launch_tabbyapi.py"]
 
 [tool.pytest.ini_options]
-addopts = "--strict-config --strict-markers -ra --cov=api --cov-report=term-missing --cov-report=xml"
+addopts = "--strict-config --strict-markers -ra --cov=llm_manager --cov-report=term-missing --cov-report=xml"
 testpaths = ["tests"]
 
 [tool.coverage.run]
 branch = true
-source = ["api"]
+source = ["llm_manager"]
 
 [tool.coverage.report]
-fail_under = 20
+fail_under = 30
 show_missing = true
 skip_covered = true
 

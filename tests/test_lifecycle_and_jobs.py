@@ -6,7 +6,7 @@ import subprocess
 import pytest
 from fastapi import HTTPException
 
-from api import server
+from llm_manager import server
 
 
 def _model(name: str):
@@ -22,6 +22,7 @@ def _inspection() -> dict:
         "recommended_backend": "tgw",
         "fallback_backends": [],
         "unsupported_reason": None,
+        "capabilities": ["chat", "completions"],
     }
 
 

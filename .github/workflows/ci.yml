@@ -31,8 +31,24 @@ jobs:
         run: node --test tests/js/*.test.mjs
       - name: Static checks
         run: |
-          ruff check api tests scripts run/engine_launcher.py run/launch_tgw.py run/launch_vllm.py run/launch_tabbyapi.py
-          python -m compileall -q api run
+          ruff check llm_manager tests scripts run/engine_launcher.py run/launch_tgw.py run/launch_vllm.py run/launch_tabbyapi.py
+          python -m compileall -q llm_manager run
           python scripts/check_secrets.py
       - name: Build distribution
-        run: python -m build
+        run: |
+          python -m build
+          python -m pip install --no-deps --target /tmp/llm-manager-wheel dist/*.whl
+          cd /tmp
+          PYTHONPATH=/tmp/llm-manager-wheel python -m llm_manager.deployment doctor --asset-root /tmp/llm-manager-wheel/share/llm-manager
+          install_root=$(mktemp -d /tmp/llm-manager-install.XXXXXX)
+          PYTHONPATH=/tmp/llm-manager-wheel python -m llm_manager.deployment bootstrap \
+            --asset-root /tmp/llm-manager-wheel/share/llm-manager \
+            --home "$install_root/home" \
+            --config-dir "$install_root/etc" \
+            --web-dir "$install_root/web" \
+            --systemd-dir "$install_root/systemd" \
+            --sudoers-dir "$install_root/sudoers" \
+            --run-dir "$install_root/run"
+          test -f "$install_root/systemd/llm-manager-engine@.service"
+          test -x "$install_root/run/engine_launcher.py"
+          PYTHONPATH=/tmp/llm-manager-wheel python -c 'from llm_manager.server import app; assert app.title == "LLM Manager API"'

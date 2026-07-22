@@ -26,11 +26,21 @@ Source-plan retirement update (2026-05-15):
 - [x] Make capability routing fail closed when model/slot support is missing or unknown.
 - [x] Protect runtime state with atomic writes plus thread/process read-modify-write locks; stop tracking live runtime state in Git.
 - [x] Cancel jobs through live child-process identity (pidfd where available) instead of a reusable numeric PID.
-- [x] Establish an isolated `tests/` suite, canonical `pytest` command, dashboard regression test, and 20% coverage gate.
+- [x] Establish an isolated `tests/` suite, canonical `pytest` command, dashboard regression test, and 30% coverage gate.
 - [x] Add installable packaging, exact dependency locks, secret scanning, and GitHub Actions CI.
 
+## Runtime and deployment maturity (2026-07-22)
+
+- [x] Add authoritative catalog capability lists and a dedicated vLLM `embed` slot/route.
+- [x] Verify exact active model identity after lifecycle operations and roll back on readiness timeout.
+- [x] Persist generic jobs and reconcile live/interrupted processes safely after API restart.
+- [x] Move high-churn runtime sections from flat JSON to versioned SQLite with one-time legacy import.
+- [x] Add full HTTP integration coverage for chat/completion/embed fallback, governance rollback, and restart recovery; raise coverage gate to 30%.
+- [x] Rename the generic `api` package to `llm_manager`, package dashboard/launcher/systemd assets, and add clean-target deployment validation.
+- [x] Add explicit v2 catalog/policy migrations and numbered runtime database migrations.
+
 ## Must Do (blocking or high-value)
-- [x] Extend `api/model_inspector.py` to emit `recommended_backend` and `fallback_backends`. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
+- [x] Extend `llm_manager/model_inspector.py` to emit `recommended_backend` and `fallback_backends`. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [x] Add backend selection to slot or switch configuration. - effort: small | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [x] Add normalized launcher wrappers for TGW, vLLM, and TabbyAPI under `run/`. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [x] Standardize and document the canonical engine and model directory layout under `/srv/2bananas/engines`, keeping llm-manager as the control plane rather than the asset store. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md (canonical layout and migration runbook documented in `docs/guides/RB-ENGINES-LAYOUT.md`)
@@ -58,7 +68,7 @@ Source-plan retirement update (2026-05-15):
 
 ## Should Do (improves quality)
 - [x] Add vLLM slot launching and make AWQ and GPTQ prefer vLLM where supported. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md (slot launcher wrapper is present and `/switch` now auto-applies recommended vLLM/Tabby backends when backend is omitted)
-- [ ] Add slot metadata for embeddings, classification, structured output, tool calling, and multimodal capabilities. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
+- [x] Add slot metadata for embeddings, classification, structured output, tool calling, reasoning, and vision capabilities. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md (v2 canonical capability lists fail closed; dedicated local vLLM embeddings slot added)
 - [x] Add curated model admin endpoints for catalogs, policies, state, and refresh operations. - effort: medium | source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md
 - [x] Add high-value router/provider diagnostic endpoints for policy resolution, route testing, and OpenRouter limiter state (`/providers/policies/test`, `/router/route-test`, `/providers/openrouter/rate-limit-state`). - effort: medium | source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md
 - [x] Document recovery for GPU-driver wedges and uninterruptible TGW engine processes, including reboot criteria and sequential single-lane validation steps. - effort: small | source: local runtime troubleshooting 2026-04-28 (CLI runbook now includes quarantine/manual-review flag recovery and single-lane post-reboot validation workflow)

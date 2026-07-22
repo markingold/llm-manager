@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from api.router.contracts import RouterChatRequest
+from llm_manager.router.contracts import RouterChatRequest
 
 
 def test_raw_json_schema_is_wrapped_for_provider_response_format():

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from api import model_inspector, server
+from llm_manager import model_inspector, server
 
 
 @pytest.fixture(autouse=True)
@@ -20,6 +20,7 @@ def isolated_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr(server, "STATE_DIR", state_dir)
     monkeypatch.setattr(server, "PROVIDER_STATE_PATH", state_dir / "provider_runtime_state.json")
+    monkeypatch.setattr(server, "RUNTIME_DB_PATH", state_dir / "runtime.db")
     monkeypatch.setattr(server, "SLOT_BACKENDS_PATH", state_dir / "slot_backends.json")
     monkeypatch.setattr(server, "PROVIDER_MODELS_PATH", tmp_path / "provider_models.json")
     monkeypatch.setattr(server, "PROVIDER_POLICIES_PATH", tmp_path / "provider_policies.json")
@@ -29,6 +30,8 @@ def isolated_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(server, "ENV_PATH", secrets_dir / ".env")
     monkeypatch.setattr(server, "GLOBAL_ENV_PATH", secrets_dir / "global.env")
     monkeypatch.setattr(model_inspector, "MODELS_DIR", str(models_dir))
+    monkeypatch.setenv("EVAL_WORKER_AUTOSTART", "0")
+    server.RUNTIME_STORE_CACHE = None
 
     with server.JOB_LOCK:
         for fd in server.JOB_PIDFDS.values():
@@ -39,6 +42,7 @@ def isolated_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         server.JOBS.clear()
         server.JOB_PROCESSES.clear()
         server.JOB_PIDFDS.clear()
+        server.JOB_IDENTITIES.clear()
     yield
 
     with server.JOB_LOCK:
@@ -54,3 +58,5 @@ def isolated_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         server.JOBS.clear()
         server.JOB_PROCESSES.clear()
         server.JOB_PIDFDS.clear()
+        server.JOB_IDENTITIES.clear()
+    server.RUNTIME_STORE_CACHE = None

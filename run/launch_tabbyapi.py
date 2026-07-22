@@ -11,11 +11,13 @@ import pathlib
 import shlex
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "api"))
-from model_inspector import detect_kind
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+from llm_manager.model_inspector import detect_kind
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-ENV_PATH = ROOT / "secrets" / ".env"
+RUNTIME_HOME = pathlib.Path(os.getenv("LLM_MANAGER_HOME", str(ROOT)))
+SECRETS_DIR = pathlib.Path(os.getenv("LLM_MANAGER_SECRETS_DIR", str(RUNTIME_HOME / "secrets")))
+ENV_PATH = SECRETS_DIR / ".env"
 GLOBAL_ENV_PATH = pathlib.Path(
     os.getenv("LLM_MANAGER_GLOBAL_ENV_PATH", "/srv/2bananas/secrets/global.env")
 )

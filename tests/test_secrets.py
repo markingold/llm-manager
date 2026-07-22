@@ -5,7 +5,7 @@ import os
 import pytest
 from fastapi import HTTPException
 
-from api import server
+from llm_manager import server
 
 
 def test_knob_updates_do_not_copy_global_secrets_into_project_env():

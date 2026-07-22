@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 import re
+import select
 import shutil
 import signal
 import subprocess
@@ -15,7 +16,7 @@ import tempfile
 import threading
 import time
 import uuid
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime
 from html.parser import HTMLParser
 from pathlib import Path
@@ -28,6 +29,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 try:
+    from .config_migrations import (
+        CONFIG_SCHEMA_VERSION,
+        MODEL_CAPABILITIES,
+        migrate_provider_models,
+        migrate_provider_policies,
+    )
     from .evaluation.schemas import (
         EvalRerunRequest,
         EvalSuitePayload,
@@ -54,7 +61,14 @@ try:
         RouterProviderPreferences,
         RouterUsage,
     )
-except ImportError:  # Support direct execution via `python api/server.py`.
+    from .runtime_store import SQLiteRuntimeStore
+except ImportError:  # Support direct execution via `python llm_manager/server.py`.
+    from config_migrations import (
+        CONFIG_SCHEMA_VERSION,
+        MODEL_CAPABILITIES,
+        migrate_provider_models,
+        migrate_provider_policies,
+    )
     from evaluation.schemas import (
         EvalRerunRequest,
         EvalSuitePayload,
@@ -81,28 +95,39 @@ except ImportError:  # Support direct execution via `python api/server.py`.
         RouterProviderPreferences,
         RouterUsage,
     )
+    from runtime_store import SQLiteRuntimeStore
 
 # -----------------------------------------------------------------------------
 # Paths / config
 # -----------------------------------------------------------------------------
-ROOT = Path(__file__).resolve().parents[1]
+PACKAGE_ROOT = Path(__file__).resolve().parent
+SOURCE_ROOT = PACKAGE_ROOT.parent
+ROOT = Path(
+    os.getenv(
+        "LLM_MANAGER_HOME",
+        str(SOURCE_ROOT if (SOURCE_ROOT / "config").exists() else Path("/var/lib/llm-manager")),
+    )
+).resolve()
 ENGINES_ROOT = Path(os.getenv("LLM_MANAGER_ENGINES_ROOT", "/srv/2bananas/engines")).resolve()
 MODELS_DIR = Path(os.getenv("SERVER_MODELS_DIR", os.getenv("MODELS_DIR", "/srv/2bananas/engines/models")))
+CONFIG_DIR = Path(os.getenv("LLM_MANAGER_CONFIG_DIR", str(ROOT / "config"))).resolve()
+SECRETS_DIR = Path(os.getenv("LLM_MANAGER_SECRETS_DIR", str(ROOT / "secrets"))).resolve()
 CONFIG_PATH = ROOT / "model_configs.json"
-ENV_PATH = ROOT / "secrets" / ".env"
+ENV_PATH = SECRETS_DIR / ".env"
 GLOBAL_ENV_PATH = Path(os.getenv("LLM_MANAGER_GLOBAL_ENV_PATH", "/srv/2bananas/secrets/global.env"))
-PROVIDER_MODELS_PATH = ROOT / "config" / "provider_models.json"
-PROVIDER_POLICIES_PATH = ROOT / "config" / "provider_policies.json"
-STATE_DIR = ROOT / "run" / "state"
+PROVIDER_MODELS_PATH = CONFIG_DIR / "provider_models.json"
+PROVIDER_POLICIES_PATH = CONFIG_DIR / "provider_policies.json"
+STATE_DIR = Path(os.getenv("LLM_MANAGER_STATE_DIR", str(ROOT / "run" / "state"))).resolve()
 SLOT_BACKENDS_PATH = STATE_DIR / "slot_backends.json"
 PROVIDER_STATE_PATH = STATE_DIR / "provider_runtime_state.json"
+RUNTIME_DB_PATH = STATE_DIR / "runtime.db"
 SCRIPTS_DIR = ROOT / "app" / "src" / "llm_manager"
-LOGS_DIR = ROOT / "run" / "logs"
-LOGS_DIR.mkdir(parents=True, exist_ok=True)
+LOGS_DIR = Path(os.getenv("LLM_MANAGER_LOG_DIR", str(ROOT / "run" / "logs"))).resolve()
 
 SUPPORTED_BACKENDS = {"tgw", "vllm", "tabbyapi"}
-DEFAULT_SLOT_BACKENDS = {"chat": "tgw", "intent": "tgw", "small": "tgw"}
-SLOT_DEFAULT_PORTS = {"chat": 8500, "intent": 8501, "small": 8502}
+SLOT_MODES = ("chat", "intent", "small", "embed")
+DEFAULT_SLOT_BACKENDS = {"chat": "tgw", "intent": "tgw", "small": "tgw", "embed": "vllm"}
+SLOT_DEFAULT_PORTS = {"chat": 8500, "intent": 8501, "small": 8502, "embed": 8503}
 SWITCH_LIFECYCLE_MODES = {"legacy", "auto", "native"}
 DEFAULT_TABBYAPI_NATIVE_MAX_SEQ_LEN = 16384
 SENSITIVE_ENV_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD")
@@ -117,12 +142,14 @@ STRICT_PROVIDER_TASK_ALLOWED_LANES = {
 }
 
 DEFAULT_PROVIDER_MODELS = {
+    "schema_version": CONFIG_SCHEMA_VERSION,
     "local": {"slots": []},
     "openrouter": {"free": [], "paid": []},
     "openai": {"allowed": []},
 }
 
 DEFAULT_PROVIDER_POLICIES = {
+    "schema_version": CONFIG_SCHEMA_VERSION,
     "defaults": {
         "strategy": "local_first",
         "free_only": False,
@@ -296,6 +323,9 @@ EVAL_QUEUE_CLAIM_LOCK = threading.Lock()
 CONVERSION_STATE_LOCK = threading.Lock()
 PROVIDER_STATE_LOCK = threading.RLock()
 PROVIDER_STATE_TRANSACTION = threading.local()
+CONFIG_MIGRATION_LOCK = threading.RLock()
+RUNTIME_STORE_LOCK = threading.Lock()
+RUNTIME_STORE_CACHE: tuple[Path, Path, SQLiteRuntimeStore] | None = None
 SLOT_STATE_LOCK = threading.RLock()
 MODEL_LIFECYCLE_LOCK = threading.RLock()
 EVAL_WORKER_STARTED = False
@@ -313,7 +343,8 @@ EVAL_RUNNING_STALE_SECONDS = max(60, int(os.getenv("EVAL_RUNNING_STALE_SECONDS",
 DEFAULTS = {
   "LLM_CHAT_API_BASE":   os.getenv("LLM_CHAT_API_BASE",   "http://127.0.0.1:8500"),
   "LLM_INTENT_API_BASE": os.getenv("LLM_INTENT_API_BASE", "http://127.0.0.1:8501"),
-  "LLM_SMALL_API_BASE":  os.getenv("LLM_SMALL_API_BASE",  "http://127.0.0.1:8502"),
+    "LLM_SMALL_API_BASE":  os.getenv("LLM_SMALL_API_BASE",  "http://127.0.0.1:8502"),
+    "LLM_EMBED_API_BASE":  os.getenv("LLM_EMBED_API_BASE",  "http://127.0.0.1:8503"),
     "LLM_CHAT_API_BASE_TGW": os.getenv("LLM_CHAT_API_BASE_TGW", ""),
     "LLM_CHAT_API_BASE_VLLM": os.getenv("LLM_CHAT_API_BASE_VLLM", ""),
     "LLM_CHAT_API_BASE_TABBYAPI": os.getenv("LLM_CHAT_API_BASE_TABBYAPI", ""),
@@ -323,11 +354,15 @@ DEFAULTS = {
     "LLM_SMALL_API_BASE_TGW": os.getenv("LLM_SMALL_API_BASE_TGW", ""),
     "LLM_SMALL_API_BASE_VLLM": os.getenv("LLM_SMALL_API_BASE_VLLM", ""),
     "LLM_SMALL_API_BASE_TABBYAPI": os.getenv("LLM_SMALL_API_BASE_TABBYAPI", ""),
+    "LLM_EMBED_API_BASE_TGW": os.getenv("LLM_EMBED_API_BASE_TGW", ""),
+    "LLM_EMBED_API_BASE_VLLM": os.getenv("LLM_EMBED_API_BASE_VLLM", ""),
+    "LLM_EMBED_API_BASE_TABBYAPI": os.getenv("LLM_EMBED_API_BASE_TABBYAPI", ""),
   "SMART_ASSISTANT_URL": os.getenv("SMART_ASSISTANT_URL", "http://127.0.0.1:8100/command"),
   "CUDA_VISIBLE_DEVICES":os.getenv("CUDA_VISIBLE_DEVICES","0"),
   "PM2_CHAT":   os.getenv("PM2_CHAT",   "llm_chat"),
   "PM2_INTENT": os.getenv("PM2_INTENT", "llm_lora_intent"),
-  "PM2_SMALL":  os.getenv("PM2_SMALL",  "llm_small"),
+    "PM2_SMALL":  os.getenv("PM2_SMALL",  "llm_small"),
+    "PM2_EMBED":  os.getenv("PM2_EMBED",  "llm_embed"),
     "TGW_CHAT_WEBUI_ENABLED": os.getenv("TGW_CHAT_WEBUI_ENABLED", "0"),
     "TGW_CHAT_WEBUI_PORT": os.getenv("TGW_CHAT_WEBUI_PORT", "7860"),
     "TGW_CHAT_WEBUI_BIND_HOST": os.getenv("TGW_CHAT_WEBUI_BIND_HOST", "127.0.0.1"),
@@ -344,7 +379,13 @@ DEFAULTS = {
 LLM_MANAGER_HOST = os.getenv("LLM_MANAGER_HOST", "127.0.0.1")
 LLM_MANAGER_PORT = int(os.getenv("LLM_MANAGER_PORT", os.getenv("PORT", "8101")))
 
-app = FastAPI(title="LLM Manager API", version="1.2")
+@asynccontextmanager
+async def _app_lifespan(_app: FastAPI):
+    _startup_runtime_reconciliation()
+    yield
+
+
+app = FastAPI(title="LLM Manager API", version="2.0", lifespan=_app_lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
@@ -573,7 +614,7 @@ def list_intent_models():
 def list_non_intent_models():
     if not MODELS_DIR.exists():
         return []
-    ignore = {"intent_active_model","chat_active_model","small_active_model"}
+    ignore = {"intent_active_model", "chat_active_model", "small_active_model", "embed_active_model"}
     return sorted([
         p.name for p in MODELS_DIR.iterdir()
         if p.is_dir() and p.name not in ignore and not p.name.startswith("lora_")
@@ -664,7 +705,7 @@ def read_slot_backends() -> dict:
             try:
                 raw = json.loads(SLOT_BACKENDS_PATH.read_text())
                 if isinstance(raw, dict):
-                    for mode in ("chat", "intent", "small"):
+                    for mode in SLOT_MODES:
                         backend = raw.get(mode)
                         if backend in SUPPORTED_BACKENDS:
                             data[mode] = backend
@@ -690,7 +731,7 @@ def _normalize_slot_mode(mode: str | None, default: str = "chat") -> str:
     raw = str(mode or "").strip().lower()
     if raw == "util":
         raw = "small"
-    if raw in {"chat", "intent", "small"}:
+    if raw in SLOT_MODES:
         return raw
     return default
 
@@ -701,6 +742,7 @@ def _slot_alias_for_mode(mode: str) -> str:
         "chat": "chat_active_model",
         "intent": "intent_active_model",
         "small": "small_active_model",
+        "embed": "embed_active_model",
     }.get(mode_key, "chat_active_model")
 
 
@@ -722,6 +764,7 @@ def _slot_mode_from_local_model(model_id: str, fallback_mode: str = "chat") -> s
         "chat_active_model": "chat",
         "intent_active_model": "intent",
         "small_active_model": "small",
+        "embed_active_model": "embed",
     }
     if model in alias_map:
         return alias_map[model]
@@ -730,15 +773,15 @@ def _slot_mode_from_local_model(model_id: str, fallback_mode: str = "chat") -> s
     if local_ref.startswith("local:"):
         local_ref = local_ref.split(":", 1)[1].strip()
 
-    if local_ref in {"chat", "intent", "small"}:
+    if local_ref in SLOT_MODES:
         return local_ref
     if ":" in local_ref:
         left = local_ref.split(":", 1)[0].strip().lower()
-        if left in {"chat", "intent", "small"}:
+        if left in SLOT_MODES:
             return left
 
     active = current_links()
-    for mode in ("chat", "intent", "small"):
+    for mode in SLOT_MODES:
         active_path = str(active.get(mode, "") or "")
         active_name = os.path.basename(active_path.rstrip("/")) if active_path else ""
         if model == active_name:
@@ -753,6 +796,7 @@ def _local_base_env_key(mode: str) -> str:
         "chat": "LLM_CHAT_API_BASE",
         "intent": "LLM_INTENT_API_BASE",
         "small": "LLM_SMALL_API_BASE",
+        "embed": "LLM_EMBED_API_BASE",
     }.get(mode_key, "LLM_CHAT_API_BASE")
 
 
@@ -860,26 +904,58 @@ def _load_json(path: Path, default_obj: dict) -> dict:
     return json.loads(json.dumps(default_obj))
 
 
+def _read_migrated_config(path: Path, default_obj: dict, migrator) -> dict:
+    with CONFIG_MIGRATION_LOCK:
+        document = _load_json(path, default_obj)
+        try:
+            migrated, applied = migrator(document)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        if applied:
+            if path.exists():
+                original_version = document.get("schema_version", 1)
+                backup = path.with_suffix(path.suffix + f".v{original_version}.bak")
+                if not backup.exists():
+                    _atomic_write_text(backup, path.read_text(), mode=0o600)
+            _atomic_write_text(path, json.dumps(migrated, indent=2, sort_keys=True) + "\n", mode=0o600)
+        return migrated
+
+
 def read_provider_models() -> dict:
-    return _load_json(PROVIDER_MODELS_PATH, DEFAULT_PROVIDER_MODELS)
+    return _read_migrated_config(PROVIDER_MODELS_PATH, DEFAULT_PROVIDER_MODELS, migrate_provider_models)
 
 
 def read_provider_policies() -> dict:
-    return _load_json(PROVIDER_POLICIES_PATH, DEFAULT_PROVIDER_POLICIES)
+    return _read_migrated_config(PROVIDER_POLICIES_PATH, DEFAULT_PROVIDER_POLICIES, migrate_provider_policies)
+
+
+def _runtime_store() -> SQLiteRuntimeStore:
+    global RUNTIME_STORE_CACHE
+    db_path = Path(RUNTIME_DB_PATH)
+    legacy_path = Path(PROVIDER_STATE_PATH)
+    cached = RUNTIME_STORE_CACHE
+    if cached is not None and cached[0] == db_path and cached[1] == legacy_path:
+        return cached[2]
+    with RUNTIME_STORE_LOCK:
+        cached = RUNTIME_STORE_CACHE
+        if cached is None or cached[0] != db_path or cached[1] != legacy_path:
+            store = SQLiteRuntimeStore(db_path, legacy_state_path=legacy_path)
+            RUNTIME_STORE_CACHE = (db_path, legacy_path, store)
+        return RUNTIME_STORE_CACHE[2]
 
 
 def read_provider_runtime_state() -> dict:
     with PROVIDER_STATE_LOCK:
-        state = _load_json(PROVIDER_STATE_PATH, DEFAULT_PROVIDER_RUNTIME_STATE)
+        state = _runtime_store().read_state(DEFAULT_PROVIDER_RUNTIME_STATE)
         changed = _ensure_provider_runtime_state(state)
-        if not PROVIDER_STATE_PATH.exists() or changed:
+        if changed:
             if int(getattr(PROVIDER_STATE_TRANSACTION, "depth", 0) or 0) > 0:
                 write_provider_runtime_state(state)
             else:
                 with _provider_state_transaction():
-                    state = _load_json(PROVIDER_STATE_PATH, DEFAULT_PROVIDER_RUNTIME_STATE)
+                    state = _runtime_store().read_state(DEFAULT_PROVIDER_RUNTIME_STATE)
                     changed = _ensure_provider_runtime_state(state)
-                    if not PROVIDER_STATE_PATH.exists() or changed:
+                    if changed:
                         write_provider_runtime_state(state)
         return state
 
@@ -889,11 +965,7 @@ def write_provider_runtime_state(state: dict):
         STATE_DIR.mkdir(parents=True, exist_ok=True)
         state = dict(state)
         state["updated_ts"] = datetime.utcnow().isoformat() + "Z"
-        _atomic_write_text(
-            PROVIDER_STATE_PATH,
-            json.dumps(state, indent=2, sort_keys=True) + "\n",
-            mode=0o600,
-        )
+        _runtime_store().write_state(state)
 
 
 @contextmanager
@@ -904,7 +976,7 @@ def _provider_state_transaction():
         lock_handle = None
         if depth == 0:
             STATE_DIR.mkdir(parents=True, exist_ok=True)
-            lock_path = PROVIDER_STATE_PATH.with_suffix(PROVIDER_STATE_PATH.suffix + ".lock")
+            lock_path = RUNTIME_DB_PATH.with_suffix(RUNTIME_DB_PATH.suffix + ".lock")
             lock_handle = lock_path.open("a+")
             fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
             PROVIDER_STATE_TRANSACTION.lock_handle = lock_handle
@@ -1028,6 +1100,8 @@ def _validate_provider_models_document(doc: dict):
         raise HTTPException(422, {"errors": ["provider models document must be a JSON object"]})
 
     errors = []
+    if doc.get("schema_version") != CONFIG_SCHEMA_VERSION:
+        errors.append(f"schema_version must be {CONFIG_SCHEMA_VERSION}")
     for root in ("local", "openrouter", "openai"):
         if root not in doc:
             errors.append(f"missing root key '{root}'")
@@ -1047,6 +1121,30 @@ def _validate_provider_models_document(doc: dict):
     if "allowed" not in openai or not isinstance(openai.get("allowed"), list):
         errors.append("openai.allowed must be a list")
 
+    capability_buckets = [
+        ("local.slots", local.get("slots", [])),
+        ("openrouter.free", openrouter.get("free", [])),
+        ("openrouter.paid", openrouter.get("paid", [])),
+        ("openai.allowed", openai.get("allowed", [])),
+    ]
+    for bucket_name, rows in capability_buckets:
+        if not isinstance(rows, list):
+            continue
+        for index, row in enumerate(rows):
+            if not isinstance(row, dict):
+                errors.append(f"{bucket_name}[{index}] must be an object")
+                continue
+            capabilities = row.get("capabilities")
+            if not isinstance(capabilities, list) or not capabilities:
+                errors.append(f"{bucket_name}[{index}].capabilities must be a non-empty list")
+                continue
+            normalized = [str(value).strip().lower() for value in capabilities]
+            invalid = sorted(set(normalized) - MODEL_CAPABILITIES)
+            if invalid:
+                errors.append(f"{bucket_name}[{index}].capabilities contains invalid values: {', '.join(invalid)}")
+            if len(normalized) != len(set(normalized)):
+                errors.append(f"{bucket_name}[{index}].capabilities must not contain duplicates")
+
     if errors:
         raise HTTPException(422, {"errors": errors})
 
@@ -1056,6 +1154,8 @@ def _validate_provider_policies_document(doc: dict):
         raise HTTPException(422, {"errors": ["provider policies document must be a JSON object"]})
 
     errors = []
+    if doc.get("schema_version") != CONFIG_SCHEMA_VERSION:
+        errors.append(f"schema_version must be {CONFIG_SCHEMA_VERSION}")
     for root in ("defaults", "openrouter", "budget", "selection"):
         if root not in doc:
             errors.append(f"missing root key '{root}'")
@@ -3325,7 +3425,13 @@ def _enforce_budget_guardrail(
 
 
 def _request_capability_requirements(req) -> dict:
+    task_type = _normalize_task_type(getattr(req, "task_type", "chat"))
     requirements = {
+        "task": {
+            "chat": "chat",
+            "completion": "completions",
+            "embed": "embeddings",
+        }.get(task_type, "chat"),
         "tools": bool(getattr(req, "tools", None)),
         "structured_outputs": bool(getattr(req, "json_schema", None)),
         "reasoning": False,
@@ -3351,18 +3457,22 @@ def _row_supports_requirements(row: dict, requirements: dict) -> bool:
     if not isinstance(row, dict):
         return False
     reqs = requirements if isinstance(requirements, dict) else {}
+    raw_capabilities = row.get("capabilities", []) if isinstance(row.get("capabilities"), list) else []
+    capabilities = {
+        str(capability).strip().lower()
+        for capability in raw_capabilities
+        if str(capability).strip()
+    }
 
-    if bool(reqs.get("tools", False)) and row.get("supports_tools") is not True:
+    if str(reqs.get("task", "")) not in capabilities:
         return False
-    if bool(reqs.get("structured_outputs", False)):
-        supports_structured = row.get("supports_structured_outputs")
-        if supports_structured is None:
-            supports_structured = row.get("supports_json_schema")
-        if supports_structured is not True:
-            return False
-    if bool(reqs.get("reasoning", False)) and row.get("supports_reasoning") is not True:
+    if bool(reqs.get("tools", False)) and "tool_calling" not in capabilities:
         return False
-    if bool(reqs.get("vision", False)) and row.get("supports_vision") is not True:
+    if bool(reqs.get("structured_outputs", False)) and "structured_output" not in capabilities:
+        return False
+    if bool(reqs.get("reasoning", False)) and "reasoning" not in capabilities:
+        return False
+    if bool(reqs.get("vision", False)) and "vision" not in capabilities:
         return False
     return True
 
@@ -3375,7 +3485,7 @@ def _local_slot_supports_request(row: dict, req) -> bool:
     }
     required_task_capability = {
         "chat": "chat",
-        "completion": "chat",
+        "completion": "completions",
         "embed": "embeddings",
     }.get(_normalize_task_type(getattr(req, "task_type", "chat")), "chat")
     if required_task_capability not in capabilities:
@@ -3383,8 +3493,8 @@ def _local_slot_supports_request(row: dict, req) -> bool:
 
     requirements = _request_capability_requirements(req)
     mapping = {
-        "tools": {"tools", "tool_calling", "function_calling"},
-        "structured_outputs": {"structured_outputs", "json_schema"},
+        "tools": {"tool_calling"},
+        "structured_outputs": {"structured_output"},
         "reasoning": {"reasoning"},
         "vision": {"vision", "multimodal"},
     }
@@ -3489,12 +3599,7 @@ def _pick_catalog_model(
         return (priority, model_id)
 
     def _apply_capability_filter(rows: list[dict], requirements: dict) -> list[dict]:
-        filtered = [row for row in rows if _row_supports_requirements(row, requirements)]
-        # If request has no capability requirements, keep current list untouched.
-        has_requirements = any(bool(requirements.get(k, False)) for k in ("tools", "structured_outputs", "reasoning", "vision"))
-        if not has_requirements:
-            return rows
-        return filtered
+        return [row for row in rows if _row_supports_requirements(row, requirements)]
 
     excluded_models = excluded_models or set()
     policies = policies or {}
@@ -3513,7 +3618,7 @@ def _pick_catalog_model(
         task_type = _normalize_task_type(getattr(req, "task_type", "chat"))
         required_capability = {
             "chat": "chat",
-            "completion": "chat",
+            "completion": "completions",
             "embed": "embeddings",
         }.get(task_type, "chat")
 
@@ -3523,7 +3628,7 @@ def _pick_catalog_model(
             if not isinstance(row, dict):
                 continue
             slot_mode = _normalize_slot_mode(row.get("id"), default="")
-            if slot_mode not in {"chat", "intent", "small"}:
+            if slot_mode not in SLOT_MODES:
                 continue
             if not bool(row.get("enabled", True)):
                 continue
@@ -3575,23 +3680,23 @@ def _pick_catalog_model(
 
             mode_hints: list[str] = []
             for tag in preferred_tags:
-                if tag in {"chat", "intent", "small"}:
+                if tag in SLOT_MODES:
                     mode_hints.append(tag)
                 elif tag in {"util"}:
                     mode_hints.append("small")
                 elif tag in {"classification", "classify"}:
                     mode_hints.append("intent")
                 elif tag in {"embed", "embedding", "embeddings", "vector"}:
-                    mode_hints.append("small")
+                    mode_hints.append("embed")
 
             mode_order: dict[str, int] = {}
             for idx, mode_hint in enumerate(mode_hints):
                 if mode_hint not in mode_order:
                     mode_order[mode_hint] = idx
             if task_type == "embed":
-                default_mode_rank = {"small": 0, "chat": 1, "intent": 2}
+                default_mode_rank = {"embed": 0, "small": 1, "chat": 2, "intent": 3}
             else:
-                default_mode_rank = {"chat": 0, "intent": 1, "small": 2}
+                default_mode_rank = {"chat": 0, "intent": 1, "small": 2, "embed": 3}
 
             pool.sort(key=lambda c: (
                 0 if c["slot_mode"] in mode_order else 1,
@@ -3683,7 +3788,7 @@ def _build_chat_payload(req: RouterChatRequest, selected_model: str, provider: s
     messages = []
     if req.system:
         messages.append({"role": "system", "content": req.system})
-    messages.extend([m.dict() for m in req.messages])
+    messages.extend([m.model_dump() for m in req.messages])
     payload = {
         "model": selected_model,
         "messages": messages,
@@ -3798,7 +3903,7 @@ def _dispatch_provider_embeddings(provider: str, env: dict, payload: dict, provi
             str(payload.get("model", "") or ""),
             env,
             provider_models=provider_models,
-            fallback_mode="small",
+            fallback_mode="embed",
         )
         return adapter.embeddings({"base": local_endpoint["base"], "payload": payload})
     if provider == "openrouter":
@@ -4138,6 +4243,20 @@ def _build_openrouter_catalog_model(row: dict, rankings_lookup: dict) -> dict | 
         created_ts = None
     ranking_row = _openrouter_ranking_for_model(model_id, model_name, rankings_lookup)
     size_data = _infer_openrouter_model_size(model_id, model_name, str(row.get("description", "") or ""))
+    normalized_outputs = {str(modality).strip().lower() for modality in output_modalities if str(modality).strip()}
+    capabilities = set()
+    if "embeddings" in normalized_outputs:
+        capabilities.add("embeddings")
+    if "text" in normalized_outputs or not normalized_outputs:
+        capabilities.update({"chat", "completions"})
+    if "tools" in supported_parameters:
+        capabilities.add("tool_calling")
+    if "structured_outputs" in supported_parameters or "response_format" in supported_parameters:
+        capabilities.add("structured_output")
+    if "reasoning" in supported_parameters:
+        capabilities.add("reasoning")
+    if any(modality in {"image", "video"} for modality in input_modalities):
+        capabilities.add("vision")
     return {
         "id": model_id,
         "canonical_slug": row.get("canonical_slug"),
@@ -4154,6 +4273,7 @@ def _build_openrouter_catalog_model(row: dict, rankings_lookup: dict) -> dict | 
         "supported_parameters": supported_parameters,
         "input_modalities": input_modalities,
         "output_modalities": output_modalities,
+        "capabilities": sorted(capabilities),
         "supports_tools": "tools" in supported_parameters,
         "supports_structured_outputs": "structured_outputs" in supported_parameters,
         "supports_json_schema": ("structured_outputs" in supported_parameters) or ("response_format" in supported_parameters),
@@ -4572,6 +4692,14 @@ def _build_openrouter_free_candidates(provider_models: dict, discovery_req: Open
             skipped["not_free"] += 1
             continue
         model_id = str(row.get("id", ""))
+        capabilities = {
+            str(capability).strip().lower()
+            for capability in (row.get("capabilities", []) if isinstance(row.get("capabilities"), list) else [])
+            if str(capability).strip()
+        }
+        if "chat" not in capabilities:
+            skipped["capabilities"] += 1
+            continue
         if not discovery_req.include_curated and model_id in curated_ids:
             skipped["curated"] += 1
             continue
@@ -4767,7 +4895,12 @@ def _refresh_openrouter_catalog(env: dict, state: dict | None = None, include_ra
         "error": None,
     }
     try:
-        r = requests.get(f"{base}/models", headers=headers, timeout=20)
+        r = requests.get(
+            f"{base}/models",
+            params={"output_modalities": "all"},
+            headers=headers,
+            timeout=20,
+        )
         r.raise_for_status()
         raw = r.json()
         rows = raw.get("data", []) if isinstance(raw, dict) else []
@@ -4890,7 +5023,7 @@ def _resolve_eval_candidate(raw_candidate: str, target_mode: str, provider_model
     elif raw.startswith("local:"):
         rem = raw.split(":", 1)[1].strip()
         parts = rem.split(":", 1)
-        if len(parts) == 2 and parts[0] in ("chat", "intent", "small"):
+        if len(parts) == 2 and parts[0] in SLOT_MODES:
             mode = parts[0]
             model = parts[1].strip()
         else:
@@ -5532,8 +5665,8 @@ def _upsert_suite_from_request(req: LocalEvalRequest):
         "suite_version": req.suite_version,
         "target_mode": req.target_mode,
         "candidate_models": req.candidate_models,
-        "variants": [v.dict() for v in req.variants],
-        "cases": [c.dict() for c in req.cases],
+        "variants": [v.model_dump() for v in req.variants],
+        "cases": [c.model_dump() for c in req.cases],
         "case_pass_threshold_pct": req.case_pass_threshold_pct,
         "suite_pass_threshold_pct": req.suite_pass_threshold_pct,
         "metadata": redact_sensitive_data(req.metadata),
@@ -5771,6 +5904,51 @@ def _ensure_eval_worker_started():
 
 
 @_state_transactional
+def _recover_evaluation_jobs() -> dict:
+    """Requeue evaluation work whose owning API process disappeared."""
+    state = read_provider_runtime_state()
+    queue = state.get("evaluation_queue", []) if isinstance(state.get("evaluation_queue"), list) else []
+    runs = state.get("evaluation_runs", {}) if isinstance(state.get("evaluation_runs"), dict) else {}
+    recovered = 0
+    now = datetime.utcnow().isoformat() + "Z"
+    queued_ids: set[str] = set()
+    for entry in queue:
+        if not isinstance(entry, dict):
+            continue
+        run_id = str(entry.get("run_id", ""))
+        if run_id:
+            queued_ids.add(run_id)
+        if entry.get("status") != "running":
+            continue
+        entry["status"] = "queued"
+        entry.pop("started_ts", None)
+        entry["recovered_ts"] = now
+        entry["recovery_count"] = int(entry.get("recovery_count", 0) or 0) + 1
+        row = runs.get(run_id, {}) if isinstance(runs.get(run_id), dict) else {}
+        row["status"] = "queued"
+        row.pop("started_ts", None)
+        row["recovered_ts"] = now
+        row["recovery_count"] = int(row.get("recovery_count", 0) or 0) + 1
+        runs[run_id] = row
+        recovered += 1
+
+    interrupted = 0
+    for run_id, row in runs.items():
+        if not isinstance(row, dict) or row.get("status") != "running" or run_id in queued_ids:
+            continue
+        row["status"] = "error"
+        row["error"] = "interrupted_api_restart_missing_queue_entry"
+        row["completed_ts"] = now
+        interrupted += 1
+
+    if recovered or interrupted:
+        state["evaluation_queue"] = queue
+        state["evaluation_runs"] = runs
+        write_provider_runtime_state(state)
+    return {"requeued": recovered, "interrupted": interrupted}
+
+
+@_state_transactional
 def _enqueue_local_evaluation(req: LocalEvalRequest, priority: str) -> tuple[str, int, str]:
     if not req.cases:
         raise HTTPException(400, "cases must contain at least one test case")
@@ -5794,7 +5972,7 @@ def _enqueue_local_evaluation(req: LocalEvalRequest, priority: str) -> tuple[str
         "priority": priority,
         "status": "queued",
         "enqueued_ts": enqueued_ts,
-        "request": req.dict(),
+        "request": req.model_dump(),
     })
     queue = _trim_evaluation_queue(queue)
 
@@ -5807,8 +5985,8 @@ def _enqueue_local_evaluation(req: LocalEvalRequest, priority: str) -> tuple[str
         "suite_version": req.suite_version,
         "target_mode": req.target_mode,
         "candidate_models": req.candidate_models,
-        "variants": [v.dict() for v in req.variants],
-        "cases": [c.dict() for c in req.cases],
+        "variants": [v.model_dump() for v in req.variants],
+        "cases": [c.model_dump() for c in req.cases],
         "case_pass_threshold_pct": req.case_pass_threshold_pct,
         "suite_pass_threshold_pct": req.suite_pass_threshold_pct,
         "metadata": redact_sensitive_data(req.metadata),
@@ -5981,7 +6159,7 @@ def _run_local_evaluation(req: LocalEvalRequest, run_id: str | None = None, queu
                     row["output_text"] = text
                     row["output_chars"] = len(text)
                     row["expected_contains_hits"] = hit_count
-                    plugin_results, plugin_score, plugin_score_max = _run_scoring_plugins(text, case.dict())
+                    plugin_results, plugin_score, plugin_score_max = _run_scoring_plugins(text, case.model_dump())
                     row["plugin_results"] = plugin_results
                     row["plugin_score"] = round(plugin_score, 4)
                     row["plugin_score_max"] = round(plugin_score_max, 4)
@@ -6029,8 +6207,8 @@ def _run_local_evaluation(req: LocalEvalRequest, run_id: str | None = None, queu
         "target_mode": req.target_mode,
         "candidate_specs": candidate_specs,
         "candidate_models": candidate_models,
-        "variants": [v.dict() for v in variants],
-        "cases": [c.dict() for c in req.cases],
+        "variants": [v.model_dump() for v in variants],
+        "cases": [c.model_dump() for c in req.cases],
         "case_pass_threshold_pct": req.case_pass_threshold_pct,
         "suite_pass_threshold_pct": req.suite_pass_threshold_pct,
         "suite_pass": suite_pass,
@@ -6062,10 +6240,12 @@ def current_links():
     ck = MODELS_DIR / "chat_active_model"
     ik = MODELS_DIR / "intent_active_model"
     sk = MODELS_DIR / "small_active_model"
+    ek = MODELS_DIR / "embed_active_model"
     return {
         "chat":   tgt(ck) if ck.exists() else None,
         "intent": tgt(ik) if ik.exists() else None,
         "small":  tgt(sk) if sk.exists() else None,
+        "embed":  tgt(ek) if ek.exists() else None,
     }
 
 # -----------------------------------------------------------------------------
@@ -6134,7 +6314,8 @@ def _bounce_engine(mode: str):
     a = os.getenv("SYSTEMD_LLM_A")
     b = os.getenv("SYSTEMD_LLM_B")
     c = os.getenv("SYSTEMD_LLM_C")
-    unit = {"chat": a, "intent": b, "small": c}.get(mode)
+    d = os.getenv("SYSTEMD_LLM_D")
+    unit = {"chat": a, "intent": b, "small": c, "embed": d}.get(mode)
 
     if unit:
         _systemctl_restart(unit)
@@ -6142,7 +6323,12 @@ def _bounce_engine(mode: str):
 
     # Legacy fallback
     env = read_env()
-    pm2name = {"chat": env.get("PM2_CHAT"), "intent": env.get("PM2_INTENT"), "small": env.get("PM2_SMALL")}.get(mode)
+    pm2name = {
+        "chat": env.get("PM2_CHAT"),
+        "intent": env.get("PM2_INTENT"),
+        "small": env.get("PM2_SMALL"),
+        "embed": env.get("PM2_EMBED"),
+    }.get(mode)
     if pm2name:
         _pm2(["restart", pm2name])
         return {"ok": True, "method": "pm2", "proc": pm2name}
@@ -6155,6 +6341,7 @@ def _stop_engine(mode: str):
         "chat": os.getenv("SYSTEMD_LLM_A"),
         "intent": os.getenv("SYSTEMD_LLM_B"),
         "small": os.getenv("SYSTEMD_LLM_C"),
+        "embed": os.getenv("SYSTEMD_LLM_D"),
     }.get(mode)
     if unit:
         _systemctl_stop(unit)
@@ -6165,6 +6352,7 @@ def _stop_engine(mode: str):
         "chat": env.get("PM2_CHAT"),
         "intent": env.get("PM2_INTENT"),
         "small": env.get("PM2_SMALL"),
+        "embed": env.get("PM2_EMBED"),
     }.get(mode)
     if pm2name:
         _pm2(["stop", pm2name])
@@ -6390,6 +6578,85 @@ def _tabbyapi_native_unload(mode: str) -> dict:
         "errors": errors[-3:],
     }
 
+
+def _readiness_timeout_seconds(requested: float | None = None) -> float:
+    if requested is not None:
+        value = float(requested)
+    else:
+        value = float(read_env().get("MODEL_READINESS_TIMEOUT_SECONDS", "90") or 90)
+    if value <= 0:
+        raise HTTPException(400, "readiness_timeout_seconds must be > 0")
+    return min(value, 300.0)
+
+
+def _wait_for_model_readiness(
+    mode: str,
+    expected_model: Path,
+    backend: str,
+    timeout_seconds: float | None = None,
+) -> dict:
+    timeout = _readiness_timeout_seconds(timeout_seconds)
+    env = read_env()
+    provider_models = read_provider_models()
+    base, base_source = _local_base_for_mode(mode, env, backend=backend, provider_models=provider_models)
+    url = str(base).rstrip("/") + "/v1/models"
+    relative_name = str(expected_model.resolve().relative_to(MODELS_DIR.resolve()))
+    accepted_ids = {str(expected_model.resolve()), relative_name, expected_model.name}
+    deadline = time.monotonic() + timeout
+    attempts = 0
+    last_status = None
+    last_model_ids: list[str] = []
+    last_error = None
+
+    while True:
+        attempts += 1
+        remaining = max(0.0, deadline - time.monotonic())
+        try:
+            response = requests.get(url, timeout=max(0.05, min(2.0, remaining or 0.05)))
+            last_status = int(response.status_code)
+            if response.ok:
+                body = response.json()
+                rows = body.get("data", []) if isinstance(body, dict) else []
+                last_model_ids = [
+                    str(row.get("id", ""))
+                    for row in rows
+                    if isinstance(row, dict) and str(row.get("id", ""))
+                ]
+                matched = next((model_id for model_id in last_model_ids if model_id in accepted_ids), None)
+                if matched is not None:
+                    return {
+                        "ok": True,
+                        "mode": mode,
+                        "backend": backend,
+                        "url": url,
+                        "base_source": base_source,
+                        "expected_model_ids": sorted(accepted_ids),
+                        "matched_model_id": matched,
+                        "model_ids": last_model_ids,
+                        "attempts": attempts,
+                    }
+                last_error = "endpoint is healthy but reports a different active model"
+            else:
+                last_error = f"model endpoint returned HTTP {response.status_code}"
+        except Exception as exc:
+            last_error = str(exc)
+
+        if time.monotonic() >= deadline:
+            return {
+                "ok": False,
+                "mode": mode,
+                "backend": backend,
+                "url": url,
+                "base_source": base_source,
+                "expected_model_ids": sorted(accepted_ids),
+                "model_ids": last_model_ids,
+                "status_code": last_status,
+                "attempts": attempts,
+                "timeout_seconds": timeout,
+                "detail": last_error or "model readiness timed out",
+            }
+        time.sleep(min(0.5, max(0.01, deadline - time.monotonic())))
+
 # -----------------------------------------------------------------------------
 # Core: model switch
 # -----------------------------------------------------------------------------
@@ -6402,12 +6669,13 @@ def switch_model(
     lifecycle_mode: str | None = None,
     native_max_seq_len: int | None = None,
     require_loaded: bool = False,
+    readiness_timeout_seconds: float | None = None,
 ):
     # Historical UI used 'util' for the third slot -> treat as small.
     if mode == "util":
         mode = "small"
-    if mode not in ("chat", "intent", "small"):
-        raise HTTPException(400, "mode must be chat|intent|small|util")
+    if mode not in SLOT_MODES:
+        raise HTTPException(400, "mode must be chat|intent|small|embed|util")
 
     if backend is not None and backend not in SUPPORTED_BACKENDS:
         raise HTTPException(400, f"backend must be one of: {', '.join(sorted(SUPPORTED_BACKENDS))}")
@@ -6421,6 +6689,18 @@ def switch_model(
 
     inspection = inspect_one(model_name)
     model_kind = str(inspection.get("kind", "unknown") or "unknown")
+    raw_model_capabilities = inspection.get("capabilities", []) if isinstance(inspection.get("capabilities"), list) else []
+    model_capabilities = {
+        str(value).strip().lower()
+        for value in raw_model_capabilities
+        if str(value).strip()
+    }
+    required_model_capability = "embeddings" if mode == "embed" else "chat"
+    if required_model_capability not in model_capabilities:
+        raise HTTPException(
+            422,
+            f"model '{model_dir}' does not declare the required '{required_model_capability}' capability for slot '{mode}'",
+        )
     recommended_backend = str(inspection.get("recommended_backend", "") or "").strip().lower()
     unsupported_reason = str(inspection.get("unsupported_reason", "") or "").strip() or None
     fallback_backends = [
@@ -6431,7 +6711,7 @@ def switch_model(
     compatible_backends = [
         candidate
         for candidate in ("tgw", "vllm", "tabbyapi")
-        if _backend_supports_model_kind(candidate, model_kind)
+        if _backend_supports_model_kind(candidate, model_kind) and (mode != "embed" or candidate == "vllm")
     ]
 
     if not compatible_backends:
@@ -6448,6 +6728,7 @@ def switch_model(
         "chat":   MODELS_DIR / "chat_active_model",
         "intent": MODELS_DIR / "intent_active_model",
         "small":  MODELS_DIR / "small_active_model",
+        "embed":  MODELS_DIR / "embed_active_model",
     }[mode]
 
     slot_backends_before = read_slot_backends()
@@ -6462,6 +6743,13 @@ def switch_model(
 
     if chosen_backend is None:
         chosen_backend = previous_backend
+
+    if mode == "embed" and chosen_backend != "vllm":
+        if backend is not None:
+            raise HTTPException(400, "the embedding slot requires backend=vllm")
+        chosen_backend = "vllm"
+        backend_source = "embedding_lane_required"
+        auto_backend_applied = chosen_backend != previous_backend
 
     # Avoid selecting backends for incompatible model formats.
     if not _backend_supports_model_kind(chosen_backend, model_kind):
@@ -6480,6 +6768,8 @@ def switch_model(
 
     # Guard vllm lanes when vllm is not available in runtime.
     if chosen_backend == "vllm" and not _vllm_backend_available():
+        if mode == "embed":
+            raise HTTPException(400, "the embedding slot requires an available vllm runtime")
         if backend is not None:
             raise HTTPException(400, "backend 'vllm' is not available in the current runtime (missing vllm module)")
         fallback_choice = None
@@ -6497,6 +6787,7 @@ def switch_model(
     native_load: dict | None = None
     bounce_result: dict | None = None
     rollback_result: dict | None = None
+    readiness: dict | None = None
     if link.exists() and not link.is_symlink():
         raise HTTPException(409, f"active model path is not a managed symlink: {link}")
     previous_target = _symlink_target(link)
@@ -6532,6 +6823,15 @@ def switch_model(
         set_slot_backend(mode, slot_backend)
         if bounce and not native_load_used:
             bounce_result = _bounce_engine(mode)
+        if native_load_used or bounce:
+            readiness = _wait_for_model_readiness(
+                mode,
+                target,
+                slot_backend,
+                timeout_seconds=readiness_timeout_seconds,
+            )
+            if not readiness.get("ok"):
+                raise HTTPException(504, {"message": "new model did not become ready", "readiness": readiness})
     except Exception as exc:
         rollback_errors = []
         try:
@@ -6544,13 +6844,24 @@ def switch_model(
             rollback_errors.append(f"backend: {rollback_exc}")
         if bounce and not native_load_used:
             try:
-                rollback_result = _bounce_engine(mode)
+                rollback_result = _bounce_engine(mode) if previous_target else _stop_engine(mode)
             except Exception as rollback_exc:
                 rollback_errors.append(f"engine: {rollback_exc}")
         if native_load_used:
-            unload_result = _tabbyapi_native_unload(mode)
-            if not unload_result.get("ok"):
-                rollback_errors.append(f"native unload: {unload_result.get('detail', 'failed')}")
+            if previous_target is not None and previous_backend == "tabbyapi":
+                restore_native = _tabbyapi_native_load(mode, previous_target)
+                rollback_result = restore_native
+                if not restore_native.get("ok"):
+                    rollback_errors.append(f"native restore: {restore_native.get('detail', 'failed')}")
+            else:
+                unload_result = _tabbyapi_native_unload(mode)
+                if not unload_result.get("ok"):
+                    rollback_errors.append(f"native unload: {unload_result.get('detail', 'failed')}")
+                if previous_target is not None:
+                    try:
+                        rollback_result = _bounce_engine(mode)
+                    except Exception as rollback_exc:
+                        rollback_errors.append(f"engine: {rollback_exc}")
         detail = exc.detail if isinstance(exc, HTTPException) else str(exc)
         status_code = exc.status_code if isinstance(exc, HTTPException) else 500
         raise HTTPException(status_code, {
@@ -6571,6 +6882,7 @@ def switch_model(
         "auto_backend_applied": auto_backend_applied,
         "previous_backend": previous_backend,
         "model_kind": model_kind,
+        "model_capabilities": sorted(model_capabilities),
         "compatible_backends": compatible_backends,
         "unsupported_reason": unsupported_reason,
         "recommended_backend": recommended_backend if recommended_backend in SUPPORTED_BACKENDS else None,
@@ -6583,6 +6895,7 @@ def switch_model(
         "load_method": "tabbyapi_native" if native_load_used else ("engine_restart" if bounce else "staged"),
         "bounce": bool(bounce),
         "bounce_result": bounce_result,
+        "readiness": readiness,
         "rollback_result": rollback_result,
     }
 
@@ -6592,7 +6905,173 @@ def switch_model(
 JOBS: dict[str, dict] = {}
 JOB_PROCESSES: dict[str, subprocess.Popen] = {}
 JOB_PIDFDS: dict[str, int] = {}
+JOB_IDENTITIES: dict[str, dict] = {}
 JOB_LOCK = threading.RLock()
+
+
+def _boot_id() -> str | None:
+    try:
+        return Path("/proc/sys/kernel/random/boot_id").read_text().strip() or None
+    except OSError:
+        return None
+
+
+def _process_identity(pid: int) -> dict | None:
+    try:
+        stat_text = Path(f"/proc/{int(pid)}/stat").read_text()
+        remainder = stat_text.rsplit(")", 1)[1].strip().split()
+        process_start_ticks = int(remainder[19])
+        command = Path(f"/proc/{int(pid)}/cmdline").read_bytes()
+    except (OSError, ValueError, IndexError):
+        return None
+    return {
+        "process_start_ticks": process_start_ticks,
+        "boot_id": _boot_id(),
+        "command_sha256": hashlib.sha256(command).hexdigest(),
+    }
+
+
+def _same_process_identity(expected: dict, actual: dict | None) -> bool:
+    if not isinstance(actual, dict):
+        return False
+    return all(
+        expected.get(key) is not None and expected.get(key) == actual.get(key)
+        for key in ("process_start_ticks", "boot_id", "command_sha256")
+    )
+
+
+def _persist_job(job_id: str) -> None:
+    with JOB_LOCK:
+        job = JOBS.get(job_id)
+        if not isinstance(job, dict):
+            return
+        payload = redact_sensitive_data(dict(job))
+        identity = dict(JOB_IDENTITIES.get(job_id, {}))
+    _runtime_store().upsert_job(payload, identity=identity)
+
+
+@_state_transactional
+def _mark_conversion_job_interrupted(job_id: str, reason: str) -> None:
+    state = read_provider_runtime_state()
+    runs = state.get("conversion_runs", {}) if isinstance(state.get("conversion_runs"), dict) else {}
+    row = runs.get(job_id)
+    if not isinstance(row, dict) or str(row.get("status")) not in {"running", "cancelling"}:
+        return
+    now = datetime.utcnow().isoformat() + "Z"
+    row["status"] = "interrupted"
+    row["error"] = reason
+    row["completed_ts"] = now
+    row["updated_ts"] = now
+    runs[job_id] = row
+    state["conversion_runs"] = runs
+    write_provider_runtime_state(state)
+
+
+def _watch_recovered_job(job_id: str, pidfd: int) -> None:
+    poller = select.poll()
+    poller.register(pidfd, select.POLLIN)
+    try:
+        poller.poll()
+    except (OSError, ValueError):
+        return
+    with JOB_LOCK:
+        if JOB_PIDFDS.get(job_id) != pidfd:
+            return
+        job = JOBS.get(job_id)
+        if isinstance(job, dict):
+            job["status"] = "ended_unknown"
+            job["end_ts"] = time.time()
+            job["recovery"] = {"state": "ended_after_restart", "returncode_available": False}
+        JOB_PIDFDS.pop(job_id, None)
+        JOB_IDENTITIES.pop(job_id, None)
+        try:
+            os.close(pidfd)
+        except OSError:
+            pass
+    _persist_job(job_id)
+    _mark_conversion_job_interrupted(job_id, "process ended after API restart; return code unavailable")
+
+
+def _recover_managed_jobs() -> dict:
+    recovered = interrupted = finished = 0
+    rows = _runtime_store().list_jobs()
+    with JOB_LOCK:
+        for stored in rows:
+            identity = stored.pop("_process_identity", {})
+            job_id = str(stored.get("id", ""))
+            if not job_id:
+                continue
+            JOBS[job_id] = stored
+            status = str(stored.get("status", ""))
+            if status not in {"running", "cancelling", "recovered_running"}:
+                finished += 1
+                continue
+            pid = int(stored.get("pid", 0) or 0)
+            actual_before = _process_identity(pid) if pid > 0 else None
+            if not _same_process_identity(identity, actual_before) or not hasattr(os, "pidfd_open"):
+                stored["status"] = "interrupted"
+                stored["end_ts"] = time.time()
+                stored["recovery"] = {"state": "process_identity_not_live"}
+                interrupted += 1
+                continue
+            try:
+                pidfd = os.pidfd_open(pid, 0)
+            except OSError:
+                stored["status"] = "interrupted"
+                stored["end_ts"] = time.time()
+                stored["recovery"] = {"state": "pidfd_open_failed"}
+                interrupted += 1
+                continue
+            actual_after = _process_identity(pid)
+            if not _same_process_identity(identity, actual_after):
+                os.close(pidfd)
+                stored["status"] = "interrupted"
+                stored["end_ts"] = time.time()
+                stored["recovery"] = {"state": "process_identity_changed"}
+                interrupted += 1
+                continue
+            stored["status"] = "recovered_running"
+            stored["recovery"] = {"state": "reattached_with_pidfd", "returncode_available": False}
+            JOB_PIDFDS[job_id] = pidfd
+            JOB_IDENTITIES[job_id] = identity
+            recovered += 1
+
+    for stored in rows:
+        job_id = str(stored.get("id", ""))
+        if job_id:
+            _persist_job(job_id)
+            if str(stored.get("status")) == "interrupted":
+                _mark_conversion_job_interrupted(job_id, "process was not live during API startup reconciliation")
+    with JOB_LOCK:
+        recovered_fds = [(job_id, fd) for job_id, fd in JOB_PIDFDS.items() if JOBS.get(job_id, {}).get("status") == "recovered_running"]
+    for job_id, fd in recovered_fds:
+        threading.Thread(target=_watch_recovered_job, args=(job_id, fd), daemon=True).start()
+    runtime_state = read_provider_runtime_state()
+    conversion_runs = (
+        runtime_state.get("conversion_runs", {})
+        if isinstance(runtime_state.get("conversion_runs"), dict)
+        else {}
+    )
+    for job_id, row in conversion_runs.items():
+        if (
+            isinstance(row, dict)
+            and str(row.get("status")) in {"running", "cancelling"}
+            and str(JOBS.get(str(job_id), {}).get("status", "")) not in {"running", "cancelling", "recovered_running"}
+        ):
+            _mark_conversion_job_interrupted(
+                str(job_id),
+                "legacy running conversion had no persistent managed-job identity during upgrade",
+            )
+            interrupted += 1
+    return {"recovered_running": recovered, "interrupted": interrupted, "finished": finished}
+
+
+def _startup_runtime_reconciliation() -> None:
+    _runtime_store().schema_version()
+    _recover_evaluation_jobs()
+    _recover_managed_jobs()
+    if _env_flag(os.getenv("EVAL_WORKER_AUTOSTART"), True):
+        _ensure_eval_worker_started()
 
 
 def _validate_job_path_args(kind: str, args: dict, env: dict) -> dict:
@@ -7121,6 +7600,7 @@ def _conversion_artifact_rows(format_filter: str | None = None) -> list[dict]:
     return rows
 
 def _launch_job(kind: str, args: dict) -> dict:
+    LOGS_DIR.mkdir(parents=True, exist_ok=True)
     job_id = uuid.uuid4().hex[:12]
     log_path = LOGS_DIR / f"{int(time.time())}_{kind}_{job_id}.log"
     conversion_kinds = set(CONVERSION_KIND_FORMAT.keys())
@@ -7316,11 +7796,13 @@ def _launch_job(kind: str, args: dict) -> dict:
             pidfd = os.pidfd_open(proc.pid, 0)
         except OSError:
             pidfd = None
+    process_identity = _process_identity(proc.pid) or {}
 
     with JOB_LOCK:
         JOB_PROCESSES[job_id] = proc
         if pidfd is not None:
             JOB_PIDFDS[job_id] = pidfd
+        JOB_IDENTITIES[job_id] = process_identity
         JOBS[job_id] = {
             "id": job_id, "kind": kind, "args": args, "cmd": cmd,
             "pid": proc.pid, "start_ts": time.time(), "end_ts": None,
@@ -7329,6 +7811,7 @@ def _launch_job(kind: str, args: dict) -> dict:
 
     if kind in conversion_kinds:
         JOBS[job_id]["conversion"] = _record_conversion_run_start(job_id, kind, args, env, log_path, proc.pid)
+    _persist_job(job_id)
 
     def _watch():
         rc = proc.wait()
@@ -7342,8 +7825,10 @@ def _launch_job(kind: str, args: dict) -> dict:
             finished_pidfd = JOB_PIDFDS.pop(job_id, None)
             if finished_pidfd is not None:
                 os.close(finished_pidfd)
+            JOB_IDENTITIES.pop(job_id, None)
         if kind in conversion_kinds:
             _record_conversion_run_finish(job_id, rc)
+        _persist_job(job_id)
 
     threading.Thread(target=_watch, daemon=True).start()
     return JOBS[job_id]
@@ -7353,27 +7838,29 @@ def _launch_job(kind: str, args: dict) -> dict:
 # -----------------------------------------------------------------------------
 class SwitchReq(BaseModel):
     model_config = {"protected_namespaces": ()}
-    mode: str            # chat|intent|small|util
+    mode: str            # chat|intent|small|embed|util
     model_dir: str
     bounce: bool = True
     backend: str | None = None  # tgw|vllm|tabbyapi
     lifecycle_mode: str | None = None  # legacy|auto|native
     native_max_seq_len: int | None = None
+    readiness_timeout_seconds: float | None = None
 
 
 class ModelLoadReq(BaseModel):
     model_config = {"protected_namespaces": ()}
-    mode: str            # chat|intent|small|util
+    mode: str            # chat|intent|small|embed|util
     model_dir: str
     bounce: bool = True
     backend: str | None = None  # tgw|vllm|tabbyapi
     lifecycle_mode: str | None = "auto"  # legacy|auto|native
     native_max_seq_len: int | None = None
+    readiness_timeout_seconds: float | None = None
 
 
 class ModelUnloadReq(BaseModel):
     model_config = {"protected_namespaces": ()}
-    mode: str            # chat|intent|small|util
+    mode: str            # chat|intent|small|embed|util
     bounce: bool = False
     backend: str | None = None  # tgw|vllm|tabbyapi
     lifecycle_mode: str | None = "auto"  # legacy|auto|native
@@ -7392,11 +7879,16 @@ class Knobs(BaseModel):
     LLM_SMALL_API_BASE_TGW: str | None = None
     LLM_SMALL_API_BASE_VLLM: str | None = None
     LLM_SMALL_API_BASE_TABBYAPI: str | None = None
+    LLM_EMBED_API_BASE: str | None = None
+    LLM_EMBED_API_BASE_TGW: str | None = None
+    LLM_EMBED_API_BASE_VLLM: str | None = None
+    LLM_EMBED_API_BASE_TABBYAPI: str | None = None
     SMART_ASSISTANT_URL: str | None = None
     CUDA_VISIBLE_DEVICES: str | None = None
     PM2_CHAT: str | None = None
     PM2_INTENT: str | None = None
     PM2_SMALL: str | None = None
+    PM2_EMBED: str | None = None
     OPENROUTER_API_BASE: str | None = None
     OPENAI_API_BASE: str | None = None
     DEFAULT_ROUTING_STRATEGY: str | None = None
@@ -7567,6 +8059,7 @@ def health():
     chat_engine = _engine_def("chat", env=env, provider_models=provider_models)
     intent_engine = _engine_def("intent", env=env, provider_models=provider_models)
     small_engine = _engine_def("small", env=env, provider_models=provider_models)
+    embed_engine = _engine_def("embed", env=env, provider_models=provider_models)
     info = {
         "ok": True,
         "time": datetime.utcnow().isoformat() + "Z",
@@ -7576,8 +8069,22 @@ def health():
             "models_loaded": bool(provider_models),
             "policies_loaded": bool(provider_policies),
         },
-        "pm2": {"chat": env.get("PM2_CHAT"), "intent": env.get("PM2_INTENT"), "small": env.get("PM2_SMALL")},
-        "api_bases": {"chat": chat_engine.get("base"), "intent": intent_engine.get("base"), "small": small_engine.get("base")},
+        "pm2": {
+            "chat": env.get("PM2_CHAT"),
+            "intent": env.get("PM2_INTENT"),
+            "small": env.get("PM2_SMALL"),
+            "embed": env.get("PM2_EMBED"),
+        },
+        "api_bases": {
+            "chat": chat_engine.get("base"),
+            "intent": intent_engine.get("base"),
+            "small": small_engine.get("base"),
+            "embed": embed_engine.get("base"),
+        },
+        "schema_versions": {
+            "config": CONFIG_SCHEMA_VERSION,
+            "runtime": _runtime_store().schema_version(),
+        },
     }
     # quick non-fatal pings (TGW exposes /v1/models, not /health)
     try:
@@ -7595,6 +8102,11 @@ def health():
         info["small_up"] = (r.status_code == 200)
     except Exception:
         info["small_up"] = False
+    try:
+        r = requests.get(str(embed_engine.get("base", "")).rstrip("/") + "/v1/models", timeout=2)
+        info["embed_up"] = (r.status_code == 200)
+    except Exception:
+        info["embed_up"] = False
     return info
 
 @app.get("/system")
@@ -7636,11 +8148,17 @@ def models():
         "chat":   env.get("ENABLE_CHAT", "1") == "1",
         "intent": env.get("ENABLE_INTENT", "1") == "1",
         "small":  env.get("ENABLE_SMALL", "1") == "1",
+        "embed":  env.get("ENABLE_EMBED", "1") == "1",
     }
 
     # Per-model metadata (kind, loader, bpw)
     all_names = sorted(set(chat_list + intent_list + small_list))
     meta = inspect_batch(all_names)
+    embed_list = [
+        name
+        for name in all_names
+        if "embeddings" in set(meta.get(name, {}).get("capabilities", []))
+    ]
     slot_endpoints = {
         mode: _local_endpoint_for_model(
             _slot_alias_for_mode(mode),
@@ -7648,13 +8166,14 @@ def models():
             provider_models=provider_models,
             fallback_mode=mode,
         )
-        for mode in ("chat", "intent", "small")
+        for mode in SLOT_MODES
     }
 
     return {
         "chat": chat_list,
         "intent": intent_list,
         "small": small_list,
+        "embed": embed_list,
         "active": active,
         "slot_backends": read_slot_backends(),
         "slot_endpoints": slot_endpoints,
@@ -7672,6 +8191,8 @@ def switch(req: SwitchReq):
         req.backend,
         req.lifecycle_mode,
         req.native_max_seq_len,
+        False,
+        req.readiness_timeout_seconds,
     )
 
 
@@ -7685,6 +8206,7 @@ def model_load(req: ModelLoadReq):
         req.lifecycle_mode,
         req.native_max_seq_len,
         True,
+        req.readiness_timeout_seconds,
     )
 
 
@@ -7692,8 +8214,8 @@ def model_load(req: ModelLoadReq):
 @_model_lifecycle_transactional
 def model_unload(req: ModelUnloadReq):
     mode = _normalize_slot_mode(req.mode, default="")
-    if mode not in ("chat", "intent", "small"):
-        raise HTTPException(400, "mode must be chat|intent|small|util")
+    if mode not in SLOT_MODES:
+        raise HTTPException(400, "mode must be chat|intent|small|embed|util")
 
     if req.backend is not None and req.backend not in SUPPORTED_BACKENDS:
         raise HTTPException(400, f"backend must be one of: {', '.join(sorted(SUPPORTED_BACKENDS))}")
@@ -7722,6 +8244,7 @@ def model_unload(req: ModelUnloadReq):
         "chat": MODELS_DIR / "chat_active_model",
         "intent": MODELS_DIR / "intent_active_model",
         "small": MODELS_DIR / "small_active_model",
+        "embed": MODELS_DIR / "embed_active_model",
     }[mode]
     if link.exists() and not link.is_symlink():
         raise HTTPException(409, f"active model path is not a managed symlink: {link}")
@@ -8532,7 +9055,7 @@ def router_route_test(req: RouterRouteTestReq):
         provider = str(first.get("provider", "local"))
         model = str(first.get("model", ""))
         lane = str(first.get("lane", "local"))
-        local_fallback_mode = "small" if task_type == "embed" else "chat"
+        local_fallback_mode = "embed" if task_type == "embed" else "chat"
         local_selection = (
             _local_endpoint_for_model(model, env, provider_models=provider_models, fallback_mode=local_fallback_mode)
             if provider == "local"
@@ -8973,7 +9496,7 @@ def router_chat(req: RouterChatRequest):
             selected_provider,
             selected_model,
         ),
-        "usage": usage.dict(),
+        "usage": usage.model_dump(),
         "metadata": req.metadata,
     }
 
@@ -9361,7 +9884,7 @@ def router_completions(req: RouterCompletionRequest):
             selected_provider,
             selected_model,
         ),
-        "usage": usage.dict(),
+        "usage": usage.model_dump(),
         "metadata": req.metadata,
     }
 
@@ -9701,7 +10224,7 @@ def router_embed(req: RouterEmbedRequest):
         data = [RouterEmbedDatum(index=0, embedding=[])]
 
     selected_local = (
-        _local_endpoint_for_model(selected_model, env, provider_models=provider_models, fallback_mode="small")
+        _local_endpoint_for_model(selected_model, env, provider_models=provider_models, fallback_mode="embed")
         if selected_provider == "local"
         else None
     )
@@ -9745,7 +10268,7 @@ def router_embed(req: RouterEmbedRequest):
             selected_provider,
             selected_model,
         ),
-        "usage": usage.dict(),
+        "usage": usage.model_dump(),
         "metadata": req.metadata,
     }
 
@@ -10442,8 +10965,8 @@ def router_evaluation_suite_rerun(suite_name: str, suite_version: str, req: Eval
 # Old UI calls /bounce/<mode>. Keep it, but make it systemd-aware.
 @app.post("/bounce/{mode}")
 def bounce(mode: str):
-    if mode not in ("chat", "intent", "small"):
-        raise HTTPException(400, "mode must be chat|intent|small")
+    if mode not in SLOT_MODES:
+        raise HTTPException(400, "mode must be chat|intent|small|embed")
     return _bounce_engine(mode)
 
 # -----------------------------------------------------------------------------
@@ -10551,7 +11074,12 @@ def jobs_detail(job_id: str, tail: int = 120):
         source = JOBS.get(job_id)
         j = dict(source) if source else None
     if not j:
-        raise HTTPException(404, "job not found")
+        persisted = _runtime_store().get_job(job_id)
+        if persisted:
+            persisted.pop("_process_identity", None)
+            j = persisted
+        else:
+            raise HTTPException(404, "job not found")
     payload = {**j, "tail": _tail(Path(j["log"]), n=tail)}
     conversion = _conversion_run_by_job_id(job_id)
     if isinstance(conversion, dict):
@@ -10560,7 +11088,7 @@ def jobs_detail(job_id: str, tail: int = 120):
 
 @app.post("/jobs")
 def jobs_start(req: JobStart):
-    return _launch_job(req.kind, req.dict())
+    return _launch_job(req.kind, req.model_dump())
 
 @app.post("/jobs/{job_id}/cancel")
 def jobs_cancel(job_id: str):
@@ -10570,13 +11098,16 @@ def jobs_cancel(job_id: str):
         if not j:
             raise HTTPException(404, "job not found")
         proc = JOB_PROCESSES.get(job_id)
-        if proc is None or proc.poll() is not None:
+        managed_pidfd = JOB_PIDFDS.get(job_id)
+        if proc is not None and proc.poll() is not None:
             j["status"] = "ended"
             raise HTTPException(409, "job process has already ended")
-        managed_pidfd = JOB_PIDFDS.get(job_id)
+        if proc is None and managed_pidfd is None:
+            raise HTTPException(409, "job process is not attached to this API instance")
         if managed_pidfd is not None:
             duplicated_pidfd = os.dup(managed_pidfd)
         j["status"] = "cancelling"
+    _persist_job(job_id)
     try:
         if duplicated_pidfd is not None and hasattr(signal, "pidfd_send_signal"):
             signal.pidfd_send_signal(duplicated_pidfd, signal.SIGTERM)
@@ -10697,7 +11228,7 @@ def _conversion_artifact_detail_for_format(artifact_id: str, target_format: str)
 
 @app.post("/conversions/exl2")
 def conversions_exl2_start(req: Exl2ConversionStartReq):
-    return _start_managed_conversion(req.dict(), req.source_type, target_format="exl2")
+    return _start_managed_conversion(req.model_dump(), req.source_type, target_format="exl2")
 
 
 @app.get("/conversions/exl2/jobs")
@@ -10744,7 +11275,7 @@ def conversions_exl2_artifact_detail(artifact_id: str):
 
 @app.post("/conversions/exl3")
 def conversions_exl3_start(req: Exl3ConversionStartReq):
-    return _start_managed_conversion(req.dict(), req.source_type, target_format="exl3")
+    return _start_managed_conversion(req.model_dump(), req.source_type, target_format="exl3")
 
 
 @app.get("/conversions/exl3/jobs")
@@ -10793,8 +11324,8 @@ def conversions_exl3_artifact_detail(artifact_id: str):
 # -----------------------------------------------------------------------------
 def _engine_def(mode: str, env: dict | None = None, provider_models: dict | None = None) -> dict:
     mode_key = _normalize_slot_mode(mode, default="")
-    if mode_key not in {"chat", "intent", "small"}:
-        raise HTTPException(400, "mode must be chat|intent|small")
+    if mode_key not in SLOT_MODES:
+        raise HTTPException(400, "mode must be chat|intent|small|embed")
 
     env_data = env if isinstance(env, dict) else read_env()
     endpoint = _local_endpoint_for_model(
@@ -10807,6 +11338,7 @@ def _engine_def(mode: str, env: dict | None = None, provider_models: dict | None
         "chat": os.getenv("SYSTEMD_LLM_A") or "",
         "intent": os.getenv("SYSTEMD_LLM_B") or "",
         "small": os.getenv("SYSTEMD_LLM_C") or "",
+        "embed": os.getenv("SYSTEMD_LLM_D") or "",
     }
     return {
         "mode": mode_key,
@@ -10824,6 +11356,7 @@ def engines_status(request: Request):
     chat = _engine_def("chat", env=env, provider_models=provider_models)
     intent = _engine_def("intent", env=env, provider_models=provider_models)
     small = _engine_def("small", env=env, provider_models=provider_models)
+    embed = _engine_def("embed", env=env, provider_models=provider_models)
 
     def pack(e: dict) -> dict:
         unit = e["unit"]
@@ -10845,6 +11378,7 @@ def engines_status(request: Request):
         "chat": pack(chat),
         "intent": pack(intent),
         "small": pack(small),
+        "embed": pack(embed),
         "tgw_webui": _tgw_webui_state(env=env, request=request),
         "time": datetime.utcnow().isoformat() + "Z",
     }
@@ -10931,6 +11465,7 @@ def engines_solo(mode: str):
         "chat": os.getenv("SYSTEMD_LLM_A") or "",
         "intent": os.getenv("SYSTEMD_LLM_B") or "",
         "small": os.getenv("SYSTEMD_LLM_C") or "",
+        "embed": os.getenv("SYSTEMD_LLM_D") or "",
     }
     if not units.get(mode):
         raise HTTPException(400, f"SYSTEMD unit not configured for {mode}")

@@ -26,7 +26,7 @@ Startup guardrails (enabled by default in `run/launch_tgw.py`):
 - tuning knobs: `TGW_STARTUP_GUARDRAILS`, `TGW_GUARDRAIL_CLEAN_PORT`, `TGW_GUARDRAIL_TERM_TIMEOUT_SECONDS`, `TGW_GUARDRAIL_CLEAN_EXLLAMA_LOCKS`, `TGW_EXLLAMA_LOCK_STALE_SECONDS`, `TGW_EXLLAMA_LOCK_FORCE_REMOVE`, `TGW_EXLLAMA_LOCK_PATHS`
 
 Check engines:
-- `sudo systemctl status llm-a llm-b llm-c llm-manager-api`
+- `sudo systemctl status llm-a llm-b llm-c llm-embed llm-manager-api`
 
 Restart chat:
 - `sudo systemctl restart llm-a`
@@ -65,7 +65,7 @@ Standalone TGW WebUI service (one-off model testing):
 Preferred via API:
 
 - POST `/switch`
-  - Body: `{ "mode": "chat|intent|small", "model_dir": "...", "bounce": true, "backend": "tgw|vllm|tabbyapi" }`
+  - Body: `{ "mode": "chat|intent|small|embed", "model_dir": "...", "bounce": true, "backend": "tgw|vllm|tabbyapi" }`
 
 Examples:
 
@@ -85,7 +85,7 @@ CLI options:
 - `python switch_model.py`  # interactive
 
 Operational note:
-- `/switch` updates `chat_active_model`, `intent_active_model`, or `small_active_model` in the shared models directory and then optionally restarts the engine.
+- `/switch` updates `chat_active_model`, `intent_active_model`, `small_active_model`, or `embed_active_model` in the shared models directory and then optionally restarts the engine.
 - When `backend` is provided, llm-manager stores per-slot backend preference in `run/state/slot_backends.json`.
 - When `backend` is omitted, llm-manager can auto-apply inspector recommendations for vLLM/Tabby-capable model kinds; inspect `backend_source` and `auto_backend_applied` in the `/switch` response.
 
@@ -459,7 +459,7 @@ B) Recover from GPU-driver wedges or uninterruptible TGW processes:
 
 1) Confirm wedge indicators:
 
-    sudo systemctl status llm-a llm-b llm-c llm-manager-api
+    sudo systemctl status llm-a llm-b llm-c llm-embed llm-manager-api
     nvidia-smi
     ps -eo pid,ppid,stat,comm,args | rg 'llm-a|llm-b|llm-c|text-generation-webui|server.py'
     ps -eo pid,stat,comm,args | awk '$2 ~ /^D/ {print}'
@@ -490,7 +490,7 @@ If residual TGW processes are not in `D` state, terminate them explicitly and re
 
 Controlled reboot sequence:
 
-    sudo systemctl stop llm-a llm-b llm-c llm-manager-api
+    sudo systemctl stop llm-a llm-b llm-c llm-embed llm-manager-api
     sudo sync
     sudo reboot
 
@@ -567,8 +567,8 @@ python validate_training_data.py
 
 | What | Path |
 |------|------|
-| API server | `api/server.py` |
-| Model inspector | `api/model_inspector.py` |
+| API server | `llm_manager/server.py` |
+| Model inspector | `llm_manager/model_inspector.py` |
 | CLI tools | `app/src/llm_manager/` |
 | Shared utilities | `app/src/llm_manager/utils.py` |
 | Configuration | `secrets/.env` |
@@ -578,15 +578,15 @@ python validate_training_data.py
 | Model configs | `model_configs.json` |
 | Training data | `data/*_prompts.jsonl` |
 | Job logs | `run/logs/` |
-| Provider runtime state | `run/state/provider_runtime_state.json` |
-| Router contracts | `api/router/contracts.py` |
+| Provider runtime state | `run/state/runtime.db` (legacy JSON imported once) |
+| Router contracts | `llm_manager/router/contracts.py` |
 | Engine launcher | `run/engine_launcher.py` |
 | Dashboard | `web/` |
 | Effective runtime models directory | `/srv/2bananas/engines/text-generation-webui/user_data/models/` |
 | Shared/backing models directory | `/srv/2bananas/engines/models/` |
 | Active symlinks | `/srv/2bananas/engines/text-generation-webui/user_data/models/{chat,intent,small}_active_model` |
-| Systemd units | `/etc/systemd/system/llm-{a,b,c}.service` |
+| Systemd units | `/etc/systemd/system/llm-{a,b,c,embed}.service` or packaged `llm-manager-engine@.service` |
 | API systemd unit | `/etc/systemd/system/llm-manager-api.service` |
 
 Operational note:
-- `run/state/provider_runtime_state.json` now tracks router request logs, usage logs, provider-model cooldowns, and OpenRouter free-tier limiter state.
+- `run/state/runtime.db` stores router request/usage sections, provider-model cooldowns, and OpenRouter free-tier limiter state.

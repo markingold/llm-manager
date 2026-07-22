@@ -1,6 +1,6 @@
 # llm-manager API Reference
 
-Public HTTP surface for the local control API in api/server.py.
+Public HTTP surface for the local control API in `llm_manager/server.py`.
 
 ## Base URL
 
@@ -12,6 +12,7 @@ Current deployed unit wiring on this host:
 - SYSTEMD_LLM_A=llm-a.service
 - SYSTEMD_LLM_B=llm-b.service
 - SYSTEMD_LLM_C=llm-c.service
+- SYSTEMD_LLM_D=llm-embed.service
 - SERVER_MODELS_DIR=/srv/2bananas/engines/text-generation-webui/user_data/models
 - MODELS_DIR=/srv/2bananas/engines/text-generation-webui/user_data/models
 
@@ -68,9 +69,10 @@ Current deployed unit wiring on this host:
 
 ### Model Lifecycle
 - POST /models/load
-  - Body: { mode, model_dir, bounce?, backend?, lifecycle_mode?, native_max_seq_len? }
+  - Body: { mode, model_dir, bounce?, backend?, lifecycle_mode?, native_max_seq_len?, readiness_timeout_seconds? }
   - Explicit lifecycle-oriented alias for `/switch` that defaults to `bounce=true`
   - Requires a successful native load or engine restart; staged/no-op loads return an error
+  - Polls the selected slot `/v1/models` endpoint and requires an exact requested model identity; timeout restores the prior symlink/backend/model
   - Reuses the same TabbyAPI native load behavior and fallback diagnostics as `/switch`
 - POST /models/unload
   - Body: { mode, bounce?, backend?, lifecycle_mode? }
@@ -123,7 +125,7 @@ Current deployed unit wiring on this host:
 - GET /engines/{mode}/logs?lines=160
   - Returns a journal tail for the configured systemd unit
 
-Engine endpoints require SYSTEMD_LLM_A, SYSTEMD_LLM_B, and SYSTEMD_LLM_C to be configured for their respective slots.
+Engine endpoints require `SYSTEMD_LLM_A` through `SYSTEMD_LLM_D` for chat, intent, small, and embedding slots respectively.
 Standalone TGW WebUI endpoints use SYSTEMD_TGW_WEBUI and default to llm-tgw-webui.service.
 
 On the deployed host, the corresponding units invoke run/engine_launcher.py, which dispatches to backend-specific launchers (`run/launch_tgw.py`, `run/launch_vllm.py`, `run/launch_tabbyapi.py`) based on slot backend preference.
@@ -135,6 +137,8 @@ TGW launches remain API-only by default (`--no-webui`) for slot services.
 
 ## Provider Config and State
 
+`provider_models.json` and `provider_policies.json` use `schema_version: 2`. Older unversioned/v1 documents are migrated atomically with a one-time `.v1.bak`; documents newer than the running application fail closed. Runtime SQLite migrations are recorded in `schema_migrations`, and `/health` reports both supported schema versions.
+
 - GET /providers/models
   - Returns curated provider model catalog from config/provider_models.json
   - Includes deterministic document version hash for optimistic concurrency
@@ -145,7 +149,7 @@ TGW launches remain API-only by default (`--no-webui`) for slot services.
   - Supports optional task-scoped overrides under `task_overrides.chat|completion|embed`
   - Supports optional `dynamic_ranking` controls for strategy-local lane scoring (`enabled`, `strategies`, weight tuning, and token estimate defaults)
 - GET /providers/state
-  - Returns provider runtime state scaffold from run/state/provider_runtime_state.json
+  - Returns provider runtime state reconstructed from versioned SQLite sections in `run/state/runtime.db`
 - POST /providers/state/provider-model-flags
   - Updates provider-model flags for manual review and free-rotation control
   - Body: { model_key, disabled_until_manual_review?, exclude_from_free_rotation?, reason, actor }
@@ -198,8 +202,8 @@ TGW launches remain API-only by default (`--no-webui`) for slot services.
   - Supports `project_id` for project-specific policy overrides
   - Applies `task_overrides.chat` and `project_overrides.<project>.task_overrides.chat` when configured
   - Optional request field `no_thinking` disables thinking for local provider dispatch (`enable_thinking=false`)
-  - Request and response models are defined in api/router/contracts.py
-  - Dispatches via provider adapters in api/providers for local, OpenRouter, and OpenAI
+  - Request and response models are defined in `llm_manager/router/contracts.py`
+  - Dispatches via provider adapters in `llm_manager/providers` for local, OpenRouter, and OpenAI
   - Local dispatch now resolves slot mode from selected local model alias and uses backend-aware slot base resolution (not chat-base only)
   - Uses policy candidate chains with fallback when allowed, including service-tier-aware chain selection and optional dynamic lane ranking when configured
   - Logs routing decisions and usage into provider runtime state
@@ -218,7 +222,8 @@ TGW launches remain API-only by default (`--no-webui`) for slot services.
   - Supports `project_id` for project-specific policy overrides
   - Applies `task_overrides.embed` and `project_overrides.<project>.task_overrides.embed` when configured
   - Uses the same policy-chain dispatch and fallback model
-  - Local dispatch resolves selected slot mode/backend from local model alias before selecting the target base
+  - Local dispatch uses the dedicated `embed_active_model` vLLM slot on port 8503 and requires authoritative `embeddings` capability metadata
+  - Fresh-install catalogs include capability-scoped `text-embedding-3-small` fallbacks through OpenRouter paid and direct OpenAI lanes
   - Decision records include deterministic `attempt_trace` and `fallback_summary` fields for incident triage, plus typed dispatch reason codes
 - POST /router/route-test
   - Dry-run route resolution utility that returns strategy, candidate chain, selected models per lane, and cooldown/lifecycle hints
@@ -289,12 +294,12 @@ TGW launches remain API-only by default (`--no-webui`) for slot services.
 - Rate-limited or retryable provider failures can place provider-model pairs into temporary cooldown windows
 - OpenRouter cooldown behavior is policy-tunable via `openrouter.cooldown_seconds_*` settings and `openrouter.auth_error_manual_review_threshold`
 - OpenRouter failure state now captures `last_error_status_code`, `last_error_provider_code`, and `last_error_provider_type`
-- Cooldown and limiter state are persisted under provider_model_state and provider_rate_limits in run/state/provider_runtime_state.json
+- Cooldown and limiter state are persisted under the `provider_model_state` and `provider_rate_limits` SQLite sections
 - OpenRouter upstream model metadata can be refreshed and cached to harden free-tier routing decisions
 - OpenRouter rankings enrichment is optional and is only fetched when operators call refresh or discovery with include_rankings enabled
 - Automatic free-tier cycling now skips models marked in provider_model_state as disabled_until_manual_review or exclude_from_free_rotation
 - Provider-model lifecycle now tracks promotion states (`discovered`, `candidate`, `smoke_passed`, `active`, `quarantined`, `retired`) and rolling failure-window metrics (`failure_count_24h`, `failure_count_7d`)
-- Manual discovery results are stored under openrouter_free_candidates in run/state/provider_runtime_state.json
+- Manual discovery results are stored under the `openrouter_free_candidates` SQLite section
 - The openrouter.free lane only consults manually activated active_ids after curated free entries are exhausted
 - Auto smoke checks support capability validation for structured outputs and tools when those requirements are requested during discovery
 
@@ -302,7 +307,7 @@ TGW launches remain API-only by default (`--no-webui`) for slot services.
 
 - Provider catalog entries in config/provider_models.json can include pricing metadata keys such as input_cost_usd_per_1k and output_cost_usd_per_1k
 - Router decisions can record estimated request cost when pricing metadata is present
-- Runtime spend tracking is stored in run/state/provider_runtime_state.json under budget_state and spend_logs
+- Runtime spend tracking is stored in SQLite under `budget_state` and `spend_logs`
 - Policy budget controls live under config/provider_policies.json budget:
   - daily_usd_limit
   - monthly_usd_limit
@@ -314,7 +319,7 @@ TGW launches remain API-only by default (`--no-webui`) for slot services.
 
 ## Local Evaluation Pipeline
 
-- Local evaluation artifacts are stored in run/state/provider_runtime_state.json under:
+- Local evaluation artifacts are stored in SQLite runtime sections under:
   - evaluation_suites
   - evaluation_runs
   - evaluation_reports
@@ -365,11 +370,12 @@ Managed conversion kinds also include:
 
 Notes:
 - Jobs are launched as local subprocesses rooted at the project directory
-- Generic job process state is kept in memory only
+- Generic job records and process identity are persisted in SQLite
+- On startup, live Linux jobs are reattached using verified boot/start/cmdline identity plus pidfd; missing or changed processes are marked interrupted
 - Job paths and repository identifiers are constrained to configured managed roots before launch
 - Cancellation uses the live managed process handle (pidfd on Linux when available), not the numeric PID copied into response state
 - Logs are written to run/logs/
-- For managed conversion jobs (`convert_hf_exl2`, `convert_merged_exl2`, `convert_hf_exl3`, `convert_merged_exl3`), run and artifact metadata is also persisted in run/state/provider_runtime_state.json
+- Managed conversion run/artifact metadata is persisted in SQLite runtime sections; legacy JSON is imported once during schema initialization
 
 ## Managed EXL2 Conversion
 
@@ -427,4 +433,4 @@ They call the OpenAI-compatible /v1/chat/completions endpoint exposed by the und
 - Prefer switching models via API rather than manual symlink edits.
 - Use /engines/status instead of /health when you need full operational state.
 - /models is the best summary endpoint for available models, active symlinks, slot visibility, slot backends, and model metadata.
-- The effective runtime model directory may differ from the default in api/server.py when overridden by the systemd service environment.
+- The effective runtime model directory may differ from the default in `llm_manager/server.py` when overridden by the systemd service environment.

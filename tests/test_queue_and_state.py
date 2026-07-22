@@ -4,7 +4,7 @@ import os
 import threading
 import time
 
-from api import server
+from llm_manager import server
 
 
 def _queue_policies(*, rpm: int = 1, wait_ms: int = 500) -> dict:
@@ -52,7 +52,7 @@ def test_wait_queue_blocks_then_acquires_capacity_without_persisting_metadata():
     assert detail["queue"]["state"] == "acquired"
     stored = server.read_provider_runtime_state()
     assert stored["provider_request_queue"] == []
-    assert "sk-test-placeholder" not in server.PROVIDER_STATE_PATH.read_text()
+    assert "sk-test-placeholder" not in server.RUNTIME_DB_PATH.read_bytes().decode("utf-8", errors="ignore")
 
 
 def test_wait_queue_is_priority_ordered():
@@ -106,4 +106,5 @@ def test_concurrent_state_updates_do_not_lose_spend_records():
     state = server.read_provider_runtime_state()
     assert len(state["spend_logs"]) == count
     assert round(state["budget_state"]["lifetime_total_usd"], 2) == 0.24
-    assert os.stat(server.PROVIDER_STATE_PATH).st_mode & 0o777 == 0o600
+    assert os.stat(server.RUNTIME_DB_PATH).st_mode & 0o777 == 0o600
+    assert os.stat(server.RUNTIME_DB_PATH.parent).st_mode & 0o777 == 0o700

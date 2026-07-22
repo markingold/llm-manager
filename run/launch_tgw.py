@@ -16,15 +16,17 @@ import subprocess
 import sys
 import time
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "api"))
-from model_inspector import detect_kind, detect_loader
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+from llm_manager.model_inspector import detect_kind, detect_loader
 
 MODELS_DIR = os.getenv(
     "SERVER_MODELS_DIR",
     os.getenv("MODELS_DIR", "/srv/2bananas/engines/models"),
 )
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-ENV_PATH = ROOT / "secrets" / ".env"
+RUNTIME_HOME = pathlib.Path(os.getenv("LLM_MANAGER_HOME", str(ROOT)))
+SECRETS_DIR = pathlib.Path(os.getenv("LLM_MANAGER_SECRETS_DIR", str(RUNTIME_HOME / "secrets")))
+ENV_PATH = SECRETS_DIR / ".env"
 GLOBAL_ENV_PATH = pathlib.Path(
     os.getenv("LLM_MANAGER_GLOBAL_ENV_PATH", "/srv/2bananas/secrets/global.env")
 )
@@ -268,6 +270,7 @@ def main():
         raise SystemExit(f"[launch-tgw] model path escapes managed root: {model_path}")
     if not resolved.exists() or not resolved.is_dir():
         raise SystemExit(f"[launch-tgw] model path not found: {model_path}")
+    model_arg = str(resolved.relative_to(models_root))
 
     kind = detect_kind(resolved)
     if kind == "multimodal":
@@ -275,7 +278,7 @@ def main():
     loader = detect_loader(kind)
 
     print(
-        f"[launch-tgw] model={args.model} resolved={resolved.name} kind={kind} loader={loader} webui={'on' if tgw_webui_enabled else 'off'}",
+        f"[launch-tgw] model={model_arg} alias={args.model} kind={kind} loader={loader} webui={'on' if tgw_webui_enabled else 'off'}",
         flush=True,
     )
 
@@ -296,7 +299,7 @@ def main():
         "--model-dir",
         str(args.model_dir),
         "--model",
-        args.model,
+        model_arg,
     ]
 
     if tgw_webui_enabled:

@@ -125,7 +125,7 @@ Right now llm-manager is already halfway to a backend-agnostic design, but not a
 ### The limiting assumption
 
 - `run/engine_launcher.py` still assumes the runtime process is TGW.
-- `api/model_inspector.py` currently ends at "which TGW loader should I use?"
+- `llm_manager/model_inspector.py` currently ends at "which TGW loader should I use?"
 - In practice, format support is being expressed as loader selection, not backend selection.
 
 That is the part to change.
@@ -277,7 +277,7 @@ That keeps the systemd layer clean.
 ## Implementation progress snapshot
 
 As of 2026-03-29:
-- `api/model_inspector.py` now emits `recommended_backend` and `fallback_backends`
+- `llm_manager/model_inspector.py` now emits `recommended_backend` and `fallback_backends`
 - `POST /switch` now accepts optional `backend` (`tgw|vllm|tabbyapi`)
 - Slot backend preference is persisted in `run/state/slot_backends.json`
 - backend launcher wrappers were added at `run/launch_tgw.py`, `run/launch_vllm.py`, and `run/launch_tabbyapi.py`

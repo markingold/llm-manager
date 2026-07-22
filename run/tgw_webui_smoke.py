@@ -19,12 +19,8 @@ from typing import Any, Dict
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
-API_DIR = os.path.join(ROOT, "api")
-if API_DIR not in sys.path:
-    sys.path.insert(0, API_DIR)
-
 from fastapi.testclient import TestClient  # noqa: E402
-from api import server  # noqa: E402
+from llm_manager import server  # noqa: E402
 
 
 @contextmanager

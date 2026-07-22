@@ -122,6 +122,44 @@ def detect_loader(kind: str) -> str:
     }.get(kind, "transformers")
 
 
+def detect_capabilities(model_path: pathlib.Path, kind: str) -> list[str]:
+    """Derive serving capabilities from checkpoint metadata, never from a model name alone."""
+    config = _read_json(model_path / "config.json") or {}
+    declared = config.get("llm_manager_capabilities")
+    allowed = {
+        "chat",
+        "completions",
+        "embeddings",
+        "classification",
+        "structured_output",
+        "tool_calling",
+        "reasoning",
+        "vision",
+    }
+    if isinstance(declared, list):
+        normalized = {str(value).strip().lower() for value in declared if str(value).strip()}
+        return sorted(normalized & allowed)
+
+    raw_architectures = config.get("architectures", []) if isinstance(config.get("architectures"), list) else []
+    architectures = {
+        str(value).strip().lower()
+        for value in raw_architectures
+        if str(value).strip()
+    }
+    if any("sequenceclassification" in architecture for architecture in architectures):
+        return ["classification"]
+    if (
+        (model_path / "modules.json").exists()
+        or (model_path / "sentence_bert_config.json").exists()
+        or any("embedding" in architecture or "sentence" in architecture for architecture in architectures)
+        or any(architecture.endswith(("bertmodel", "robertamodel", "xlmrobertamodel")) for architecture in architectures)
+    ):
+        return ["embeddings"]
+    if kind in {"exl2", "exl3", "gguf", "awq", "gptq", "transformers", "lora"}:
+        return ["chat", "completions"]
+    return []
+
+
 def recommend_backends(kind: str) -> tuple[str, list[str]]:
     """
     Return (recommended_backend, fallback_backends) for a detected model kind.
@@ -261,6 +299,7 @@ def inspect_one(model_name: str) -> dict:
             "model_name": model_name,
             "path": str(model_path),
             "kind": "unknown",
+            "capabilities": [],
             "loader": None,
             "recommended_backend": "tgw",
             "fallback_backends": [],
@@ -274,6 +313,7 @@ def inspect_one(model_name: str) -> dict:
         }
 
     kind = detect_kind(model_path)
+    capabilities = detect_capabilities(model_path, kind)
     loader = detect_loader(kind)
     recommended_backend, fallback_backends = recommend_backends(kind)
     unsupported_reason = None
@@ -305,6 +345,7 @@ def inspect_one(model_name: str) -> dict:
         "model_name": model_name,
         "path": str(model_path),
         "kind": kind,
+        "capabilities": capabilities,
         "loader": loader,
         "recommended_backend": recommended_backend,
         "fallback_backends": fallback_backends,

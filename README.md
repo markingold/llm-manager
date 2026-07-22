@@ -56,17 +56,20 @@ cp config/settings.example.env secrets/.env
 # and falls back to secrets/.env for missing values.
 # Edit secrets/.env with project-local fallbacks/overrides.
 
-# 3. Start the API
-python api/server.py
+# 3. Install the package and start the API
+pip install --no-deps -e .
+llm-manager-api
 # (or use the systemd unit: sudo systemctl start llm-manager-api)
 
 # 4. Open dashboard
 # http://<host>/llm-manager/
 ```
 
+For a packaged host, `llm-manager-deploy doctor` validates the installed wheel assets and schema engines. Run `llm-manager-deploy bootstrap` as root to create the runtime directories and copy missing config, dashboard, launcher, engine environment, systemd, and least-privilege sudoers files without overwriting operator changes. Review `/etc/llm-manager`, create the `llm-manager` service account, and run `systemctl daemon-reload` before enabling services.
+
 ## Current Deployment Model
 
-- The FastAPI control plane runs from `api/server.py`
+- The FastAPI control plane is the canonical `llm_manager` package (`llm_manager/server.py`)
 - By default it binds to `127.0.0.1:8101`
 - Apache is expected to reverse-proxy `/llm-manager-api` to that local API
 - The dashboard is the static UI in `web/index.html` with domain modules under `web/js/domains/`
@@ -74,7 +77,8 @@ python api/server.py
 - Provider routing policies now support optional dynamic lane ranking (cost/availability/quality weighted) within each strategy
 - Explicit model requests are constrained to enabled catalog entries in policy-permitted lanes; capability and budget checks are never bypassed
 - OpenRouter `wait` overflow behavior is a real priority queue: requests wait for capacity, time out cleanly, and do not persist arbitrary metadata
-- Runtime JSON and local secret files use atomic, permission-restricted writes and are intentionally not tracked by Git
+- High-churn runtime sections and managed jobs are stored in versioned SQLite at `run/state/runtime.db`; legacy runtime JSON is imported once
+- Runtime SQLite, its parent directory, and local secret files are permission-restricted and intentionally not tracked by Git
 - Runtime serving stays in `text-generation-webui`; the API manages it rather than serving models itself
 - The deployed systemd engine units launch through `run/engine_launcher.py`
 
@@ -82,16 +86,17 @@ Typical slot layout:
 - `chat` on port `8500`
 - `intent` on port `8501`
 - `small` on port `8502`
+- `embed` on port `8503` (vLLM embedding task)
 
 Current host deployment note:
-- The deployed `llm-manager-api.service` sets `SYSTEMD_LLM_A=llm-a.service`, `SYSTEMD_LLM_B=llm-b.service`, and `SYSTEMD_LLM_C=llm-c.service`
+- The packaged settings map `SYSTEMD_LLM_A` through `SYSTEMD_LLM_D` to the `chat`, `intent`, `small`, and `embed` systemd instances; host overrides may retain legacy unit names
 - The deployed unit overrides `SERVER_MODELS_DIR` and `MODELS_DIR` to `/srv/2bananas/engines/text-generation-webui/user_data/models`
 - On this host, that effective runtime models path currently mirrors the model inventory and active symlinks used by the engines
 
 ## Project Layout
 
 ```
-api/
+llm_manager/
   server.py            # FastAPI application (main API)
   model_inspector.py   # Format detection, VRAM estimation, GPU info
 app/src/llm_manager/
@@ -142,10 +147,11 @@ Notes:
 | `LLM_CHAT_API_BASE` | Chat engine OpenAI API base | `http://127.0.0.1:8500` |
 | `LLM_INTENT_API_BASE` | Intent engine API base | `http://127.0.0.1:8501` |
 | `LLM_SMALL_API_BASE` | Small/utility engine API base | `http://127.0.0.1:8502` |
-| `LLM_*_API_BASE_TGW` / `LLM_*_API_BASE_VLLM` / `LLM_*_API_BASE_TABBYAPI` | Optional per-backend slot API base overrides (chat/intent/small) | (none) |
+| `LLM_EMBED_API_BASE` | Local embedding engine API base | `http://127.0.0.1:8503` |
+| `LLM_*_API_BASE_TGW` / `LLM_*_API_BASE_VLLM` / `LLM_*_API_BASE_TABBYAPI` | Optional per-backend slot API base overrides | (none) |
 | `SMART_ASSISTANT_URL` | Smart Assistant /command endpoint | `http://127.0.0.1:8100/command` |
 | `CUDA_VISIBLE_DEVICES` | GPU(s) for training/conversion | `0` |
-| `PM2_CHAT` / `PM2_INTENT` / `PM2_SMALL` | Legacy PM2 process names | `llm_a_8500` etc. |
+| `PM2_CHAT` / `PM2_INTENT` / `PM2_SMALL` / `PM2_EMBED` | Legacy PM2 process names | slot-specific |
 | `WEBUI_ROOT` | text-generation-webui install dir | `/srv/2bananas/engines/text-generation-webui` |
 | `LLM_MANAGER_ENGINES_ROOT` | Allowed root for managed engine/conversion paths | `/srv/2bananas/engines` |
 | `WEBUI_MODELS_DIR` | Shared models directory | `/srv/2bananas/engines/models` |
@@ -154,7 +160,8 @@ Notes:
 | `EXLLAMA_V3_ROOT` | ExLlamaV3 install dir used by managed EXL3 conversion | `/srv/2bananas/engines/exllamav3` |
 | `EXL3_CONVERT_SCRIPT` | Optional explicit ExLlamaV3 convert script path | (none) |
 | `CONVERSION_PYTHON_BIN` | Optional Python interpreter override for managed conversion jobs | (none) |
-| `ENABLE_CHAT` / `ENABLE_INTENT` / `ENABLE_SMALL` | Show slot in dashboard (0/1) | `1` |
+| `ENABLE_CHAT` / `ENABLE_INTENT` / `ENABLE_SMALL` / `ENABLE_EMBED` | Enable slot visibility/routing (0/1) | `1` |
+| `MODEL_READINESS_TIMEOUT_SECONDS` | Bounded exact-model readiness poll after lifecycle loads | `90` |
 | `TGW_WEBUI_ENABLED` | Default TGW WebUI mode for launch_tgw.py when no explicit `--webui`/`--no-webui` is passed | `0` |
 | `TGW_WEBUI_PORT` | TGW WebUI listen port | `7860` |
 | `TGW_WEBUI_BIND_HOST` | TGW WebUI bind host | `127.0.0.1` |
@@ -177,6 +184,7 @@ Process/service environment commonly used in deployment:
 | `SYSTEMD_LLM_A` | Systemd unit name for chat slot | (none) |
 | `SYSTEMD_LLM_B` | Systemd unit name for intent slot | (none) |
 | `SYSTEMD_LLM_C` | Systemd unit name for small slot | (none) |
+| `SYSTEMD_LLM_D` | Systemd unit name for embedding slot | (none) |
 | `SYSTEMD_TGW_WEBUI` | Systemd unit name for standalone TGW WebUI service | `llm-tgw-webui.service` |
 | `SERVER_MODELS_DIR` / `MODELS_DIR` | Effective runtime model directory override | (none) |
 
@@ -298,10 +306,10 @@ Process/service environment commonly used in deployment:
 
 Notes:
 - All test endpoints also accept `no_thinking=1`
-- Generic job process state is tracked in memory only and does not survive an API restart
+- Generic jobs are persisted in SQLite; startup reconciliation reattaches live Linux processes through verified pidfds or marks them interrupted
 - Cancellation uses the live managed child-process handle (Linux pidfd when available), never a stale persisted PID
 - Job logs are written to `run/logs/`
-- Managed EXL2/EXL3 conversion metadata persists in `run/state/provider_runtime_state.json`
+- Managed EXL2/EXL3 conversion metadata persists in SQLite runtime sections
 - `/models.meta` includes `recommended_backend` and `fallback_backends`
 - `/models` now includes `converted_artifacts` for managed EXL2/EXL3 outputs
 - `/models` now includes `slot_endpoints` with backend-aware resolved local base, port, and slot mode metadata
@@ -310,9 +318,9 @@ Notes:
 - Local dispatch for `/router/chat`, `/router/completions`, and `/router/embed` now resolves slot mode from selected local model alias and routes to backend-aware slot base endpoints
 - `/switch` now auto-applies model-inspector backend recommendations for vLLM/Tabby-capable model kinds when backend is omitted
 - Provider config files live in `config/provider_models.json` and `config/provider_policies.json`
-- Provider runtime state scaffold is persisted at `run/state/provider_runtime_state.json`
-- Router request and response contract models live in `api/router/contracts.py`
-- Provider adapters live in `api/providers/` for local, OpenRouter, and OpenAI
+- Provider runtime state is persisted by top-level section in `run/state/runtime.db`
+- Router request and response contract models live in `llm_manager/router/contracts.py`
+- Provider adapters live in `llm_manager/providers/` for local, OpenRouter, and OpenAI
 - `/router/chat` now performs real adapter-backed provider dispatch with policy-chain fallback
 - `/router/completions` and `/router/embed` use the same policy-chain dispatch path
 - Routing policy now supports task-specific overrides via `task_overrides.chat|completion|embed` and per-project task overrides under `project_overrides.<project>.task_overrides.*`
@@ -333,7 +341,7 @@ Notes:
 - Free-tier overflow behavior now follows policy `queue_behavior` (`wait`, `fail_fast`, `fallback_to_local`, `upgrade_to_paid`)
 - OpenRouter cooldown behavior is policy-tunable via `openrouter.cooldown_seconds_*` and `openrouter.auth_error_manual_review_threshold`
 - Provider budget guardrails can be configured in `config/provider_policies.json` (`budget`) and inspected at `/router/budget-state`
-- Runtime spend and budget state are persisted in `run/state/provider_runtime_state.json` (`spend_logs`, `budget_state`)
+- Runtime spend and budget sections are persisted in SQLite (`spend_logs`, `budget_state`)
 - Local evaluation runs can compare prompt/system/temperature variants and store recommendations for tuning
 - Local evaluation runs now support case-level and suite-level pass thresholds for stricter tuning gates
 - Local evaluation queue supports priority lanes (`interactive`, `batch`, `evaluation`) for async runs
@@ -355,9 +363,10 @@ Notes:
   - `chat_active_model`
   - `intent_active_model`
   - `small_active_model`
+  - `embed_active_model`
 - `POST /switch` is the canonical switch entrypoint
-- Model lifecycle changes are serialized across workers and restore the previous symlink/backend on failure
-- Engine control is systemd-first via `SYSTEMD_LLM_A`, `SYSTEMD_LLM_B`, and `SYSTEMD_LLM_C`
+- Model lifecycle changes are serialized, poll `/v1/models` for the exact requested identity, and restore the previous model/backend when readiness fails
+- Engine control is systemd-first via `SYSTEMD_LLM_A`, `SYSTEMD_LLM_B`, `SYSTEMD_LLM_C`, and `SYSTEMD_LLM_D`
 - `POST /bounce/{mode}` can still fall back to legacy PM2 names when systemd unit env vars are absent
 - The dashboard hides slots when `ENABLE_CHAT`, `ENABLE_INTENT`, or `ENABLE_SMALL` is set to `0`
 - The currently deployed engine units launch `run/engine_launcher.py`, which now dispatches to backend-specific launchers (`run/launch_tgw.py`, `run/launch_vllm.py`, `run/launch_tabbyapi.py`) based on slot backend preference
@@ -370,12 +379,12 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements/dev.lock
 pip install --no-deps -e .
 pytest
-ruff check api tests scripts
+ruff check llm_manager tests scripts
 python -m build
 python scripts/check_secrets.py
 ```
 
-`pytest` is the canonical test command. It runs Python and dashboard escaping regressions, enforces branch-aware coverage at 20%, and writes `coverage.xml`. GitHub Actions performs the same locked install, tests, static checks, secret scan, and package build. `requirements/api.lock` and `requirements/dev.lock` are hash-verified; `requirements/training.lock` is an exact Linux GPU/training environment lock.
+`pytest` is the canonical test command. It includes chat/completion/embed HTTP fallback flows, restart recovery, migrations, lifecycle readiness, and dashboard regressions; branch-aware coverage is gated at 30%. CI also installs the built wheel into a clean target and runs `llm-manager-deploy doctor` against packaged config, dashboard, launcher, and systemd assets.
 
 ## Supported Model Formats
 

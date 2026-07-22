@@ -1,6 +1,6 @@
 <!--
 id: PLAN-NEXT-PUSH
-version: 3.0
+version: 4.0
 last_updated: 2026-07-22
 title: Next Push Recommendations
 purpose:
@@ -8,19 +8,20 @@ purpose:
 -->
 # LLM Manager - Next Push
 
-## Refreshed backlog after the 2026-07-22 hardening pass
+## Refreshed backlog after the 2026-07-22 runtime/deployment pass
 
-The immediate audit findings are closed. Recommended next options, in order:
+The seven runtime-maturity items from the prior queue are complete: authoritative capabilities and local embeddings, exact-model readiness rollback, restart-safe jobs, SQLite runtime sections, broader endpoint coverage with a 30% gate, clean-target package validation, and versioned config/runtime migrations.
 
-1. **Add authoritative slot capability metadata and a real local embeddings lane — medium.** Routing now fails closed, which is safe, but the current local slot catalog only declares chat/classification. This is the strongest planned feature candidate because it unlocks local `/router/embed` and makes tool/structured/reasoning support explicit rather than inferred.
-2. **Add post-lifecycle readiness verification — medium.** A successful systemd/PM2 restart proves the control command ran, not that the requested model became healthy. Poll the slot model/health endpoint, verify the active model identity, and include bounded rollback on readiness failure.
-3. **Persist and reconcile the generic job registry — medium.** Cancellation is now process-identity-safe, but `JOBS` is still in memory. On API restart, running training/conversion children and their logs should be rediscovered or marked orphaned deterministically.
-4. **Move high-churn runtime state to SQLite — medium/large.** Atomic writes and interprocess transactions have removed lost-update/corruption races on one host. SQLite would reduce full-file rewrite cost, provide indexed retention queries, and prepare for larger histories; this is no longer an emergency fix.
-5. **Raise coverage around full router endpoints and provider adapters — medium.** The new suite establishes a 20% gate and covers every closed audit finding. Next add FastAPI integration tests for chat/completion/embed fallbacks, provider HTTP error bodies, governance rollback, and evaluation worker recovery, then ratchet the threshold upward.
-6. **Validate the packaged service on a clean host and add deployment assets — medium.** The wheel/CLI now build, but systemd unit templates, static dashboard installation, config bootstrap/migrations, and the generic top-level `api` package name still need a production packaging decision.
-7. **Add schema versions and migrations for catalogs/policies/runtime state — medium.** Defaults repair missing runtime keys, but operator-edited catalog and policy documents need explicit versioned migrations and compatibility diagnostics.
-8. **Split hardware-specific training locks/profiles — small/medium.** The API/dev locks are hash-verified and the Linux training lock is exact. CUDA/ROCm/CPU profiles and a lightweight conversion smoke job would make training installs more portable and reproducible.
-9. **Restrict browser origins and add authentication when ready — medium.** Authentication was intentionally deferred for this pass. Before exposing the control plane beyond the trusted reverse proxy, replace wildcard CORS and protect lifecycle, jobs, governance, state, and secret-setting routes.
+Recommended remaining options, in order:
+
+1. **Run a live embedding-lane acceptance pass — medium.** Install/select a real sentence-transformer checkpoint, start the packaged vLLM `embed` unit, and validate dimensions, batching, restart recovery, and fallback behavior on the target GPUs.
+2. **Run live lifecycle/readiness fault injection — medium.** Exercise wrong-model reports, slow startup, engine crash, and rollback against actual systemd/TGW/vLLM/TabbyAPI services rather than controlled test doubles.
+3. **Normalize the largest SQLite histories into indexed event tables — medium.** Runtime sections now avoid whole-file rewrites and are transactionally durable; request/spend/failure/evaluation histories can later become row-oriented tables when query volume justifies it.
+4. **Package the legacy training/conversion pipeline for source-independent installs — medium.** The control plane, dashboard, and engine launchers are wheel-installed, while generic `/jobs` still expects scripts and model/data configuration under `$LLM_MANAGER_HOME/app/src/llm_manager`.
+5. **Continue provider/lifecycle integration coverage and split the API monolith — medium/large.** Coverage is now 36% with a 30% gate; isolate the 11k-line server domains and raise the gate incrementally as adapter error matrices and lifecycle failure paths gain tests.
+6. **Split hardware-specific training locks/profiles — small/medium.** Add CUDA, ROCm, and CPU profiles plus a lightweight conversion smoke job.
+7. **Perform a privileged clean-host service install — medium.** CI proves wheel contents in a clean target; the remaining operational gate is creating the service account, installing unit files, starting all four slots, and validating reverse-proxy/static paths on a disposable host.
+8. **Restrict browser origins and add authentication when ready — medium.** Authentication remains intentionally deferred. Before broader network exposure, replace wildcard CORS and protect lifecycle, jobs, governance, state, and secret-setting routes.
 
 Planned features that remain valid but are less urgent:
 

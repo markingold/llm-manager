@@ -8,8 +8,8 @@ import os
 import pathlib
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "api"))
-from model_inspector import detect_kind
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+from llm_manager.model_inspector import detect_kind
 
 MODELS_DIR = os.getenv(
     "SERVER_MODELS_DIR",
@@ -55,6 +55,7 @@ def main():
     parser.add_argument("--gpu-memory-utilization", default="0.9", help="vLLM GPU memory utilization")
     parser.add_argument("--tensor-parallel-size", default="1", help="vLLM tensor parallel size")
     parser.add_argument("--cuda-visible-devices", default=None, help="Optional CUDA_VISIBLE_DEVICES override")
+    parser.add_argument("--task", choices=("auto", "generate", "embed", "classify"), default="auto")
     args = parser.parse_args()
 
     models_root = pathlib.Path(args.model_dir).resolve()
@@ -91,6 +92,8 @@ def main():
         str(args.gpu_memory_utilization),
         "--tensor-parallel-size",
         str(args.tensor_parallel_size),
+        "--task",
+        args.task,
     ]
 
     print(

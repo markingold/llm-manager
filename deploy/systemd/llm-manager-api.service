@@ -1,0 +1,25 @@
+[Unit]
+Description=LLM Manager API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=llm-manager
+Group=llm-manager
+Environment=LLM_MANAGER_HOME=/var/lib/llm-manager
+Environment=LLM_MANAGER_CONFIG_DIR=/etc/llm-manager
+Environment=LLM_MANAGER_SECRETS_DIR=/var/lib/llm-manager/secrets
+EnvironmentFile=-/etc/llm-manager/llm-manager.env
+ExecStart=/usr/bin/env llm-manager-api
+Restart=on-failure
+RestartSec=3
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/llm-manager
+ReadWritePaths=/etc/llm-manager
+ReadWritePaths=/srv/2bananas/engines
+
+[Install]
+WantedBy=multi-user.target
