@@ -221,6 +221,21 @@ def test_chat_endpoint_records_local_error_then_falls_back_to_openai(monkeypatch
     assert [attempt["result"] for attempt in body["routing"]["attempt_trace"]] == ["error", "selected"]
 
 
+def test_chat_endpoint_accepts_null_usage_from_local_backend(monkeypatch: pytest.MonkeyPatch):
+    _configure(_catalog(), _policies(["local"]))
+    monkeypatch.setattr(server, "_maybe_refresh_openrouter_catalog", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(server, "_dispatch_provider_chat", lambda *_args, **_kwargs: {
+        "choices": [{"index": 0, "message": {"role": "assistant", "content": "ok"}, "finish_reason": "stop"}],
+        "usage": None,
+    })
+
+    with TestClient(server.app) as client:
+        response = client.post("/router/chat", json={"messages": [{"role": "user", "content": "hello"}]})
+
+    assert response.status_code == 200, response.text
+    assert response.json()["usage"] == {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+
 def test_completion_endpoint_falls_back_after_provider_error(monkeypatch: pytest.MonkeyPatch):
     _configure(_catalog(), _policies(["openrouter.paid", "openai"]))
     monkeypatch.setattr(server, "_maybe_refresh_openrouter_catalog", lambda *_args, **_kwargs: {})

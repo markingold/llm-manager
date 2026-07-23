@@ -3,7 +3,6 @@ from __future__ import annotations
 import fcntl
 import functools
 import hashlib
-import importlib.util
 import json
 import os
 import re
@@ -29,6 +28,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 try:
+    from .backend_registry import (
+        SUPPORTED_BACKENDS,
+        backend_readiness,
+        backend_supports_kind,
+        backend_supports_task,
+        probe_backend,
+        probe_backends,
+        public_backend_probe,
+        resolve_vllm_python,
+    )
     from .config_migrations import (
         CONFIG_SCHEMA_VERSION,
         MODEL_CAPABILITIES,
@@ -63,6 +72,16 @@ try:
     )
     from .runtime_store import SQLiteRuntimeStore
 except ImportError:  # Support direct execution via `python llm_manager/server.py`.
+    from backend_registry import (
+        SUPPORTED_BACKENDS,
+        backend_readiness,
+        backend_supports_kind,
+        backend_supports_task,
+        probe_backend,
+        probe_backends,
+        public_backend_probe,
+        resolve_vllm_python,
+    )
     from config_migrations import (
         CONFIG_SCHEMA_VERSION,
         MODEL_CAPABILITIES,
@@ -124,7 +143,6 @@ RUNTIME_DB_PATH = STATE_DIR / "runtime.db"
 SCRIPTS_DIR = ROOT / "app" / "src" / "llm_manager"
 LOGS_DIR = Path(os.getenv("LLM_MANAGER_LOG_DIR", str(ROOT / "run" / "logs"))).resolve()
 
-SUPPORTED_BACKENDS = {"tgw", "vllm", "tabbyapi"}
 SLOT_MODES = ("chat", "intent", "small", "embed")
 DEFAULT_SLOT_BACKENDS = {"chat": "tgw", "intent": "tgw", "small": "tgw", "embed": "vllm"}
 SLOT_DEFAULT_PORTS = {"chat": 8500, "intent": 8501, "small": 8502, "embed": 8503}
@@ -638,8 +656,12 @@ def _model_names_for_slot(names: list[str], metadata: dict, mode: str) -> list[s
             continue
 
         model_kind = str(inspected.get("kind", "unknown") or "unknown")
-        compatible_backends = ("vllm",) if mode == "embed" else ("tgw", "vllm", "tabbyapi")
-        if any(_backend_supports_model_kind(backend, model_kind) for backend in compatible_backends):
+        compatible_backends = ("vllm",) if mode == "embed" else tuple(SUPPORTED_BACKENDS)
+        if any(
+            _backend_supports_model_kind(backend, model_kind)
+            and backend_supports_task(backend, required_capability)
+            for backend in compatible_backends
+        ):
             candidates.append(name)
     return candidates
 
@@ -6214,7 +6236,7 @@ def _run_local_evaluation(req: LocalEvalRequest, run_id: str | None = None, queu
                         if str(token).lower() in lower_text:
                             hit_count += 1
 
-                    usage_raw = raw.get("usage", {}) if isinstance(raw, dict) else {}
+                    usage_raw = raw.get("usage") if isinstance(raw, dict) and isinstance(raw.get("usage"), dict) else {}
                     row["ok"] = True
                     row["output_text"] = text
                     row["output_chars"] = len(text)
@@ -6428,47 +6450,12 @@ def _normalize_switch_lifecycle_mode(value: str | None) -> str:
 
 
 def _backend_supports_model_kind(backend: str, model_kind: str) -> bool:
-    backend_key = str(backend or "").strip().lower()
-    kind = str(model_kind or "unknown").strip().lower()
-
-    if backend_key == "tgw":
-        return kind in {"exl3", "gguf", "transformers"}
-    if backend_key == "tabbyapi":
-        return kind in {"exl2", "exl3"}
-    if backend_key == "vllm":
-        return kind in {"transformers", "awq", "gptq"}
-    return False
+    return backend_supports_kind(backend, model_kind)
 
 
 def _vllm_backend_available() -> bool:
-    env = read_env()
-    configured = str(env.get("VLLM_PYTHON_BIN", "") or os.getenv("VLLM_PYTHON_BIN", "")).strip()
-    candidates = [configured] if configured else []
-    candidates.extend((
-        "/srv/2bananas/engines/vllm-env/bin/python3",
-        "/srv/2bananas/engines/vllm-env/bin/python",
-        "/srv/2bananas/engines/llm-env/bin/python3",
-        "/srv/2bananas/engines/llm-env/bin/python",
-    ))
-    for candidate in dict.fromkeys(candidates):
-        if not candidate:
-            continue
-        path = Path(candidate)
-        if not path.is_file() or not os.access(path, os.X_OK):
-            continue
-        try:
-            probe = subprocess.run(
-                [str(path), "-c", "import vllm"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=False,
-                timeout=10,
-            )
-        except Exception:
-            continue
-        if probe.returncode == 0:
-            return True
-    return importlib.util.find_spec("vllm") is not None
+    python, _ = resolve_vllm_python(read_env(), probe=True)
+    return python is not None
 
 
 def _tabbyapi_native_base_for_mode(mode: str) -> tuple[str, str]:
@@ -6679,10 +6666,7 @@ def _wait_for_model_readiness(
     provider_models = read_provider_models()
     base, base_source = _local_base_for_mode(mode, env, backend=backend, provider_models=provider_models)
     backend_key = str(backend or "").strip().lower()
-    # TabbyAPI's OpenAI-compatible /v1/models route is an inventory endpoint:
-    # it lists every model in model_dir, not the model currently resident in
-    # memory. Its singular route is the authoritative current-model endpoint.
-    readiness_path = "/v1/model" if backend_key == "tabbyapi" else "/v1/models"
+    readiness_path, readiness_shape = backend_readiness(backend_key)
     url = str(base).rstrip("/") + readiness_path
     relative_name = str(expected_model.resolve().relative_to(MODELS_DIR.resolve()))
     accepted_ids = {str(expected_model.resolve()), relative_name, expected_model.name}
@@ -6700,7 +6684,7 @@ def _wait_for_model_readiness(
             last_status = int(response.status_code)
             if response.ok:
                 body = response.json()
-                if backend_key == "tabbyapi":
+                if readiness_shape == "current_model":
                     current_id = str(body.get("id", "") or "") if isinstance(body, dict) else ""
                     last_model_ids = [current_id] if current_id else []
                 else:
@@ -6798,8 +6782,10 @@ def switch_model(
     ]
     compatible_backends = [
         candidate
-        for candidate in ("tgw", "vllm", "tabbyapi")
-        if _backend_supports_model_kind(candidate, model_kind) and (mode != "embed" or candidate == "vllm")
+        for candidate in SUPPORTED_BACKENDS
+        if _backend_supports_model_kind(candidate, model_kind)
+        and backend_supports_task(candidate, required_model_capability)
+        and (mode != "embed" or candidate == "vllm")
     ]
 
     if not compatible_backends:
@@ -6874,6 +6860,14 @@ def switch_model(
         chosen_backend = fallback_choice
         backend_source = "auto_vllm_unavailable_fallback"
         auto_backend_applied = chosen_backend != previous_backend
+
+    if chosen_backend in {"tabbyapi", "llamacpp"} and (bounce or require_loaded):
+        runtime_probe = probe_backend(chosen_backend, env=read_env())
+        if not bool(runtime_probe.get("available", False)):
+            raise HTTPException(
+                400,
+                f"backend '{chosen_backend}' is unavailable: {runtime_probe.get('detail') or 'runtime probe failed'}",
+            )
 
     slot_backend = str(chosen_backend or previous_backend)
     native_load_attempted = False
@@ -7935,7 +7929,7 @@ class SwitchReq(BaseModel):
     mode: str            # chat|intent|small|embed|util
     model_dir: str
     bounce: bool = True
-    backend: str | None = None  # tgw|vllm|tabbyapi
+    backend: str | None = None  # tgw|vllm|tabbyapi|llamacpp
     lifecycle_mode: str | None = None  # legacy|auto|native
     native_max_seq_len: int | None = None
     readiness_timeout_seconds: float | None = None
@@ -7946,7 +7940,7 @@ class ModelLoadReq(BaseModel):
     mode: str            # chat|intent|small|embed|util
     model_dir: str
     bounce: bool = True
-    backend: str | None = None  # tgw|vllm|tabbyapi
+    backend: str | None = None  # tgw|vllm|tabbyapi|llamacpp
     lifecycle_mode: str | None = "auto"  # legacy|auto|native
     native_max_seq_len: int | None = None
     readiness_timeout_seconds: float | None = None
@@ -7956,7 +7950,7 @@ class ModelUnloadReq(BaseModel):
     model_config = {"protected_namespaces": ()}
     mode: str            # chat|intent|small|embed|util
     bounce: bool = False
-    backend: str | None = None  # tgw|vllm|tabbyapi
+    backend: str | None = None  # tgw|vllm|tabbyapi|llamacpp
     lifecycle_mode: str | None = "auto"  # legacy|auto|native
 
 class Knobs(BaseModel):
@@ -8227,6 +8221,15 @@ def system():
         "disk": {"total": total, "used": used, "free": free},
         "mem": {"total": mem_total, "free": mem_free, "available": mem_avail},
     }
+
+@app.get("/backends")
+def backends():
+    rows = probe_backends(env=read_env())
+    return {
+        "backends": {name: public_backend_probe(row) for name, row in rows.items()},
+        "time": datetime.utcnow().isoformat() + "Z",
+    }
+
 
 @app.get("/models")
 def models():
@@ -9520,7 +9523,7 @@ def router_chat(req: RouterChatRequest):
             "request_id": failure_decision.get("request_id"),
         })
 
-    usage_raw = raw.get("usage", {}) if isinstance(raw, dict) else {}
+    usage_raw = raw.get("usage") if isinstance(raw, dict) and isinstance(raw.get("usage"), dict) else {}
     usage = RouterUsage(
         prompt_tokens=int(usage_raw.get("prompt_tokens", 0) or 0),
         completion_tokens=int(usage_raw.get("completion_tokens", 0) or 0),
@@ -9909,7 +9912,7 @@ def router_completions(req: RouterCompletionRequest):
             "request_id": failure_decision.get("request_id"),
         })
 
-    usage_raw = raw.get("usage", {}) if isinstance(raw, dict) else {}
+    usage_raw = raw.get("usage") if isinstance(raw, dict) and isinstance(raw.get("usage"), dict) else {}
     usage = RouterUsage(
         prompt_tokens=int(usage_raw.get("prompt_tokens", 0) or 0),
         completion_tokens=int(usage_raw.get("completion_tokens", 0) or 0),
@@ -10297,7 +10300,7 @@ def router_embed(req: RouterEmbedRequest):
             "request_id": failure_decision.get("request_id"),
         })
 
-    usage_raw = raw.get("usage", {}) if isinstance(raw, dict) else {}
+    usage_raw = raw.get("usage") if isinstance(raw, dict) and isinstance(raw.get("usage"), dict) else {}
     usage = RouterUsage(
         prompt_tokens=int(usage_raw.get("prompt_tokens", 0) or 0),
         completion_tokens=0,
@@ -11437,6 +11440,25 @@ def _engine_def(mode: str, env: dict | None = None, provider_models: dict | None
         "small": os.getenv("SYSTEMD_LLM_C") or "",
         "embed": os.getenv("SYSTEMD_LLM_D") or "",
     }
+    prefix = f"LLM_{mode_key.upper()}_"
+    resource_keys = {
+        "cuda_visible_devices": "CUDA_VISIBLE_DEVICES",
+        "vllm_gpu_memory_utilization": "VLLM_GPU_MEMORY_UTILIZATION",
+        "vllm_tensor_parallel_size": "VLLM_TENSOR_PARALLEL_SIZE",
+        "llama_cpp_n_gpu_layers": "LLAMA_CPP_N_GPU_LAYERS",
+        "llama_cpp_parallel": "LLAMA_CPP_PARALLEL",
+        "llama_cpp_tensor_split": "LLAMA_CPP_TENSOR_SPLIT",
+    }
+    resources = {}
+    for output_key, env_key in resource_keys.items():
+        value = str(
+            os.getenv(prefix + env_key)
+            or env_data.get(prefix + env_key)
+            or os.getenv(env_key)
+            or env_data.get(env_key, "")
+        ).strip()
+        if value:
+            resources[output_key] = value
     return {
         "mode": mode_key,
         "unit": unit_map[mode_key],
@@ -11444,6 +11466,7 @@ def _engine_def(mode: str, env: dict | None = None, provider_models: dict | None
         "port": int(endpoint["port"]),
         "backend": endpoint["backend"],
         "base_source": endpoint["base_source"],
+        "resources": resources,
     }
 
 @app.get("/engines/status")
@@ -11468,6 +11491,7 @@ def engines_status(request: Request):
             "listening": _is_listening(port),
             "systemd": _systemctl_show(unit) if unit else {"error": "SYSTEMD unit not configured"},
             "active": current_links().get(e["mode"]),
+            "resources": e.get("resources", {}),
         }
         return payload
 
@@ -11551,6 +11575,10 @@ def _preflight_engine_start(mode: str) -> dict:
         raise HTTPException(409, f"backend '{backend}' cannot load active {mode_key} model kind '{kind}'")
     if backend == "vllm" and not _vllm_backend_available():
         raise HTTPException(409, "configured vllm backend is unavailable (module import failed)")
+    if backend in {"tabbyapi", "llamacpp"}:
+        runtime_probe = probe_backend(backend, env=read_env())
+        if not bool(runtime_probe.get("available", False)):
+            raise HTTPException(409, f"configured {backend} backend is unavailable: {runtime_probe.get('detail')}")
     return {"mode": mode_key, "model": target.name, "backend": backend, "kind": kind}
 
 

@@ -25,6 +25,8 @@ def test_source_deployment_assets_pass_doctor_and_bootstrap(tmp_path: Path):
     assert (systemd_dir / "llm-manager-api.service").exists()
     assert (sudoers_dir / "llm-manager").stat().st_mode & 0o777 == 0o440
     assert (run_dir / "engine_launcher.py").stat().st_mode & 0o777 == 0o755
+    assert (run_dir / "launch_llamacpp.py").stat().st_mode & 0o777 == 0o755
+    assert (config_dir / "backend-pins.json").exists()
 
     (web_dir / "index.html").write_text("operator-owned")
     second = deployment.bootstrap(source_root, home, config_dir, web_dir, systemd_dir, sudoers_dir, run_dir)

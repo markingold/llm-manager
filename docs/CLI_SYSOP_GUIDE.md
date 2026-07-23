@@ -43,6 +43,7 @@ Logs:
 
 API equivalents:
 - `curl http://localhost:8101/engines/status | python3 -m json.tool`
+- `curl http://localhost:8101/backends | python3 -m json.tool`
 - `curl -X POST http://localhost:8101/engines/chat/restart`
 - `curl -X POST http://localhost:8101/engines/solo/chat`
 - `curl "http://localhost:8101/engines/chat/logs?lines=100" | python3 -m json.tool`
@@ -64,30 +65,33 @@ Standalone TGW WebUI service (one-off model testing):
 
 Preferred via API:
 
-- POST `/switch`
-  - Body: `{ "mode": "chat|intent|small|embed", "model_dir": "...", "bounce": true, "backend": "tgw|vllm|tabbyapi" }`
+- POST `/models/load`
+  - Body: `{ "mode": "chat|intent|small|embed", "model_dir": "...", "bounce": true, "backend": "tgw|vllm|tabbyapi|llamacpp" }`
 
 Examples:
 
-    curl -X POST http://localhost:8101/switch \
+    curl -X POST http://localhost:8101/models/load \
       -H 'Content-Type: application/json' \
       -d '{"mode":"chat","model_dir":"Qwen3-14B-exl2","bounce":true}'
 
-    curl -X POST http://localhost:8101/switch \
+    curl -X POST http://localhost:8101/models/load \
       -H 'Content-Type: application/json' \
       -d '{"mode":"intent","model_dir":"lora_llama3.2-3b","bounce":true}'
 
-CLI options:
-
-- `cd app/src/llm_manager`
-- `python switch_model.py --chat <dir>`
-- `python switch_model.py --intent <dir>`
-- `python switch_model.py`  # interactive
+The old `switch_model.py` and `main.py` direct serve/switch paths are retired.
+They exit without mutating state because they bypassed readiness verification
+and rollback.
 
 Operational note:
-- `/switch` updates `chat_active_model`, `intent_active_model`, `small_active_model`, or `embed_active_model` in the shared models directory and then optionally restarts the engine.
+- `/models/load` updates `chat_active_model`, `intent_active_model`, `small_active_model`, or `embed_active_model`, restarts the configured unit, verifies the exact served identity, and rolls back on failure.
 - When `backend` is provided, llm-manager stores per-slot backend preference in `run/state/slot_backends.json`.
-- When `backend` is omitted, llm-manager can auto-apply inspector recommendations for vLLM/Tabby-capable model kinds; inspect `backend_source` and `auto_backend_applied` in the `/switch` response.
+- When `backend` is omitted, llm-manager can auto-apply registry-backed inspector recommendations; inspect `backend_source` and `auto_backend_applied` in the response.
+
+Embedding validation:
+
+    curl http://127.0.0.1:8503/v1/embeddings \
+      -H 'Content-Type: application/json' \
+      -d '{"model":"BAAI__bge-small-en-v1.5","input":"hello world"}'
 
 ---
 

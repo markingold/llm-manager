@@ -1,6 +1,6 @@
-import { api } from "../api.js?v=20260722_2";
-import { $, setOut, setBudgetBanner } from "../ui-core.js?v=20260722_2";
-import { pickFlaggedModels, updateBudgetBannerFromSnapshot } from "./providers-budget.js?v=20260722_2";
+import { api } from "../api.js?v=20260722_3";
+import { $, setOut, setBudgetBanner } from "../ui-core.js?v=20260722_3";
+import { pickFlaggedModels, updateBudgetBannerFromSnapshot } from "./providers-budget.js?v=20260722_3";
 
 function parseCsvList(value) {
   return String(value || "")

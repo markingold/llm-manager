@@ -10,7 +10,8 @@ import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
-from llm_manager.model_inspector import detect_kind
+from llm_manager.backend_registry import resolve_vllm_python
+from llm_manager.model_inspector import detect_kind, resolve_lora_base_path
 
 MODELS_DIR = os.getenv(
     "SERVER_MODELS_DIR",
@@ -25,6 +26,9 @@ DEFAULT_VLLM_PYTHON_CANDIDATES = (
 
 
 def _resolve_vllm_python_bin() -> str:
+    resolved, _ = resolve_vllm_python(dict(os.environ), probe=True)
+    if resolved:
+        return resolved
     configured = str(os.getenv("VLLM_PYTHON_BIN", "") or "").strip()
     candidates = []
     if configured:
@@ -84,9 +88,15 @@ def main():
         raise SystemExit(f"[launch-vllm] model path not found: {model_path}")
     model_kind = detect_kind(model_path)
     if model_kind not in {"transformers", "awq", "gptq"}:
-        raise SystemExit(f"[launch-vllm] unsupported model kind: {model_kind}")
-    model_arg = str(model_path)
-    served_model_name = model_path.name
+        if model_kind != "lora":
+            raise SystemExit(f"[launch-vllm] unsupported model kind: {model_kind}")
+
+    adapter_path = model_path if model_kind == "lora" else None
+    base_model_path = resolve_lora_base_path(model_path, models_root) if adapter_path else model_path
+    if base_model_path is None:
+        raise SystemExit("[launch-vllm] LoRA base_model_name_or_path is not available inside the managed model root")
+    model_arg = str(base_model_path)
+    served_model_name = base_model_path.name
 
     if args.cuda_visible_devices is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_devices)
@@ -109,15 +119,17 @@ def main():
         str(args.gpu_memory_utilization),
         "--tensor-parallel-size",
         str(args.tensor_parallel_size),
-        "--task",
-        args.task,
     ]
-    effective_max_model_len = _effective_max_model_len(model_path, str(args.max_seq_len), args.task)
+    cmd += ["--runner", "pooling" if args.task in {"embed", "classify"} else "generate"]
+    effective_max_model_len = _effective_max_model_len(base_model_path, str(args.max_seq_len), args.task)
     if effective_max_model_len is not None:
         cmd += ["--max-model-len", effective_max_model_len]
+    if adapter_path is not None:
+        cmd += ["--enable-lora", "--lora-modules", f"{adapter_path.name}={adapter_path}"]
 
     print(
-        f"[launch-vllm] model={model_arg} port={args.api_port} tp={args.tensor_parallel_size} python={vllm_python}",
+        f"[launch-vllm] model={model_arg} served={served_model_name} adapter={adapter_path.name if adapter_path else '-'} "
+        f"port={args.api_port} tp={args.tensor_parallel_size} python={vllm_python}",
         flush=True,
     )
 

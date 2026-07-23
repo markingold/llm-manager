@@ -19,6 +19,7 @@ REQUIRED_ASSETS = (
     "config/engine-intent.env",
     "config/engine-small.env",
     "config/engine-embed.env",
+    "config/backend-pins.json",
     "systemd/llm-manager-api.service",
     "systemd/llm-manager-engine@.service",
     "sudoers/llm-manager",
@@ -26,6 +27,7 @@ REQUIRED_ASSETS = (
     "run/launch_tgw.py",
     "run/launch_vllm.py",
     "run/launch_tabbyapi.py",
+    "run/launch_llamacpp.py",
     "web/index.html",
     "web/app.js",
     "web/js/api.js",
@@ -125,6 +127,7 @@ def bootstrap(
         "config/engine-intent.env": config_dir / "engine-intent.env",
         "config/engine-small.env": config_dir / "engine-small.env",
         "config/engine-embed.env": config_dir / "engine-embed.env",
+        "config/backend-pins.json": config_dir / "backend-pins.json",
     }
     if systemd_dir is not None:
         copies.update({
@@ -134,7 +137,7 @@ def bootstrap(
     if sudoers_dir is not None:
         copies["sudoers/llm-manager"] = sudoers_dir / "llm-manager"
     if run_dir is not None:
-        for filename in ("engine_launcher.py", "launch_tgw.py", "launch_vllm.py", "launch_tabbyapi.py"):
+        for filename in ("engine_launcher.py", "launch_tgw.py", "launch_vllm.py", "launch_tabbyapi.py", "launch_llamacpp.py"):
             copies[f"run/{filename}"] = run_dir / filename
     for relative, destination in copies.items():
         if destination.exists():

@@ -11,26 +11,33 @@ slot starts one inference server and exposes its OpenAI-compatible HTTP API.
 |---|---|---|---|
 | TabbyAPI | Low-latency NVIDIA serving for ExLlama quants | EXL2, EXL3 on the pinned host revision | Working on chat `:8500` |
 | text-generation-webui (TGW) | Interactive workbench and broad fallback | GGUF, EXL3, standard Transformers | Working; standalone WebUI/API also running |
-| vLLM | Throughput-oriented serving, embeddings, AWQ/GPTQ and standard HF models | Transformers, AWQ, GPTQ | Installed; no embedding model/unit active |
+| vLLM | Throughput-oriented serving, embeddings, LoRA, AWQ/GPTQ and standard HF models | Transformers, AWQ, GPTQ, managed PEFT adapters | Working; pinned BGE embedding lane on `:8503` |
+| llama.cpp server | Lean GGUF serving with explicit GPU offload and OpenAI compatibility | GGUF | Integrated and live-smoke-tested with Qwen3.5 4B |
 
 TabbyAPI is a specialized server, not merely a TGW loader. The installed May
-2026 revision successfully serves EXL2, but current upstream `main` has removed
-EXL2 and directs those users to its `exl2-checkpoint` branch. Do not upgrade
-this host blindly while EXL2 is required. TGW is a WebUI and
-compatibility facade over several loaders. On this host, TGW's GGUF path starts
-its bundled `llama-server`; direct llama.cpp is not yet a first-class manager
-backend. vLLM is the dedicated batching and embedding lane.
+2026 revision successfully serves EXL2. It is locked in
+`config/backend-pins.json` at commit
+`857f9e21dde2b7f10551ed5c5b9845e129b41e6a`; startup fails if the checkout no
+longer matches. Current upstream `main` removed EXL2, so upgrades must first
+move the lane to upstream's preserved EXL2 branch and be regression-tested.
+TGW remains the interactive workbench. Direct llama.cpp is the preferred
+production GGUF path, while vLLM owns batching, embeddings, and managed LoRA.
 
 The compatibility matrix intentionally fails closed. In particular, current
-TGW releases no longer expose an ExLlamaV2 loader, and a raw PEFT/LoRA adapter
-directory is not a standalone checkpoint. The manager does not advertise a
-format unless its launcher has a complete load path.
+TGW releases no longer expose an ExLlamaV2 loader. A PEFT/LoRA adapter is
+advertised only when `base_model_name_or_path` resolves to a real checkpoint
+inside the managed models root; vLLM then launches the base with the named
+adapter and readiness must report that adapter identity.
+
+The local embedding checkpoint is `BAAI/bge-small-en-v1.5`, pinned at revision
+`5c38ec7c405ec4b44b94cc5a9bb96e735b38267a`. It produces 384-dimensional
+vectors, uses a 512-token context, and runs as `llm-embed.service` on GPU 1
+with `--runner pooling` and a `0.20` vLLM memory-utilization ceiling.
 
 ## Other viable servers
 
 | Server | Why consider it | Cost / reason to defer |
 |---|---|---|
-| llama.cpp server | Lean, dependable GGUF server with OpenAI-compatible chat, embeddings and reranking; CPU/GPU offload | Highest-value next backend, but needs its own lifecycle/readiness adapter rather than hiding under TGW |
 | SGLang | High-throughput language/multimodal serving, structured generation, prefix caching, broad accelerator support | Overlaps vLLM; install only after a representative benchmark shows a material benefit |
 | TensorRT-LLM | NVIDIA-specific optimized engines, in-flight batching and quantization | More engine-build/deployment complexity; best for stable, high-volume model fleets |
 | Ollama | Very simple downloads and local model lifecycle with partial OpenAI compatibility | Duplicates LLM Manager's catalog/lifecycle and offers less explicit runtime control |
@@ -41,12 +48,11 @@ format unless its launcher has a complete load path.
 This host has two RTX 3090 24 GB GPUs:
 
 1. Keep TabbyAPI for EXL2/EXL3 chat models.
-2. Keep TGW for interactive testing and as the current GGUF lane.
-3. Finish the vLLM embedding service/model configuration, then use vLLM for
-   standard Hugging Face, AWQ, and GPTQ checkpoints.
-4. Add direct llama.cpp next if GGUF is operationally important. It removes the
-   TGW layer from production GGUF serving and can later provide embedding or
-   reranking lanes.
+2. Keep standalone TGW for interactive testing; it intentionally remains bound
+   to `0.0.0.0` without authentication by operator decision.
+3. Use direct llama.cpp for GGUF production slots.
+4. Keep the BGE embedding lane on vLLM and use vLLM for standard Hugging Face,
+   AWQ, GPTQ, and resolvable PEFT adapters.
 5. Benchmark SGLang against vLLM before installing it. Defer TensorRT-LLM and
    Ollama unless a concrete workload requires them.
 

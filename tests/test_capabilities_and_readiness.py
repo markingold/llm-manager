@@ -96,7 +96,6 @@ def test_embedding_slot_fails_when_vllm_is_unavailable(monkeypatch: pytest.Monke
 def test_vllm_availability_requires_a_successful_module_import(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(server, "read_env", lambda: {"VLLM_PYTHON_BIN": sys.executable})
     monkeypatch.setattr(server.subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(returncode=1))
-    monkeypatch.setattr(server.importlib.util, "find_spec", lambda _name: None)
     assert server._vllm_backend_available() is False
 
     monkeypatch.setattr(server.subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(returncode=0))

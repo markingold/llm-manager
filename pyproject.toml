@@ -52,6 +52,7 @@ packages = ["llm_manager", "llm_manager.evaluation", "llm_manager.providers", "l
   "config/engine-intent.env",
   "config/engine-small.env",
   "config/engine-embed.env",
+  "config/backend-pins.json",
 ]
 "share/llm-manager/web" = ["web/index.html", "web/app.js", "web/lab.meta.json", "web/package.json"]
 "share/llm-manager/web/js" = ["web/js/api.js", "web/js/ui-core.js"]
@@ -65,7 +66,7 @@ packages = ["llm_manager", "llm_manager.evaluation", "llm_manager.providers", "l
 ]
 "share/llm-manager/systemd" = ["deploy/systemd/llm-manager-api.service", "deploy/systemd/llm-manager-engine@.service"]
 "share/llm-manager/sudoers" = ["deploy/sudoers/llm-manager"]
-"share/llm-manager/run" = ["run/engine_launcher.py", "run/launch_tgw.py", "run/launch_vllm.py", "run/launch_tabbyapi.py"]
+"share/llm-manager/run" = ["run/engine_launcher.py", "run/launch_tgw.py", "run/launch_vllm.py", "run/launch_tabbyapi.py", "run/launch_llamacpp.py"]
 
 [tool.pytest.ini_options]
 addopts = "--strict-config --strict-markers -ra --cov=llm_manager --cov-report=term-missing --cov-report=xml"

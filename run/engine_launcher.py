@@ -2,9 +2,9 @@
 """
 engine_launcher.py - Compatibility wrapper for existing systemd units.
 
-New backend-specific launchers now live under run/launch_*.py.
-This file intentionally remains as a stable entrypoint for existing ExecStart
-definitions and forwards to launch_tgw.py.
+Backend-specific launchers live under run/launch_*.py. This file remains the
+stable systemd entrypoint and dispatches through the authoritative runtime
+registry and persisted per-slot backend selection.
 """
 
 import argparse
@@ -22,7 +22,6 @@ MODELS_DIR = os.getenv(
     "SERVER_MODELS_DIR",
     os.getenv("MODELS_DIR", "/srv/2bananas/engines/models"),
 )
-SUPPORTED_BACKENDS = {"tgw", "vllm", "tabbyapi"}
 SLOT_MODES = ("chat", "intent", "small", "embed")
 DEFAULT_SLOT_BACKENDS = {"chat": "tgw", "intent": "tgw", "small": "tgw", "embed": "vllm"}
 PORT_TO_MODE = {"8500": "chat", "8501": "intent", "8502": "small", "8503": "embed"}
@@ -41,8 +40,18 @@ MODEL_TO_MODE = {
 
 sys.path.insert(0, str(ROOT))
 try:
+    from llm_manager.backend_registry import (
+        SUPPORTED_BACKENDS,
+        backend_supports_kind,
+        probe_backend,
+        resolve_vllm_python,
+    )
     from llm_manager.model_inspector import detect_kind as _detect_kind
 except Exception:
+    SUPPORTED_BACKENDS = frozenset({"tgw", "vllm", "tabbyapi", "llamacpp"})
+    backend_supports_kind = None
+    probe_backend = None
+    resolve_vllm_python = None
     _detect_kind = None
 
 
@@ -103,6 +112,7 @@ def _launcher_path_for_backend(backend: str) -> pathlib.Path:
         "tgw": "launch_tgw.py",
         "vllm": "launch_vllm.py",
         "tabbyapi": "launch_tabbyapi.py",
+        "llamacpp": "launch_llamacpp.py",
     }.get(backend, "launch_tgw.py")
     path = run_dir / name
     if not path.exists() and backend != "tgw":
@@ -135,6 +145,8 @@ def _model_kind_for_launch(model: str) -> str:
 
 
 def _backend_supports_kind(backend: str, kind: str) -> bool:
+    if backend_supports_kind is not None:
+        return bool(backend_supports_kind(backend, kind))
     backend_key = str(backend or "").strip().lower()
     model_kind = str(kind or "unknown").strip().lower()
     if backend_key == "tgw":
@@ -142,11 +154,19 @@ def _backend_supports_kind(backend: str, kind: str) -> bool:
     if backend_key == "tabbyapi":
         return model_kind in {"exl2", "exl3"}
     if backend_key == "vllm":
-        return model_kind in {"transformers", "awq", "gptq"}
+        return model_kind in {"transformers", "awq", "gptq", "lora"}
+    if backend_key == "llamacpp":
+        return model_kind == "gguf"
     return False
 
 
 def _vllm_available() -> bool:
+    if resolve_vllm_python is not None:
+        candidate, _ = resolve_vllm_python(dict(os.environ), probe=True)
+        if candidate:
+            os.environ["VLLM_PYTHON_BIN"] = candidate
+            return True
+        return False
     configured = str(os.getenv("VLLM_PYTHON_BIN", "") or "").strip()
     candidates: list[str] = []
     if configured:
@@ -182,7 +202,7 @@ def _vllm_available() -> bool:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Compatibility wrapper forwarding to run/launch_tgw.py")
+    parser = argparse.ArgumentParser(description="Dispatch a managed model slot to its selected inference backend")
     parser.add_argument("--api-port", required=True, help="API listen port")
     parser.add_argument("--model", required=True, help="Model directory name (or symlink)")
     parser.add_argument("--max-seq-len", required=True, help="Max sequence length")
@@ -213,6 +233,11 @@ def main():
             if vllm_python:
                 print(f"[engine-launcher] backend=vllm using python={vllm_python}", flush=True)
 
+    if backend in {"tabbyapi", "llamacpp"} and probe_backend is not None:
+        runtime = probe_backend(backend, env=dict(os.environ))
+        if not bool(runtime.get("available", False)):
+            raise SystemExit(f"[engine-launcher] configured {backend} backend is unavailable: {runtime.get('detail')}")
+
     launcher = _launcher_path_for_backend(backend)
 
     cmd = [
@@ -233,11 +258,34 @@ def main():
         else:
             cmd.append("--no-webui")
     else:
-        cuda_visible_devices = str(os.getenv("CUDA_VISIBLE_DEVICES", "") or "").strip()
+        slot_prefix = f"LLM_{mode.upper()}_"
+        cuda_visible_devices = str(
+            os.getenv(f"{slot_prefix}CUDA_VISIBLE_DEVICES", os.getenv("CUDA_VISIBLE_DEVICES", "")) or ""
+        ).strip()
         if cuda_visible_devices:
             cmd += ["--cuda-visible-devices", cuda_visible_devices]
         if backend == "vllm" and mode == "embed":
             cmd += ["--task", "embed"]
+        if backend == "vllm":
+            gpu_memory = str(
+                os.getenv(f"{slot_prefix}VLLM_GPU_MEMORY_UTILIZATION", os.getenv("VLLM_GPU_MEMORY_UTILIZATION", "0.9"))
+            ).strip()
+            tensor_parallel = str(
+                os.getenv(f"{slot_prefix}VLLM_TENSOR_PARALLEL_SIZE", os.getenv("VLLM_TENSOR_PARALLEL_SIZE", "1"))
+            ).strip()
+            cmd += ["--gpu-memory-utilization", gpu_memory, "--tensor-parallel-size", tensor_parallel]
+        if backend == "llamacpp":
+            cmd += [
+                "--n-gpu-layers",
+                str(os.getenv(f"{slot_prefix}LLAMA_CPP_N_GPU_LAYERS", os.getenv("LLAMA_CPP_N_GPU_LAYERS", "-1"))),
+                "--parallel",
+                str(os.getenv(f"{slot_prefix}LLAMA_CPP_PARALLEL", os.getenv("LLAMA_CPP_PARALLEL", "1"))),
+            ]
+            tensor_split = str(
+                os.getenv(f"{slot_prefix}LLAMA_CPP_TENSOR_SPLIT", os.getenv("LLAMA_CPP_TENSOR_SPLIT", ""))
+            ).strip()
+            if tensor_split:
+                cmd += ["--tensor-split", tensor_split]
 
     print(
         f"[engine-launcher] mode={mode} backend={backend} kind={model_kind} launcher={launcher.name} model={args.model} port={args.api_port}",

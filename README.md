@@ -1,7 +1,7 @@
 # LLM Manager
 
 Production control plane for multi-slot LLM serving on dual-GPU systems.
-Manages **TabbyAPI**, **text-generation-webui**, and **vLLM** instances via systemd, with model switching, format auto-detection, a LoRA training pipeline, and a web dashboard.
+Manages **TabbyAPI**, **text-generation-webui**, **vLLM**, and direct **llama.cpp** instances via systemd, with transactional model switching, format auto-detection, a LoRA training pipeline, and a web dashboard.
 
 Additional local docs:
 - `docs/API.md`
@@ -36,7 +36,7 @@ Baseline quality reports:
   │ GPU 0 · :8500   │  │ GPU 1 · :8501│  │ GPU 1 · :8502│
   │ chat slot        │  │ intent slot  │  │ small slot   │
   └──────────────────┘  └──────────────┘  └──────────────┘
-        per-slot backend: TabbyAPI, TGW, or vLLM
+        per-slot backend: TabbyAPI, TGW, vLLM, or llama.cpp
 ```
 
 **Hardware:** 2× NVIDIA RTX 3090 (24 GB each)
@@ -68,6 +68,8 @@ llm-manager-api
 
 For a packaged host, `llm-manager-deploy doctor` validates the installed wheel assets and schema engines. Run `llm-manager-deploy bootstrap` as root to create the runtime directories and copy missing config, dashboard, launcher, engine environment, systemd, and least-privilege sudoers files without overwriting operator changes. Review `/etc/llm-manager`, create the `llm-manager` service account, and run `systemctl daemon-reload` before enabling services.
 
+For this host's project-checkout deployment, install `deploy/systemd/llm-manager-api.project.service` as `/etc/systemd/system/llm-manager-api.service`. It starts the package with `python -m llm_manager.server` from the checkout and validates that package entry point before startup, so moving modules inside the package cannot leave systemd calling a retired script path. After updating the unit, run `systemctl daemon-reload`, restart the service, and confirm `systemctl show llm-manager-api -p WorkingDirectory -p ExecStart`.
+
 ## Current Deployment Model
 
 - The FastAPI control plane is the canonical `llm_manager` package (`llm_manager/server.py`)
@@ -80,7 +82,7 @@ For a packaged host, `llm-manager-deploy doctor` validates the installed wheel a
 - OpenRouter `wait` overflow behavior is a real priority queue: requests wait for capacity, time out cleanly, and do not persist arbitrary metadata
 - High-churn runtime sections and managed jobs are stored in versioned SQLite at `run/state/runtime.db`; legacy runtime JSON is imported once
 - Runtime SQLite, its parent directory, and local secret files are permission-restricted and intentionally not tracked by Git
-- Model inference stays in a selected backend (TabbyAPI, TGW, or vLLM); the API is the control plane and router, not the inference server
+- Model inference stays in a selected backend (TabbyAPI, TGW, vLLM, or llama.cpp); the API is the control plane and router, not the inference server
 - The deployed systemd engine units launch through `run/engine_launcher.py`
 
 Typical slot layout:
@@ -107,7 +109,7 @@ app/src/llm_manager/
   train_lora_dual.py   # Multi-GPU (DDP) LoRA trainer
   merge_lora.py        # Merge LoRA adapters into base model
   convert_lora.py      # Convert merged model to EXL2
-  switch_model.py      # CLI model switcher
+  switch_model.py      # Retired compatibility stub; use the transactional API
   download_models.py   # Download from Hugging Face
   download_convert_chat_model.py  # Download + convert to EXL2
   test_intent_models.py           # Benchmark LoRA models
@@ -124,6 +126,7 @@ run/
   launch_tgw.py        # TGW launcher wrapper (backend lane)
   launch_vllm.py       # vLLM launcher wrapper (backend lane)
   launch_tabbyapi.py   # TabbyAPI launcher wrapper (backend lane)
+  launch_llamacpp.py   # Direct llama.cpp GGUF launcher
 model_configs.json     # Model definitions (training + runtime)
 web/
   index.html           # Dashboard UI
@@ -149,7 +152,7 @@ Notes:
 | `LLM_INTENT_API_BASE` | Intent engine API base | `http://127.0.0.1:8501` |
 | `LLM_SMALL_API_BASE` | Small/utility engine API base | `http://127.0.0.1:8502` |
 | `LLM_EMBED_API_BASE` | Local embedding engine API base | `http://127.0.0.1:8503` |
-| `LLM_*_API_BASE_TGW` / `LLM_*_API_BASE_VLLM` / `LLM_*_API_BASE_TABBYAPI` | Optional per-backend slot API base overrides | (none) |
+| `LLM_*_API_BASE_TGW` / `LLM_*_API_BASE_VLLM` / `LLM_*_API_BASE_TABBYAPI` / `LLM_*_API_BASE_LLAMACPP` | Optional per-backend slot API base overrides | (none) |
 | `SMART_ASSISTANT_URL` | Smart Assistant /command endpoint | `http://127.0.0.1:8100/command` |
 | `CUDA_VISIBLE_DEVICES` | GPU(s) for training/conversion | `0` |
 | `PM2_CHAT` / `PM2_INTENT` / `PM2_SMALL` / `PM2_EMBED` | Legacy PM2 process names | slot-specific |
@@ -158,6 +161,9 @@ Notes:
 | `LLM_MANAGER_ENGINES_ROOT` | Allowed root for managed engine/conversion paths | `/srv/2bananas/engines` |
 | `WEBUI_MODELS_DIR` | Shared models directory | `/srv/2bananas/engines/models` |
 | `TABBYAPI_CMD` | Explicit TabbyAPI startup command for source checkouts/non-module installs | install-specific |
+| `TABBYAPI_REVISION` / `BACKEND_PINS_PATH` | Installed Tabby revision guard and registry pin document | packaged pin |
+| `LLAMA_CPP_SERVER_BIN` | Optional direct llama-server executable override | auto-detected |
+| `LLM_*_CUDA_VISIBLE_DEVICES` / `LLM_*_VLLM_GPU_MEMORY_UTILIZATION` / `LLM_*_VLLM_TENSOR_PARALLEL_SIZE` | Per-slot GPU and vLLM allocation controls | slot env |
 | `EXLLAMA_ROOT` | ExLlamaV2 install dir | `/srv/2bananas/engines/exllamav2` |
 | `EXLLAMA_V3_ROOT` | ExLlamaV3 install dir used by managed EXL3 conversion | `/srv/2bananas/engines/exllamav3` |
 | `EXL3_CONVERT_SCRIPT` | Optional explicit ExLlamaV3 convert script path | (none) |
@@ -199,6 +205,7 @@ Process/service environment commonly used in deployment:
 | GET | `/health` | Service health + engine pings |
 | GET | `/system` | CPU load, RAM, disk |
 | GET | `/models` | List all models + active links + slot visibility + metadata (`slot_endpoints` includes resolved backend/base/port info) |
+| GET | `/backends` | Sanitized authoritative backend metadata, installed versions, pin status, tasks, formats, launchers, and readiness contracts |
 | POST | `/switch` | Switch model: `{ mode, model_dir, bounce, backend?, lifecycle_mode?, native_max_seq_len? }` |
 | POST | `/models/load` | Verified lifecycle load; requires native load or engine restart and rolls back failures |
 | POST | `/models/unload` | Verified native unload/engine stop; rejects already-unloaded no-ops |
@@ -371,7 +378,7 @@ Notes:
 - Engine control is systemd-first via `SYSTEMD_LLM_A`, `SYSTEMD_LLM_B`, `SYSTEMD_LLM_C`, and `SYSTEMD_LLM_D`
 - `POST /bounce/{mode}` can still fall back to legacy PM2 names when systemd unit env vars are absent
 - The dashboard hides slots when `ENABLE_CHAT`, `ENABLE_INTENT`, or `ENABLE_SMALL` is set to `0`
-- The currently deployed engine units launch `run/engine_launcher.py`, which now dispatches to backend-specific launchers (`run/launch_tgw.py`, `run/launch_vllm.py`, `run/launch_tabbyapi.py`) based on slot backend preference
+- The deployed engine units launch `run/engine_launcher.py`, which dispatches through the version-aware backend registry to TGW, vLLM, TabbyAPI, or direct llama.cpp
 - `run/launch_tgw.py` now applies startup guardrails by default to clean stale TGW port owners and stale ExLlama lock files before launch
 
 ## Development and CI
@@ -396,12 +403,12 @@ The inspector auto-detects and recommends the correct loader:
 |--------|-----------|-------------------|
 | **EXL2** | `.exl2`, name, or `quantization_config` | TabbyAPI / ExLlamaV2 |
 | **EXL3** | `.exl3`, name, or `quantization_config` | TabbyAPI; TGW `ExLlamav3` fallback |
-| **GGUF** | `.gguf` files | TGW `llama.cpp` |
+| **GGUF** | `.gguf` files | direct llama.cpp; TGW fallback |
 | **AWQ** | `quantization_config.quant_method == "awq"` | vLLM |
 | **GPTQ** | `quantization_config.quant_method == "gptq"` | vLLM |
 | **FP16/BF16/FP8** | safetensors + config.json torch_dtype | vLLM; TGW `Transformers` fallback |
 | **Multimodal** | vision/image/video fields in config.json | unsupported (rejected before local launch) |
-| **LoRA adapter-only** | `adapter_config.json` present | unsupported until base-model + adapter lifecycle is implemented |
+| **LoRA adapter-only** | `adapter_config.json` with a managed local base | vLLM base + named adapter lifecycle; unresolved bases fail closed |
 
 ## Multi-GPU Notes
 

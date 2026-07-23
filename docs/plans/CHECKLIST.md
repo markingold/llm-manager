@@ -92,7 +92,7 @@ Source-plan retirement update (2026-05-15):
 
 ## Nice To Have
 - [x] Add optional backend-native model load and unload support for the TabbyAPI lane. - effort: medium | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md (initial `/switch` lifecycle prototype plus explicit `/models/load` and `/models/unload` endpoints with native-load/unload diagnostics)
-- [ ] Add direct llama.cpp integration instead of relying on TGW for GGUF. - effort: large | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
+- [x] Add direct llama.cpp integration instead of relying on TGW for GGUF. - effort: large | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md (first-class registry/launcher/readiness path and Qwen3.5 GGUF host smoke test completed 2026-07-22)
 - [ ] Add a lightweight raw-Transformers fallback backend if experiments justify it. - effort: large | source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md
 - [x] Add per-project routing overrides and budget guardrails for paid providers. - effort: medium | source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md
 - [x] Record spend and lane-sufficiency reporting to prove when cheaper models are good enough. - effort: medium | source: docs/plans/retired/PROVIDER_ROUTER_PLAN.md, docs/plans/retired/EVALUATION_PLAN.md (`/router/lane-sufficiency-report` + dashboard lane sufficiency panel)

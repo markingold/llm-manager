@@ -50,6 +50,31 @@ def _read_json(path: pathlib.Path) -> Optional[dict]:
         return None
 
 
+def resolve_lora_base_path(model_path: pathlib.Path, models_dir: pathlib.Path | None = None) -> pathlib.Path | None:
+    """Resolve a PEFT adapter's base checkpoint within the managed model root."""
+    adapter = _read_json(model_path / "adapter_config.json") or {}
+    raw = str(adapter.get("base_model_name_or_path") or "").strip()
+    if not raw:
+        return None
+    root = (models_dir or pathlib.Path(MODELS_DIR)).resolve()
+    reference = pathlib.Path(raw).expanduser()
+    candidates = [reference] if reference.is_absolute() else [
+        root / raw,
+        root / raw.replace("/", "__"),
+        root / reference.name,
+    ]
+    for candidate in candidates:
+        try:
+            resolved = candidate.resolve()
+        except Exception:
+            continue
+        if resolved != root and not resolved.is_relative_to(root):
+            continue
+        if resolved.is_dir() and (resolved / "config.json").is_file():
+            return resolved
+    return None
+
+
 def detect_kind(model_path: pathlib.Path) -> str:
     """
     Detect the model format/kind.  Returns one of:
@@ -164,11 +189,10 @@ def detect_capabilities(model_path: pathlib.Path, kind: str) -> list[str]:
         or any(architecture.endswith(("bertmodel", "robertamodel", "xlmrobertamodel")) for architecture in architectures)
     ):
         return ["embeddings"]
-    # A PEFT adapter is not a standalone checkpoint.  It needs its base model
-    # plus backend-specific LoRA arguments, which the launchers do not yet
-    # implement, so it must fail closed instead of appearing loadable.
+    # A PEFT adapter is loadable only when its base checkpoint resolves within
+    # the managed model root. vLLM then owns the combined serving lifecycle.
     if kind == "lora":
-        return []
+        return ["chat", "completions"] if resolve_lora_base_path(model_path) is not None else []
     if kind in {"exl2", "exl3", "gguf", "awq", "gptq", "transformers"}:
         return ["chat", "completions"]
     return []
@@ -188,10 +212,10 @@ def recommend_backends(kind: str) -> tuple[str, list[str]]:
         "exl3": ("tabbyapi", ["tgw"]),
         "awq": ("vllm", []),
         "gptq": ("vllm", []),
-        "gguf": ("tgw", []),
+        "gguf": ("llamacpp", ["tgw"]),
         "transformers": ("vllm", ["tgw"]),
         "multimodal": ("unsupported", []),
-        "lora": ("unsupported", []),
+        "lora": ("vllm", []),
         "unknown": ("unsupported", []),
     }
     return mapping.get(kind, ("tgw", []))
@@ -330,16 +354,21 @@ def inspect_one(model_name: str) -> dict:
     capabilities = detect_capabilities(model_path, kind)
     loader = detect_loader(kind)
     recommended_backend, fallback_backends = recommend_backends(kind)
+    if capabilities and not {"chat", "completions"}.intersection(capabilities):
+        recommended_backend, fallback_backends = "vllm", []
     unsupported_reason = None
     if kind == "multimodal":
         unsupported_reason = (
             "Multimodal checkpoints are not currently supported by local backends "
             "(tgw, vllm, tabbyapi) in this deployment."
         )
-    elif kind == "lora":
+    lora_base_path = resolve_lora_base_path(model_path) if kind == "lora" else None
+    if kind == "lora" and lora_base_path is None:
+        recommended_backend = "unsupported"
+        fallback_backends = []
         unsupported_reason = (
-            "Standalone PEFT/LoRA adapter directories are not loadable until a base "
-            "model and backend-specific adapter lifecycle are configured."
+            "The adapter's base model (base_model_name_or_path) does not resolve to a checkpoint "
+            "inside the managed models directory."
         )
     elif kind == "unknown":
         unsupported_reason = "The model format could not be identified from checkpoint metadata."
@@ -373,6 +402,8 @@ def inspect_one(model_name: str) -> dict:
         "recommended_backend": recommended_backend,
         "fallback_backends": fallback_backends,
         "unsupported_reason": unsupported_reason,
+        "base_model": lora_base_path.name if lora_base_path else None,
+        "base_model_path": str(lora_base_path) if lora_base_path else None,
         "bpw": bpw,
         "dtype": dtype,
         "chat_template_mode": tpl_mode,

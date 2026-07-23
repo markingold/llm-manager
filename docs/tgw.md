@@ -1,6 +1,6 @@
 # TGW WebUI Standalone Plan
 
-Last updated: 2026-05-09
+Last updated: 2026-07-22
 Status: Implemented
 
 ## Goal
@@ -27,6 +27,10 @@ independent from chat/intent/small slot lifecycle.
 - Standalone service unit name is configurable via `SYSTEMD_TGW_WEBUI`.
 - Default unit fallback: `llm-tgw-webui.service`.
 - TGW WebUI launch URL defaults to `http://<host>:7860/` unless overridden.
+- Operator decision: this host intentionally keeps the standalone TGW WebUI
+  bound to `0.0.0.0` without authentication. Manager-controlled model slots
+  remain loopback-only. Treat port 7860 as a trusted-network service and do not
+  expose it directly to the public Internet.
 
 ## Recommended systemd unit (example)
 

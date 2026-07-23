@@ -1,4 +1,4 @@
-import { api } from "../api.js?v=20260722_2";
+import { api } from "../api.js?v=20260722_3";
 import {
   $,
   setStatus,
@@ -9,9 +9,9 @@ import {
   fmtEngineMeta,
   setSelectOptions,
   setEngineButtonStates,
-} from "../ui-core.js?v=20260722_2";
-import { refreshEvalPanel } from "./evaluation.js?v=20260722_2";
-import { refreshRouterPanel } from "./router.js?v=20260722_2";
+} from "../ui-core.js?v=20260722_3";
+import { refreshEvalPanel } from "./evaluation.js?v=20260722_3";
+import { refreshRouterPanel } from "./router.js?v=20260722_3";
 
 const UI_BUILD = "phase-a-ops-v6";
 const MAX_CONVERSION_ROWS = 30;
@@ -65,6 +65,10 @@ const BACKEND_CAPABILITIES = {
     supportsNoThinking: false,
   },
   tabbyapi: {
+    supportsSlotTest: true,
+    supportsNoThinking: false,
+  },
+  llamacpp: {
     supportsSlotTest: true,
     supportsNoThinking: false,
   },

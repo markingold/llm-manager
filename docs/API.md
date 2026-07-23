@@ -24,6 +24,11 @@ Current deployed unit wiring on this host:
 
 ## Core Endpoints
 
+### Backends
+- GET /backends
+  - Returns the authoritative backend registry with availability, installed version/revision, pin status, model formats, tasks, launcher, readiness contract, and served-model identity strategy
+  - Command arguments are stripped so tokens embedded in operator-supplied commands cannot leak through this status endpoint
+
 ### Health
 - GET /health
   - Lightweight status payload
@@ -53,12 +58,12 @@ Current deployed unit wiring on this host:
 - POST /switch
   - Body: { mode, model_dir, bounce, backend?, lifecycle_mode?, native_max_seq_len? }
   - mode supports chat, intent, small, and legacy alias util
-  - backend can be tgw, vllm, or tabbyapi
+  - backend can be tgw, vllm, tabbyapi, or llamacpp
   - Serializes lifecycle mutations across API workers and atomically replaces the active symlink
   - Loads natively before committing state where supported; restart failures restore the prior symlink/backend
   - Rejects model paths outside the configured models root and rejects multimodal checkpoints until a compatible local lane exists
   - If backend is provided, updates per-slot backend preference state
-  - If backend is omitted, switch auto-applies the model inspector's recommended backend (`tgw`, `vllm`, or `tabbyapi`)
+  - If backend is omitted, switch auto-applies the model inspector's recommended backend (`tgw`, `vllm`, `tabbyapi`, or `llamacpp`)
   - If the selected backend is incompatible with the model kind, `/switch` returns HTTP 400 when backend was explicit, or auto-falls back to a compatible backend when backend was omitted
   - If no local backend supports the detected model kind, `/switch` returns HTTP 422 without mutating symlinks/backend state
   - If `vllm` is selected but unavailable in the current runtime, `/switch` returns HTTP 400 when explicit, or auto-falls back when omitted
@@ -89,7 +94,7 @@ Current deployed unit wiring on this host:
 - POST /knobs
   - Reads merged runtime values (local + global-preferred merge)
   - Writes project-local `secrets/.env` only
-  - Supports optional per-backend slot base overrides: `LLM_*_API_BASE_TGW|VLLM|TABBYAPI`
+  - Supports optional per-backend slot base overrides: `LLM_*_API_BASE_TGW|VLLM|TABBYAPI|LLAMACPP`
   - GET response redacts sensitive keys containing KEY, TOKEN, SECRET, or PASSWORD
 
 ### Bounce
