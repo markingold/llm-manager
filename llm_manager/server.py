@@ -25,6 +25,7 @@ import requests
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 try:
@@ -3277,6 +3278,13 @@ def _build_fallback_summary(
             dispatch_error_count += 1
 
     used_fallback = bool(selected_attempt_index is not None and selected_attempt_index > 1)
+    if selected_provider == "local":
+        service_state = "local_success"
+    elif selected_provider:
+        local_attempted = "local" in attempted_providers
+        service_state = "remote_fallback" if local_attempted else "remote_success"
+    else:
+        service_state = "unavailable"
     return {
         "allow_fallbacks": bool(allow_fallbacks),
         "chain_length": len(candidate_chain if isinstance(candidate_chain, list) else []),
@@ -3292,6 +3300,8 @@ def _build_fallback_summary(
         "attempt_reason_codes": reason_codes,
         "blocked_or_skipped_count": blocked_or_skipped_count,
         "dispatch_error_count": dispatch_error_count,
+        "service_state": service_state,
+        "degraded": service_state in {"remote_fallback", "unavailable"},
     }
 
 
@@ -3906,6 +3916,154 @@ def _local_serving_payload(payload: dict, endpoint: dict) -> dict:
     outbound = dict(payload)
     outbound["model"] = active_model
     return outbound
+
+
+def _managed_unit_for_mode(mode: str) -> str:
+    return {
+        "chat": os.getenv("SYSTEMD_LLM_A") or "",
+        "intent": os.getenv("SYSTEMD_LLM_B") or "",
+        "small": os.getenv("SYSTEMD_LLM_C") or "",
+        "embed": os.getenv("SYSTEMD_LLM_D") or "",
+    }.get(_normalize_slot_mode(mode, default=""), "")
+
+
+def _local_lane_availability(
+    model_id: str,
+    env: dict,
+    *,
+    provider_models: dict | None = None,
+    fallback_mode: str = "chat",
+) -> dict:
+    endpoint = _local_endpoint_for_model(
+        str(model_id or ""),
+        env,
+        provider_models=provider_models,
+        fallback_mode=fallback_mode,
+    )
+    mode = str(endpoint.get("mode", fallback_mode) or fallback_mode)
+    backend = str(endpoint.get("backend", "") or "")
+    active_model = str(endpoint.get("active_model", "") or "").strip()
+    unit = _managed_unit_for_mode(mode)
+    port = int(endpoint.get("port", SLOT_DEFAULT_PORTS.get(mode, 8500)))
+
+    base = {
+        "mode": mode,
+        "backend": backend,
+        "unit": unit or None,
+        "port": port,
+        "active_model": active_model or None,
+        "available": False,
+        "retryable": False,
+        "state": "unknown",
+        "failure_type": None,
+        "detail": None,
+        "incident_key": None,
+    }
+    enabled = env.get(f"ENABLE_{mode.upper()}", "1") == "1"
+    if not enabled:
+        return {
+            **base,
+            "state": "operator_disabled",
+            "failure_type": "operator_disabled_lane",
+            "detail": f"{mode} lane is disabled by configuration",
+        }
+    if not active_model:
+        return {
+            **base,
+            "state": "operator_unconfigured",
+            "failure_type": "missing_model",
+            "detail": f"{mode} lane has no selected model",
+        }
+    if not unit:
+        return {
+            **base,
+            "available": True,
+            "state": "unmanaged",
+            "detail": "no systemd unit is configured; availability is determined at dispatch",
+        }
+
+    systemd = _systemctl_show(unit)
+    active_state = str(systemd.get("ActiveState", "") or "")
+    sub_state = str(systemd.get("SubState", "") or "")
+    unit_file_state = str(systemd.get("UnitFileState", "") or "")
+    result = str(systemd.get("Result", "") or "")
+    try:
+        exit_status = int(systemd.get("ExecMainStatus", 0) or 0)
+    except (TypeError, ValueError):
+        exit_status = 0
+    listening = _is_listening(port)
+
+    if active_state == "active" and listening:
+        return {
+            **base,
+            "available": True,
+            "state": "ready",
+            "detail": "managed unit is active and listening",
+            "systemd_state": active_state,
+            "systemd_substate": sub_state,
+        }
+    if active_state == "active":
+        failure_type = "health_timeout"
+        state = "starting" if sub_state in {"start", "start-pre", "start-post"} else "not_ready"
+        retryable = True
+    elif exit_status == 78:
+        failure_type = "configuration_error"
+        state = "configuration_error"
+        retryable = False
+    elif unit_file_state == "disabled" and active_state in {"inactive", ""}:
+        failure_type = "operator_disabled_lane"
+        state = "operator_disabled"
+        retryable = False
+    elif active_state == "failed" or result not in {"", "success"}:
+        failure_type = "transient_process_failure"
+        state = "failed"
+        retryable = True
+    else:
+        failure_type = "lane_unavailable"
+        state = "stopped"
+        retryable = True
+    incident_key = f"lane:{mode}:{failure_type}:{backend}:{Path(active_model).name}"
+    return {
+        **base,
+        "state": state,
+        "failure_type": failure_type,
+        "retryable": retryable,
+        "detail": f"{mode} lane is {state}; unit={unit}; listener={listening}",
+        "incident_key": incident_key,
+        "systemd_state": active_state or None,
+        "systemd_substate": sub_state or None,
+        "unit_file_state": unit_file_state or None,
+        "service_result": result or None,
+        "exit_status": exit_status,
+    }
+
+
+def _known_local_lane_error(
+    provider: str,
+    model_id: str,
+    env: dict,
+    provider_models: dict,
+    *,
+    fallback_mode: str,
+) -> dict | None:
+    if provider != "local":
+        return None
+    availability = _local_lane_availability(
+        model_id,
+        env,
+        provider_models=provider_models,
+        fallback_mode=fallback_mode,
+    )
+    if bool(availability.get("available", False)):
+        return None
+    return {
+        "type": "local_lane_unavailable",
+        "message": availability.get("detail") or "local lane is unavailable",
+        "retryable": bool(availability.get("retryable", False)),
+        "lane_state": availability.get("state"),
+        "failure_type": availability.get("failure_type"),
+        "incident_key": availability.get("incident_key"),
+    }
 
 
 def _dispatch_provider_chat(provider: str, env: dict, payload: dict, provider_models: dict | None = None) -> dict:
@@ -6362,7 +6520,16 @@ def _systemctl_stop(unit: str):
         raise HTTPException(status_code=500, detail=f"systemctl stop failed for {unit}: {(r.stderr or r.stdout)[-500:]}")
 
 def _systemctl_show(unit: str) -> dict:
-    r = _systemctl(["show", unit, "--no-pager", "--property=Id,ActiveState,SubState,MainPID,ExecStart"])
+    properties = (
+        "Id,LoadState,ActiveState,SubState,UnitFileState,MainPID,ExecStart,"
+        "Result,NRestarts,ExecMainCode,ExecMainStatus"
+    )
+    r = subprocess.run(
+        ["/bin/systemctl", "show", unit, "--no-pager", f"--property={properties}"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
     if r.returncode != 0:
         return {"error": (r.stderr or r.stdout).strip()}
     out = {}
@@ -8137,6 +8304,98 @@ class RouterRouteTestReq(BaseModel):
     execute_first: bool = False
 
 # -----------------------------------------------------------------------------
+def _readiness_snapshot(
+    env: dict | None = None,
+    provider_models: dict | None = None,
+    provider_policies: dict | None = None,
+) -> dict:
+    effective_env = env if isinstance(env, dict) else read_env()
+    models_doc = provider_models if isinstance(provider_models, dict) else read_provider_models()
+    policies_doc = provider_policies if isinstance(provider_policies, dict) else read_provider_policies()
+    local_doc = models_doc.get("local", {}) if isinstance(models_doc.get("local", {}), dict) else {}
+    local_rows = local_doc.get("slots", []) if isinstance(local_doc.get("slots", []), list) else []
+
+    lanes: dict[str, dict] = {}
+    capability_sources: dict[str, list[dict]] = {
+        "chat": [],
+        "completions": [],
+        "embeddings": [],
+    }
+    for row in local_rows:
+        if not isinstance(row, dict):
+            continue
+        mode = _normalize_slot_mode(row.get("id"), default="")
+        if mode not in SLOT_MODES:
+            continue
+        enabled = bool(row.get("enabled", True))
+        availability = _local_lane_availability(
+            _slot_alias_for_mode(mode),
+            effective_env,
+            provider_models=models_doc,
+            fallback_mode=mode,
+        )
+        availability["catalog_enabled"] = enabled
+        lanes[mode] = availability
+        if not enabled or not bool(availability.get("available", False)):
+            continue
+        capabilities = row.get("capabilities", []) if isinstance(row.get("capabilities", []), list) else []
+        for capability in capabilities:
+            normalized = str(capability or "").strip().lower()
+            if normalized in capability_sources:
+                capability_sources[normalized].append({"provider": "local", "lane": mode})
+
+    remote_provider_state: dict[str, str] = {}
+    for provider, bucket in (("openrouter", None), ("openai", "allowed")):
+        key_name = f"{provider.upper()}_API_KEY"
+        key_state = "[SET]" if str(effective_env.get(key_name, "") or "").strip() else "[MISSING]"
+        remote_provider_state[provider] = key_state
+        if key_state != "[SET]":
+            continue
+        provider_doc = models_doc.get(provider, {}) if isinstance(models_doc.get(provider, {}), dict) else {}
+        rows = []
+        if provider == "openrouter":
+            for name in ("free", "paid"):
+                if isinstance(provider_doc.get(name, []), list):
+                    rows.extend(provider_doc[name])
+        elif isinstance(provider_doc.get(bucket, []), list):
+            rows.extend(provider_doc[bucket])
+        for row in rows:
+            if not isinstance(row, dict) or not bool(row.get("enabled", True)):
+                continue
+            for capability in row.get("capabilities", []) if isinstance(row.get("capabilities", []), list) else []:
+                normalized = str(capability or "").strip().lower()
+                if normalized in capability_sources:
+                    source = {"provider": provider}
+                    if source not in capability_sources[normalized]:
+                        capability_sources[normalized].append(source)
+
+    capabilities = {
+        name: {
+            "available": bool(sources),
+            "sources": sources,
+        }
+        for name, sources in capability_sources.items()
+    }
+    provider_config_ok = bool(models_doc) and bool(policies_doc)
+    required_capabilities = ("chat", "completions", "embeddings")
+    ok = provider_config_ok and all(capabilities[name]["available"] for name in required_capabilities)
+    unavailable_lanes = [
+        mode
+        for mode, row in lanes.items()
+        if bool(row.get("catalog_enabled", False)) and not bool(row.get("available", False))
+    ]
+    return {
+        "ok": ok,
+        "degraded": bool(unavailable_lanes),
+        "provider_config_ok": provider_config_ok,
+        "required_capabilities": list(required_capabilities),
+        "capabilities": capabilities,
+        "lanes": lanes,
+        "unavailable_lanes": unavailable_lanes,
+        "remote_credentials": remote_provider_state,
+    }
+
+
 # Routes: baseline (restore everything the old UI used)
 # -----------------------------------------------------------------------------
 @app.get("/health")
@@ -8148,8 +8407,10 @@ def health():
     intent_engine = _engine_def("intent", env=env, provider_models=provider_models)
     small_engine = _engine_def("small", env=env, provider_models=provider_models)
     embed_engine = _engine_def("embed", env=env, provider_models=provider_models)
+    readiness = _readiness_snapshot(env, provider_models, provider_policies)
     info = {
         "ok": True,
+        "degraded": readiness["degraded"],
         "time": datetime.utcnow().isoformat() + "Z",
         "active": current_links(),
         "slot_backends": read_slot_backends(),
@@ -8173,29 +8434,32 @@ def health():
             "config": CONFIG_SCHEMA_VERSION,
             "runtime": _runtime_store().schema_version(),
         },
+        "readiness": {
+            "ok": readiness["ok"],
+            "degraded": readiness["degraded"],
+            "capabilities": readiness["capabilities"],
+            "unavailable_lanes": readiness["unavailable_lanes"],
+        },
     }
-    # quick non-fatal pings (TGW exposes /v1/models, not /health)
-    try:
-        r = requests.get(str(chat_engine.get("base", "")).rstrip("/") + "/v1/models", timeout=2)
-        info["chat_up"] = (r.status_code == 200)
-    except Exception:
-        info["chat_up"] = False
-    try:
-        r = requests.get(str(intent_engine.get("base", "")).rstrip("/") + "/v1/models", timeout=2)
-        info["intent_up"] = (r.status_code == 200)
-    except Exception:
-        info["intent_up"] = False
-    try:
-        r = requests.get(str(small_engine.get("base", "")).rstrip("/") + "/v1/models", timeout=2)
-        info["small_up"] = (r.status_code == 200)
-    except Exception:
-        info["small_up"] = False
-    try:
-        r = requests.get(str(embed_engine.get("base", "")).rstrip("/") + "/v1/models", timeout=2)
-        info["embed_up"] = (r.status_code == 200)
-    except Exception:
-        info["embed_up"] = False
+    info["chat_up"] = bool(readiness["lanes"].get("chat", {}).get("available", False))
+    info["intent_up"] = bool(readiness["lanes"].get("intent", {}).get("available", False))
+    info["small_up"] = bool(readiness["lanes"].get("small", {}).get("available", False))
+    info["embed_up"] = bool(readiness["lanes"].get("embed", {}).get("available", False))
     return info
+
+
+@app.get("/ready")
+def ready():
+    snapshot = _readiness_snapshot()
+    payload = {
+        **snapshot,
+        "time": datetime.utcnow().isoformat() + "Z",
+        "schema_versions": {
+            "config": CONFIG_SCHEMA_VERSION,
+            "runtime": _runtime_store().schema_version(),
+        },
+    }
+    return JSONResponse(payload, status_code=200 if snapshot["ok"] else 503)
 
 @app.get("/system")
 def system():
@@ -9326,6 +9590,38 @@ def router_chat(req: RouterChatRequest):
                 break
             continue
 
+        local_unavailable = _known_local_lane_error(
+            provider,
+            model_id,
+            env,
+            provider_models,
+            fallback_mode="chat",
+        )
+        if local_unavailable is not None:
+            routing_errors.append({
+                "lane": lane,
+                "provider": provider,
+                "model": model_id,
+                "error": local_unavailable,
+            })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="skipped",
+                reason_code="local_lane_unavailable",
+                error=local_unavailable,
+                fallback_action=(
+                    "break_fallback_disabled"
+                    if not allow_fallbacks
+                    else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
+                ),
+            )
+            if not allow_fallbacks or idx == len(chain) - 1:
+                break
+            continue
+
         if _is_model_in_cooldown(provider, model_id):
             cooldown_error = {
                 "type": "cooldown",
@@ -9717,6 +10013,38 @@ def router_completions(req: RouterCompletionRequest):
                 break
             continue
 
+        local_unavailable = _known_local_lane_error(
+            provider,
+            model_id,
+            env,
+            provider_models,
+            fallback_mode="chat",
+        )
+        if local_unavailable is not None:
+            routing_errors.append({
+                "lane": lane,
+                "provider": provider,
+                "model": model_id,
+                "error": local_unavailable,
+            })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="skipped",
+                reason_code="local_lane_unavailable",
+                error=local_unavailable,
+                fallback_action=(
+                    "break_fallback_disabled"
+                    if not allow_fallbacks
+                    else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
+                ),
+            )
+            if not allow_fallbacks or idx == len(chain) - 1:
+                break
+            continue
+
         if _is_model_in_cooldown(provider, model_id):
             cooldown_error = {
                 "type": "cooldown",
@@ -10105,6 +10433,38 @@ def router_embed(req: RouterEmbedRequest):
                 break
             continue
 
+        local_unavailable = _known_local_lane_error(
+            provider,
+            model_id,
+            env,
+            provider_models,
+            fallback_mode="embed",
+        )
+        if local_unavailable is not None:
+            routing_errors.append({
+                "lane": lane,
+                "provider": provider,
+                "model": model_id,
+                "error": local_unavailable,
+            })
+            _append_route_attempt(
+                attempt_trace,
+                lane=lane,
+                provider=provider,
+                model=model_id,
+                result="skipped",
+                reason_code="local_lane_unavailable",
+                error=local_unavailable,
+                fallback_action=(
+                    "break_fallback_disabled"
+                    if not allow_fallbacks
+                    else ("break_chain_exhausted" if idx == len(chain) - 1 else "continue_next_candidate")
+                ),
+            )
+            if not allow_fallbacks or idx == len(chain) - 1:
+                break
+            continue
+
         if _is_model_in_cooldown(provider, model_id):
             cooldown_error = {
                 "type": "cooldown",
@@ -10398,17 +10758,24 @@ def router_embed(req: RouterEmbedRequest):
 @app.get("/router/health")
 def router_health():
     state = read_provider_runtime_state()
+    provider_models = read_provider_models()
+    provider_policies = read_provider_policies()
     logs = state.get("request_logs", []) if isinstance(state.get("request_logs"), list) else []
     catalog = state.get("openrouter_catalog_cache", {}) if isinstance(state.get("openrouter_catalog_cache"), dict) else {}
     manual_candidates = state.get("openrouter_free_candidates", {}) if isinstance(state.get("openrouter_free_candidates"), dict) else {}
-    budget = _budget_snapshot(read_provider_policies())
+    budget = _budget_snapshot(provider_policies)
+    readiness = _readiness_snapshot(read_env(), provider_models, provider_policies)
     last = logs[-1] if logs else None
     return {
         "ok": True,
         "time": datetime.utcnow().isoformat() + "Z",
         "router": {
-            "provider_models_loaded": bool(read_provider_models()),
-            "provider_policies_loaded": bool(read_provider_policies()),
+            "provider_models_loaded": bool(provider_models),
+            "provider_policies_loaded": bool(provider_policies),
+            "ready": readiness["ok"],
+            "degraded": readiness["degraded"],
+            "capabilities": readiness["capabilities"],
+            "unavailable_local_lanes": readiness["unavailable_lanes"],
             "request_log_count": len(logs),
             "last_request_ts": last.get("ts") if isinstance(last, dict) else None,
             "openrouter_catalog_fetched_ts": catalog.get("fetched_ts"),
@@ -11492,6 +11859,12 @@ def engines_status(request: Request):
             "systemd": _systemctl_show(unit) if unit else {"error": "SYSTEMD unit not configured"},
             "active": current_links().get(e["mode"]),
             "resources": e.get("resources", {}),
+            "availability": _local_lane_availability(
+                _slot_alias_for_mode(str(e.get("mode", "chat"))),
+                env,
+                provider_models=provider_models,
+                fallback_mode=str(e.get("mode", "chat")),
+            ),
         }
         return payload
 

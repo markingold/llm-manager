@@ -221,6 +221,46 @@ def test_chat_endpoint_records_local_error_then_falls_back_to_openai(monkeypatch
     assert [attempt["result"] for attempt in body["routing"]["attempt_trace"]] == ["error", "selected"]
 
 
+def test_chat_skips_known_unavailable_local_lane_and_marks_remote_fallback(monkeypatch: pytest.MonkeyPatch):
+    _configure(_catalog(), _policies(["local", "openai"]))
+    monkeypatch.setattr(server, "_maybe_refresh_openrouter_catalog", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(
+        server,
+        "_known_local_lane_error",
+        lambda provider, *_args, **_kwargs: (
+            {
+                "type": "local_lane_unavailable",
+                "message": "chat lane has a static configuration error",
+                "retryable": False,
+                "failure_type": "configuration_error",
+                "incident_key": "lane:chat:configuration_error:tgw:chat-checkpoint",
+            }
+            if provider == "local"
+            else None
+        ),
+    )
+    dispatched: list[str] = []
+
+    def dispatch(provider, env, payload, provider_models=None):
+        dispatched.append(provider)
+        assert provider == "openai"
+        return {
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": "fallback"}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 2, "completion_tokens": 1, "total_tokens": 3},
+        }
+
+    monkeypatch.setattr(server, "_dispatch_provider_chat", dispatch)
+    with TestClient(server.app) as client:
+        response = client.post("/router/chat", json={"messages": [{"role": "user", "content": "hello"}]})
+
+    assert response.status_code == 200, response.text
+    routing = response.json()["routing"]
+    assert dispatched == ["openai"]
+    assert [row["reason_code"] for row in routing["attempt_trace"]] == ["local_lane_unavailable", "selected"]
+    assert routing["fallback_summary"]["service_state"] == "remote_fallback"
+    assert routing["fallback_summary"]["degraded"] is True
+
+
 def test_chat_endpoint_accepts_null_usage_from_local_backend(monkeypatch: pytest.MonkeyPatch):
     _configure(_catalog(), _policies(["local"]))
     monkeypatch.setattr(server, "_maybe_refresh_openrouter_catalog", lambda *_args, **_kwargs: {})
