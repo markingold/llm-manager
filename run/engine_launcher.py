@@ -11,6 +11,8 @@ import argparse
 import json
 import os
 import pathlib
+import re
+import socket
 import subprocess
 import sys
 
@@ -37,22 +39,58 @@ MODEL_TO_MODE = {
     "small_active_model": "small",
     "embed_active_model": "embed",
 }
+EX_TEMPFAIL = 75
+EX_CONFIG = 78
 
 sys.path.insert(0, str(ROOT))
 try:
     from llm_manager.backend_registry import (
         SUPPORTED_BACKENDS,
         backend_supports_kind,
+        backend_supports_task,
         probe_backend,
         resolve_vllm_python,
     )
     from llm_manager.model_inspector import detect_kind as _detect_kind
+    from llm_manager.runtime_env import read_runtime_env as _read_runtime_env
 except Exception:
     SUPPORTED_BACKENDS = frozenset({"tgw", "vllm", "tabbyapi", "llamacpp"})
     backend_supports_kind = None
+    backend_supports_task = None
     probe_backend = None
     resolve_vllm_python = None
     _detect_kind = None
+    _read_runtime_env = None
+
+
+class EnginePreflightError(RuntimeError):
+    def __init__(
+        self,
+        failure_type: str,
+        detail: str,
+        *,
+        exit_code: int = EX_CONFIG,
+        retryable: bool = False,
+    ):
+        super().__init__(detail)
+        self.failure_type = str(failure_type)
+        self.detail = str(detail)
+        self.exit_code = int(exit_code)
+        self.retryable = bool(retryable)
+
+
+def _runtime_env() -> dict[str, str]:
+    if _read_runtime_env is None:
+        return dict(os.environ)
+    secrets_dir = pathlib.Path(os.getenv("LLM_MANAGER_SECRETS_DIR", str(RUNTIME_HOME / "secrets")))
+    project_env_path = secrets_dir / ".env"
+    global_env_path = pathlib.Path(
+        os.getenv("LLM_MANAGER_GLOBAL_ENV_PATH", "/srv/2bananas/secrets/global.env")
+    )
+    return _read_runtime_env(
+        project_env_path=project_env_path,
+        global_env_path=global_env_path,
+    )
 
 
 def _read_slot_backends() -> dict[str, str]:
@@ -95,10 +133,11 @@ def _mode_for_launch(api_port: str, model: str) -> str:
     return "chat"
 
 
-def _backend_for_mode(mode: str) -> str:
+def _backend_for_mode(mode: str, env: dict[str, str] | None = None) -> str:
     mode_key = _normalize_mode(mode)
     env_key = f"LLM_{mode_key.upper()}_BACKEND"
-    env_backend = str(os.getenv(env_key, "") or "").strip().lower()
+    source = env if isinstance(env, dict) else os.environ
+    env_backend = str(source.get(env_key, "") or "").strip().lower()
     if env_backend in SUPPORTED_BACKENDS:
         return env_backend
     backends = _read_slot_backends()
@@ -128,9 +167,9 @@ def _resolve_model_path(model: str) -> pathlib.Path:
     models_root = pathlib.Path(MODELS_DIR).resolve()
     resolved = model_path.resolve()
     if resolved != models_root and not resolved.is_relative_to(models_root):
-        raise SystemExit(f"[engine-launcher] model path escapes managed root: {model_path}")
+        raise EnginePreflightError("configuration_error", "model path escapes the managed model root")
     if not resolved.exists() or not resolved.is_dir():
-        raise SystemExit(f"[engine-launcher] model path not found: {model_path}")
+        raise EnginePreflightError("missing_model", f"model alias or directory is missing: {model_text}")
     return resolved
 
 
@@ -160,14 +199,15 @@ def _backend_supports_kind(backend: str, kind: str) -> bool:
     return False
 
 
-def _vllm_available() -> bool:
+def _vllm_available(env: dict[str, str] | None = None) -> bool:
+    source = env if isinstance(env, dict) else dict(os.environ)
     if resolve_vllm_python is not None:
-        candidate, _ = resolve_vllm_python(dict(os.environ), probe=True)
+        candidate, _ = resolve_vllm_python(source, probe=True)
         if candidate:
             os.environ["VLLM_PYTHON_BIN"] = candidate
             return True
         return False
-    configured = str(os.getenv("VLLM_PYTHON_BIN", "") or "").strip()
+    configured = str(source.get("VLLM_PYTHON_BIN", "") or "").strip()
     candidates: list[str] = []
     if configured:
         candidates.append(configured)
@@ -201,6 +241,138 @@ def _vllm_available() -> bool:
     return False
 
 
+def _backend_supports_mode(backend: str, mode: str) -> bool:
+    required_task = "embeddings" if mode == "embed" else "chat"
+    if backend_supports_task is not None:
+        return bool(backend_supports_task(backend, required_task))
+    if mode == "embed":
+        return backend == "vllm"
+    return backend in SUPPORTED_BACKENDS
+
+
+def _port_available(host: str, port: int) -> bool:
+    family = socket.AF_INET6 if ":" in host else socket.AF_INET
+    address = (host, port, 0, 0) if family == socket.AF_INET6 else (host, port)
+    try:
+        with socket.socket(family, socket.SOCK_STREAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind(address)
+    except OSError:
+        return False
+    return True
+
+
+def preflight_launch(
+    *,
+    api_port: str,
+    model: str,
+    max_seq_len: str,
+    listen_host: str,
+    env: dict[str, str] | None = None,
+    check_port: bool = True,
+) -> dict:
+    runtime_env = dict(env) if isinstance(env, dict) else _runtime_env()
+    mode = _mode_for_launch(api_port, model)
+    backend = _backend_for_mode(mode, runtime_env)
+
+    try:
+        port = int(str(api_port).strip())
+    except ValueError as exc:
+        raise EnginePreflightError("configuration_error", "API port must be an integer") from exc
+    if not 1 <= port <= 65535:
+        raise EnginePreflightError("configuration_error", "API port must be between 1 and 65535")
+    try:
+        sequence_length = int(str(max_seq_len).strip())
+    except ValueError as exc:
+        raise EnginePreflightError("configuration_error", "maximum sequence length must be an integer") from exc
+    if sequence_length <= 0:
+        raise EnginePreflightError("configuration_error", "maximum sequence length must be greater than zero")
+
+    model_path = _resolve_model_path(model)
+    model_kind = _model_kind_for_launch(model)
+    if not _backend_supports_mode(backend, mode):
+        raise EnginePreflightError(
+            "configuration_error",
+            f"backend={backend} does not provide the required {mode} task",
+        )
+    if not _backend_supports_kind(backend, model_kind):
+        raise EnginePreflightError(
+            "configuration_error",
+            f"backend={backend} is incompatible with model_kind={model_kind}",
+        )
+
+    if backend == "vllm" and not _vllm_available(runtime_env):
+        raise EnginePreflightError("missing_backend", "configured vllm runtime is unavailable")
+    if backend != "vllm" and probe_backend is not None:
+        runtime = probe_backend(backend, env=runtime_env)
+        if not bool(runtime.get("available", False)):
+            raise EnginePreflightError(
+                "missing_backend",
+                f"configured {backend} runtime is unavailable: {runtime.get('detail') or 'probe failed'}",
+            )
+
+    launcher = _launcher_path_for_backend(backend)
+    if not launcher.is_file():
+        raise EnginePreflightError("missing_backend", f"launcher for backend={backend} is missing")
+    if check_port and not _port_available(str(listen_host), port):
+        raise EnginePreflightError(
+            "port_collision",
+            f"listen address {listen_host}:{port} is already occupied",
+            exit_code=EX_TEMPFAIL,
+            retryable=True,
+        )
+
+    return {
+        "mode": mode,
+        "backend": backend,
+        "model_alias": str(model),
+        "model_path": model_path,
+        "model_kind": model_kind,
+        "launcher": launcher,
+        "api_port": port,
+        "max_seq_len": sequence_length,
+        "listen_host": str(listen_host),
+        "runtime_env": runtime_env,
+    }
+
+
+def _incident_key(mode: str, failure_type: str, backend: str, model_alias: str) -> str:
+    return ":".join((
+        "engine_preflight",
+        str(mode or "unknown"),
+        str(failure_type or "unknown"),
+        str(backend or "unknown"),
+        pathlib.Path(str(model_alias or "unknown")).name,
+    ))
+
+
+def _redact_detail(detail: str) -> str:
+    text = str(detail or "")
+    patterns = (
+        r"(?i)\b(?:sk|hf)_[A-Za-z0-9_-]{8,}\b",
+        r"(?i)\bsk-[A-Za-z0-9_-]{8,}\b",
+        r"(?i)\b(?:api[_-]?key|token|secret|password)\s*[=:]\s*\S+",
+    )
+    for pattern in patterns:
+        text = re.sub(pattern, "[REDACTED]", text)
+    return text[:500]
+
+
+def _emit_preflight_failure(exc: EnginePreflightError, *, mode: str, backend: str, model_alias: str) -> None:
+    print(json.dumps({
+        "event": "engine_preflight_failed",
+        "level": "error",
+        "failure_type": exc.failure_type,
+        "retryable": exc.retryable,
+        "exit_code": exc.exit_code,
+        "lane": mode,
+        "backend": backend,
+        "model_alias": pathlib.Path(str(model_alias or "")).name,
+        "incident_key": _incident_key(mode, exc.failure_type, backend, model_alias),
+        "detail": _redact_detail(exc.detail),
+    }, sort_keys=True, separators=(",", ":")), file=sys.stderr, flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Dispatch a managed model slot to its selected inference backend")
     parser.add_argument("--api-port", required=True, help="API listen port")
@@ -208,37 +380,45 @@ def main():
     parser.add_argument("--max-seq-len", required=True, help="Max sequence length")
     parser.add_argument("--listen-host", default="127.0.0.1", help="Listen host")
     parser.add_argument("--webui", action="store_true", help="Enable TGW WebUI for this launch")
+    parser.add_argument("--preflight-only", action="store_true", help="Validate configuration and exit without launching")
+    parser.add_argument("--skip-port-check", action="store_true", help="Do not validate listen-port availability")
     args = parser.parse_args()
 
     mode = _mode_for_launch(args.api_port, args.model)
-    backend = _backend_for_mode(mode)
-    model_kind = _model_kind_for_launch(args.model)
-    if mode == "embed" and backend != "vllm":
-        raise SystemExit(
-            f"[engine-launcher] embedding slot requires vllm; configured_backend={backend}; "
-            "persist the correct backend before starting the slot"
+    runtime_env = _runtime_env()
+    backend = _backend_for_mode(mode, runtime_env)
+    try:
+        plan = preflight_launch(
+            api_port=args.api_port,
+            model=args.model,
+            max_seq_len=args.max_seq_len,
+            listen_host=args.listen_host,
+            env=runtime_env,
+            check_port=not args.skip_port_check,
         )
+    except EnginePreflightError as exc:
+        _emit_preflight_failure(exc, mode=mode, backend=backend, model_alias=args.model)
+        return exc.exit_code
 
-    if not _backend_supports_kind(backend, model_kind):
-        raise SystemExit(
-            f"[engine-launcher] backend={backend} incompatible with model_kind={model_kind}; "
-            "select and persist a compatible backend before starting the slot"
-        )
+    model_kind = str(plan["model_kind"])
+    launcher = pathlib.Path(plan["launcher"])
+    runtime_env = dict(plan["runtime_env"])
+    if args.preflight_only:
+        print(json.dumps({
+            "event": "engine_preflight_succeeded",
+            "level": "info",
+            "lane": mode,
+            "backend": backend,
+            "model_alias": pathlib.Path(args.model).name,
+            "model_kind": model_kind,
+            "port_checked": not args.skip_port_check,
+        }, sort_keys=True, separators=(",", ":")), flush=True)
+        return 0
 
     if backend == "vllm":
-        if not _vllm_available():
-            raise SystemExit("[engine-launcher] configured vllm backend is unavailable (module import failed)")
-        else:
-            vllm_python = str(os.getenv("VLLM_PYTHON_BIN", "") or "").strip()
-            if vllm_python:
-                print(f"[engine-launcher] backend=vllm using python={vllm_python}", flush=True)
-
-    if backend in {"tabbyapi", "llamacpp"} and probe_backend is not None:
-        runtime = probe_backend(backend, env=dict(os.environ))
-        if not bool(runtime.get("available", False)):
-            raise SystemExit(f"[engine-launcher] configured {backend} backend is unavailable: {runtime.get('detail')}")
-
-    launcher = _launcher_path_for_backend(backend)
+        vllm_python = str(os.getenv("VLLM_PYTHON_BIN", "") or "").strip()
+        if vllm_python:
+            print(f"[engine-launcher] backend=vllm using python={vllm_python}", flush=True)
 
     cmd = [
         sys.executable,
@@ -260,7 +440,7 @@ def main():
     else:
         slot_prefix = f"LLM_{mode.upper()}_"
         cuda_visible_devices = str(
-            os.getenv(f"{slot_prefix}CUDA_VISIBLE_DEVICES", os.getenv("CUDA_VISIBLE_DEVICES", "")) or ""
+            runtime_env.get(f"{slot_prefix}CUDA_VISIBLE_DEVICES", runtime_env.get("CUDA_VISIBLE_DEVICES", "")) or ""
         ).strip()
         if cuda_visible_devices:
             cmd += ["--cuda-visible-devices", cuda_visible_devices]
@@ -268,21 +448,21 @@ def main():
             cmd += ["--task", "embed"]
         if backend == "vllm":
             gpu_memory = str(
-                os.getenv(f"{slot_prefix}VLLM_GPU_MEMORY_UTILIZATION", os.getenv("VLLM_GPU_MEMORY_UTILIZATION", "0.9"))
+                runtime_env.get(f"{slot_prefix}VLLM_GPU_MEMORY_UTILIZATION", runtime_env.get("VLLM_GPU_MEMORY_UTILIZATION", "0.9"))
             ).strip()
             tensor_parallel = str(
-                os.getenv(f"{slot_prefix}VLLM_TENSOR_PARALLEL_SIZE", os.getenv("VLLM_TENSOR_PARALLEL_SIZE", "1"))
+                runtime_env.get(f"{slot_prefix}VLLM_TENSOR_PARALLEL_SIZE", runtime_env.get("VLLM_TENSOR_PARALLEL_SIZE", "1"))
             ).strip()
             cmd += ["--gpu-memory-utilization", gpu_memory, "--tensor-parallel-size", tensor_parallel]
         if backend == "llamacpp":
             cmd += [
                 "--n-gpu-layers",
-                str(os.getenv(f"{slot_prefix}LLAMA_CPP_N_GPU_LAYERS", os.getenv("LLAMA_CPP_N_GPU_LAYERS", "-1"))),
+                str(runtime_env.get(f"{slot_prefix}LLAMA_CPP_N_GPU_LAYERS", runtime_env.get("LLAMA_CPP_N_GPU_LAYERS", "-1"))),
                 "--parallel",
-                str(os.getenv(f"{slot_prefix}LLAMA_CPP_PARALLEL", os.getenv("LLAMA_CPP_PARALLEL", "1"))),
+                str(runtime_env.get(f"{slot_prefix}LLAMA_CPP_PARALLEL", runtime_env.get("LLAMA_CPP_PARALLEL", "1"))),
             ]
             tensor_split = str(
-                os.getenv(f"{slot_prefix}LLAMA_CPP_TENSOR_SPLIT", os.getenv("LLAMA_CPP_TENSOR_SPLIT", ""))
+                runtime_env.get(f"{slot_prefix}LLAMA_CPP_TENSOR_SPLIT", runtime_env.get("LLAMA_CPP_TENSOR_SPLIT", ""))
             ).strip()
             if tensor_split:
                 cmd += ["--tensor-split", tensor_split]
@@ -292,7 +472,8 @@ def main():
         flush=True,
     )
     os.execv(sys.executable, cmd)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

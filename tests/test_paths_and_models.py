@@ -89,8 +89,10 @@ def test_engine_launcher_enforces_the_same_model_boundary_and_multimodal_guard(t
     assert launcher._backend_supports_kind("tgw", "multimodal") is False
     assert launcher._backend_supports_kind("tgw", "exl2") is False
     assert launcher._backend_supports_kind("tabbyapi", "exl2") is True
-    with pytest.raises(SystemExit):
+    with pytest.raises(launcher.EnginePreflightError) as exc:
         launcher._resolve_model_path(str(tmp_path / "outside"))
+    assert exc.value.failure_type == "configuration_error"
+    assert exc.value.exit_code == 78
 
 
 def test_inspector_will_not_read_outside_model_root(tmp_path: Path):
@@ -235,6 +237,7 @@ def test_tabby_runtime_fails_closed_when_revision_does_not_match(tmp_path: Path,
     executable.chmod(0o755)
     root = tmp_path / "tabby"
     root.mkdir()
+    (root / "main.py").write_text("# fixture\n")
     monkeypatch.setattr(backend_registry, "_git_revision", lambda _path: "installed")
     row = backend_registry.probe_backend(
         "tabbyapi",
@@ -247,6 +250,25 @@ def test_tabby_runtime_fails_closed_when_revision_does_not_match(tmp_path: Path,
     assert row["available"] is False
     assert row["revision_matches"] is False
     assert "revision mismatch" in row["detail"].lower()
+
+
+def test_tabby_runtime_fails_closed_when_python_entrypoint_is_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    executable = tmp_path / "python"
+    executable.write_text("#!/bin/sh\n")
+    executable.chmod(0o755)
+    root = tmp_path / "tabby"
+    root.mkdir()
+    monkeypatch.setattr(backend_registry, "_git_revision", lambda _path: "pinned")
+    row = backend_registry.probe_backend(
+        "tabbyapi",
+        env={
+            "TABBYAPI_CMD": f"{executable} {root / 'missing-main.py'}",
+            "TABBYAPI_ROOT": str(root),
+            "TABBYAPI_REVISION": "pinned",
+        },
+    )
+    assert row["available"] is False
+    assert "entrypoint" in row["detail"].lower()
 
 
 def test_legacy_cli_cannot_switch_symlinks_or_launch_inference():

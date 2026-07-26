@@ -197,12 +197,50 @@ def _probe_tabbyapi(env: dict[str, str]) -> dict[str, Any]:
     raw_cmd = str(env.get("TABBYAPI_CMD") or "").strip()
     command = shlex.split(raw_cmd) if raw_cmd else []
     executable = command[0] if command else ""
-    command_available = bool(executable and (Path(executable).is_file() or shutil.which(executable)))
+    resolved_executable = None
+    if executable:
+        candidate = Path(executable).expanduser()
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            resolved_executable = str(candidate)
+        else:
+            resolved_executable = shutil.which(executable)
+    entrypoint_available = True
+    if resolved_executable and len(command) >= 2:
+        if command[1] == "-m":
+            module = str(command[2] if len(command) >= 3 else "").strip()
+            entrypoint_available = bool(module)
+            if module:
+                try:
+                    check = subprocess.run(
+                        [
+                            resolved_executable,
+                            "-c",
+                            (
+                                "import importlib.util,sys;"
+                                "sys.exit(0 if importlib.util.find_spec(sys.argv[1]) else 1)"
+                            ),
+                            module,
+                        ],
+                        cwd=str(root) if root.is_dir() else None,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        check=False,
+                        timeout=10,
+                    )
+                    entrypoint_available = check.returncode == 0
+                except Exception:
+                    entrypoint_available = False
+        elif command[1].endswith(".py"):
+            entrypoint = Path(command[1]).expanduser()
+            if not entrypoint.is_absolute():
+                entrypoint = root / entrypoint
+            entrypoint_available = entrypoint.is_file()
+    command_available = bool(resolved_executable and entrypoint_available)
     revision_matches = expected is None or actual == expected
     available = command_available and revision_matches
     detail = None
     if not command_available:
-        detail = "TABBYAPI_CMD is not configured or its executable is unavailable"
+        detail = "TABBYAPI_CMD is not configured or its executable/module entrypoint is unavailable"
     elif not revision_matches:
         detail = f"TabbyAPI revision mismatch: expected {expected}, found {actual or 'unknown'}"
     return {

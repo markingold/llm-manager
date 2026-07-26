@@ -18,6 +18,7 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 from llm_manager.model_inspector import detect_kind, detect_loader
+from llm_manager.runtime_env import read_runtime_env as _read_runtime_env
 
 MODELS_DIR = os.getenv(
     "SERVER_MODELS_DIR",
@@ -32,32 +33,11 @@ GLOBAL_ENV_PATH = pathlib.Path(
 )
 
 
-def read_env_file(path: pathlib.Path) -> dict[str, str]:
-    values: dict[str, str] = {}
-    if not path.exists():
-        return values
-    for line in path.read_text().splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            continue
-        key, value = stripped.split("=", 1)
-        values[key.strip()] = value.strip()
-    return values
-
-
 def read_runtime_env() -> dict:
-    env = dict(os.environ)
-
-    # Shared global env keys are preferred when not already set by process env.
-    for key, value in read_env_file(GLOBAL_ENV_PATH).items():
-        if value and key not in env:
-            env[key] = value
-
-    # Project-local secrets provide fallback values when global/env do not define one.
-    for key, value in read_env_file(ENV_PATH).items():
-        if key not in env:
-            env[key] = value
-    return env
+    return _read_runtime_env(
+        project_env_path=ENV_PATH,
+        global_env_path=GLOBAL_ENV_PATH,
+    )
 
 
 def env_flag(value: str | None, default: bool = False) -> bool:

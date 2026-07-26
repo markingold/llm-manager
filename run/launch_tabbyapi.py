@@ -13,6 +13,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 from llm_manager.model_inspector import detect_kind
+from llm_manager.runtime_env import read_runtime_env as _read_runtime_env
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RUNTIME_HOME = pathlib.Path(os.getenv("LLM_MANAGER_HOME", str(ROOT)))
@@ -28,31 +29,11 @@ MODELS_DIR = os.getenv(
 )
 
 
-def read_env_file(path: pathlib.Path) -> dict[str, str]:
-    values: dict[str, str] = {}
-    if not path.exists():
-        return values
-    for line in path.read_text().splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            continue
-        key, value = stripped.split("=", 1)
-        values[key.strip()] = value.strip()
-    return values
-
-
 def read_runtime_env() -> dict[str, str]:
-    env = dict(os.environ)
-
-    for key, value in read_env_file(GLOBAL_ENV_PATH).items():
-        if value and key not in env:
-            env[key] = value
-
-    for key, value in read_env_file(ENV_PATH).items():
-        if key not in env:
-            env[key] = value
-
-    return env
+    return _read_runtime_env(
+        project_env_path=ENV_PATH,
+        global_env_path=GLOBAL_ENV_PATH,
+    )
 
 
 def main():
