@@ -1,9 +1,21 @@
 # LLM Manager - Roadmap
 
-> Consolidated: 2026-05-15 | Sources: docs/plans/BACKEND_ARCHITECTURE_PLAN.md, docs/plans/EXLLAMA_CONVERSION_PLAN.md, docs/plans/retired/PROVIDER_ROUTER_PLAN.md, docs/plans/retired/EVALUATION_PLAN.md, docs/TODO/README.md, local runtime troubleshooting (2026-04-28)
+> Consolidated: 2026-07-26 | Latest evidence: docs/reviews/2026-07-26-foundation-review.md
 
 ## Current Status
-LLM Manager is currently a production control plane for slot-based local serving on dual GPUs, centered on text-generation-webui, systemd-managed engine slots, model switching, inspection, training jobs, and a dashboard. The active plan is to evolve it into a universal LLM broker that can route across local backends, OpenRouter, and OpenAI while adding managed conversion, evaluation, and observability.
+LLM Manager is a production-like local control plane and universal broker across
+TGW, TabbyAPI, vLLM, direct llama.cpp, OpenRouter, and OpenAI. The July 26
+foundation pass added configuration-aware supervision, capability readiness, and
+known-dead local-lane exclusion after a 4,027-restart incident. It is not yet
+production-ready because privileged lifecycle/governance endpoints lack an
+authentication boundary and backup/restore plus wider contract evidence remain.
+
+Immediate roadmap order:
+
+1. Preserve the stabilized launcher/unit/readiness contract and monitor it under normal use.
+2. Add scoped lifecycle/governance authorization before broader API exposure.
+3. Complete SQLite integrity/backup/restore drills and consumer contract fixtures.
+4. Raise coverage progressively, then validate a Python 3.12 migration against every backend.
 
 WebUI overhaul status:
 - The dedicated overhaul is complete and retired.
@@ -83,7 +95,8 @@ Source-plan status update (2026-05-15):
 
 ## Parking Lot
 Items not yet prioritized:
-- Direct llama.cpp integration as a backend separate from TGW. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
+- Direct llama.cpp integration is complete; keep upstream CLI compatibility in
+  the normal backend-registry maintenance path.
 - A lightweight raw-Transformers fallback backend derived from existing experiments. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
 - Turning llm-manager into a broader local AI orchestrator for ComfyUI or Home Assistant-adjacent workflows. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_
 - Treating FlashInfer as a managed engine rather than an acceleration capability. - _source: docs/plans/BACKEND_ARCHITECTURE_PLAN.md_

@@ -8,6 +8,10 @@ purpose:
 -->
 # LLM Manager - Next Push
 
+> Historical delivery notes. This file is retained for implementation history
+> and is no longer the active queue. Use `docs/plans/ROADMAP.md`,
+> `docs/plans/CHECKLIST.md`, and the latest dated foundation review.
+
 ## Refreshed backlog after the 2026-07-22 runtime/deployment pass
 
 The seven runtime-maturity items from the prior queue are complete: authoritative capabilities and local embeddings, exact-model readiness rollback, restart-safe jobs, SQLite runtime sections, broader endpoint coverage with a 30% gate, clean-target package validation, and versioned config/runtime migrations.

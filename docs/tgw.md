@@ -32,26 +32,12 @@ independent from chat/intent/small slot lifecycle.
   remain loopback-only. Treat port 7860 as a trusted-network service and do not
   expose it directly to the public Internet.
 
-## Recommended systemd unit (example)
+## Authoritative systemd unit
 
-Create `llm-tgw-webui.service` with a fixed testing model alias such as `webui_active_model`:
-
-```ini
-[Unit]
-Description=Standalone TGW WebUI (one-off testing)
-After=network.target
-
-[Service]
-Type=simple
-WorkingDirectory=/srv/2bananas/engines/text-generation-webui
-Environment=TGW_WEBUI_ENABLED=1
-ExecStart=/usr/bin/python3 /srv/2bananas/projects/llm-manager/run/launch_tgw.py --api-port 7861 --model webui_active_model --max-seq-len 8192 --listen-host 127.0.0.1 --webui
-Restart=always
-RestartSec=2
-
-[Install]
-WantedBy=multi-user.target
-```
+The current project-checkout host source is
+`deploy/systemd/host/llm-tgw-webui.service`. It preserves the accepted public
+WebUI bind while using bounded `Restart=on-failure` supervision. Packaged engine
+slots use `deploy/systemd/llm-manager-engine@.service`.
 
 Notes:
 - Keep the TGW OpenAI API port separate from normal chat/intent/small lanes.

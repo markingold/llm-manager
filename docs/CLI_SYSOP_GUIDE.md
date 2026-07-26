@@ -174,7 +174,8 @@ Examples:
 
 Notes:
 - Jobs run as subprocesses from the project root.
-- Job state is not persisted across an API restart.
+- Job state and process identity are persisted in `run/state/runtime.db`; API
+  startup reconciles live, completed, and interrupted jobs.
 - Logs are stored in `run/logs/`.
 
 ---
@@ -182,6 +183,7 @@ Notes:
 ## 7. Health & Diagnostics
 
 - `GET /health`
+- `GET /ready`
 - `GET /system`
 - `GET /engines/status`
 - `GET /models`
@@ -326,7 +328,35 @@ Suite reuse and reruns:
       -d '{"async_run":true,"priority":"batch","case_pass_threshold_pct":0.85,"suite_pass_threshold_pct":0.95}' | python3 -m json.tool
 
 Operational note:
-- Use `/engines/status` for complete slot state. `/health` is only a quick readiness snapshot and does not replace engine status inspection.
+- Use `/health` for API liveness, `/ready` for routed capability readiness, and
+  `/engines/status` for complete slot/unit state.
+
+### Engine configuration preflight and restart-storm prevention
+
+Safe config-only probe (does not launch a process):
+
+    python run/engine_launcher.py \
+      --api-port 8500 \
+      --model chat_active_model \
+      --max-seq-len 16384 \
+      --preflight-only \
+      --skip-port-check
+
+Omit `--skip-port-check` only while the lane is stopped. A running healthy lane
+already owns its port and should then report a temporary `port_collision`.
+
+Failure classes:
+
+- exit 78: static configuration (`missing_backend`, `missing_model`, incompatible
+  backend/task/model, invalid numeric config); systemd does not restart it
+- exit 75: temporary preflight failure such as a port collision; systemd may
+  retry within the configured start limit
+- other non-zero exit: backend/runtime crash; bounded `Restart=on-failure`
+  recovery remains enabled
+
+Inspect the one-line JSON event `engine_preflight_failed`. Its `incident_key` is
+stable for alert deduplication and its detail is redacted. Correct configuration,
+then use `systemctl reset-failed <unit>` and start the lane once.
 
 ---
 
@@ -585,6 +615,7 @@ python validate_training_data.py
 | Provider runtime state | `run/state/runtime.db` (legacy JSON imported once) |
 | Router contracts | `llm_manager/router/contracts.py` |
 | Engine launcher | `run/engine_launcher.py` |
+| Current host unit sources | `deploy/systemd/host/` |
 | Dashboard | `web/` |
 | Effective runtime models directory | `/srv/2bananas/engines/text-generation-webui/user_data/models/` |
 | Shared/backing models directory | `/srv/2bananas/engines/models/` |

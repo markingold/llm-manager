@@ -4,6 +4,7 @@ Production control plane for multi-slot LLM serving on dual-GPU systems.
 Manages **TabbyAPI**, **text-generation-webui**, **vLLM**, and direct **llama.cpp** instances via systemd, with transactional model switching, format auto-detection, a LoRA training pipeline, and a web dashboard.
 
 Additional local docs:
+- `docs/INDEX.md` (documentation authority and navigation)
 - `docs/API.md`
 - `docs/CLI_SYSOP_GUIDE.md` (historical filename; this is the llm-manager CLI operations guide, including recovery procedures for manual-review/quarantine flags and GPU/TGW wedges)
 - `docs/guides/EXTERNAL_INTEGRATION.md`
@@ -84,6 +85,17 @@ For this host's project-checkout deployment, install `deploy/systemd/llm-manager
 - Runtime SQLite, its parent directory, and local secret files are permission-restricted and intentionally not tracked by Git
 - Model inference stays in a selected backend (TabbyAPI, TGW, vLLM, or llama.cpp); the API is the control plane and router, not the inference server
 - The deployed systemd engine units launch through `run/engine_launcher.py`
+- Engine launch preflight loads the same effective runtime configuration as the
+  backend launchers, validates the backend/model/task/port before execution, and
+  emits a redacted structured failure event
+- Static configuration failures exit with status 78 and are not restarted;
+  transient failures retain bounded systemd restart recovery
+- `/health` is API liveness with additive degradation context; `/ready` is the
+  capability/readiness contract and returns 503 when required routed capabilities
+  have no available source
+- The router skips a known-unavailable managed local lane before dispatch and
+  records `fallback_summary.service_state` as `local_success`,
+  `remote_fallback`, `remote_success`, or `unavailable`
 
 Typical slot layout:
 - `chat` on port `8500`
@@ -95,6 +107,9 @@ Current host deployment note:
 - The packaged settings map `SYSTEMD_LLM_A` through `SYSTEMD_LLM_D` to the `chat`, `intent`, `small`, and `embed` systemd instances; host overrides may retain legacy unit names
 - The deployed unit overrides `SERVER_MODELS_DIR` and `MODELS_DIR` to `/srv/2bananas/engines/text-generation-webui/user_data/models`
 - On this host, that effective runtime models path currently mirrors the model inventory and active symlinks used by the engines
+- Exact legacy-named project-checkout units are tracked in
+  `deploy/systemd/host/`; packaged installations use
+  `llm-manager-engine@.service`
 
 ## Project Layout
 

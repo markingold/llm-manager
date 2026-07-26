@@ -14,6 +14,22 @@ Source-plan retirement update (2026-05-15):
 - `EVALUATION_PLAN.md`, `OPENROUTER_FREE_MODEL_DISCOVERY_PLAN.md`, and `PROVIDER_ROUTER_PLAN.md` are now retired under `docs/plans/retired/`.
 - Existing checklist items keep source citations pointing at the retired paths for audit traceability.
 
+## Foundation stabilization (2026-07-26)
+
+- [x] Reconstruct and prevent the `llm-a` static-configuration restart-storm class.
+- [x] Load one effective runtime environment for launcher/backend preflight.
+- [x] Classify static configuration failures as exit 78 and temporary preflight failures as exit 75.
+- [x] Add bounded systemd restart policy and exact project-checkout host unit sources.
+- [x] Add `/ready`, normalized per-lane availability, and additive capability degradation reporting.
+- [x] Skip known-unavailable managed local lanes before dispatch and expose remote-fallback state.
+- [x] Retire the stale broken intent active alias without selecting a default model.
+- [x] Add incident-class launcher, readiness, routing, redaction, and unit-source regression tests.
+- [x] Establish `docs/INDEX.md` and `docs/reviews/2026-07-26-foundation-review.md` as documentation authority.
+- [ ] Add lifecycle/governance authentication or an equivalent trusted operator boundary before broader exposure.
+- [ ] Add a SQLite integrity/backup/restore drill and runbook.
+- [ ] Raise coverage beyond 30% with consumer contract and router failure-matrix tests.
+- [ ] Plan and validate Python 3.12 only after all GPU/backend compatibility checks pass.
+
 ## Reliability and security hardening (2026-07-22)
 
 - [x] Constrain explicit model selection to enabled curated catalogs, allowed lanes, capability checks, and the normal budget guardrails.

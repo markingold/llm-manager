@@ -18,17 +18,17 @@
 | 10 | Projects that call LLM Manager should not need direct provider API keys when LLM Manager is acting as the broker. | Centralizing provider access simplifies client integration and enforces routing policy in one place. | 2026-03-29 | Active |
 | 11 | Canonical engine installs and model artifacts should live under `/srv/2bananas/engines`, while llm-manager remains the control plane, metadata layer, and UI. | The project should avoid duplicating large engine and model assets inside the repo, while still allowing symlinks or runtime pointers for compatibility. | 2026-03-29 | Active |
 | 12 | Upgrade completion requires a full end-to-end evaluation pass across all local models on this host, with manual model-format downloads allowed when coverage gaps are found. | Final acceptance must reflect real local model coverage, not only schema or endpoint readiness. | 2026-03-29 | Active |
+| 13 | Static engine configuration failures use exit 78 and are not automatically restarted; temporary/runtime failures retain bounded recovery. | The July 26 chat incident reached 4,027 restarts because supervision could not distinguish configuration from runtime failure. | 2026-07-26 | Active |
+| 14 | `/health` is liveness, `/ready` is routed-capability readiness, and `/engines/status` is per-unit operational detail. | Consumers need stable additive semantics for local outage and remote fallback. | 2026-07-26 | Active |
+| 15 | SQLite is the runtime-state authority; exact installed units require checked-in sources. | Durable recovery and reproducible deployment are foundation requirements. | 2026-07-26 | Active |
 
 ## Open Questions
-- What should back persistent router state: flat files, SQLite, or another storage layer for health state, queues, usage, and evaluation artifacts?
-- Which route should be the first production broker surface after `/router/chat`: completions, embeddings, or evaluation submission?
-- Should the default overflow behavior for OpenRouter free-tier queue pressure be `wait`, `fallback_to_local`, or `upgrade_to_paid`?
-- Should TabbyAPI-backed model switching remain symlink-based at first, or should backend-native load and unload be introduced in the first integration pass?
-- When ExLlamaV3 tooling is installed, should EXL3 conversion be exposed through the same job model as EXL2 conversion or a separate workflow while the toolchain is still maturing?
 - How should evaluation report scoring be performed initially: human review only, secondary-LLM adjudication, or both?
-- What is the minimum documentation package external projects need before they can reliably consume the broker and evaluation APIs?
 - How should per-project routing policy overrides be authenticated and authorized?
+- Should inference-only router access and privileged lifecycle/governance access
+  use separate Apache locations, API roles, or both?
+- Which SQLite backup/integrity/restore procedure should become the host standard?
+- When can the 30% coverage floor be raised without encouraging low-value tests?
 
 ## Conflicts To Resolve
-- GGUF support is described in one place as part of the broader vLLM opportunity, but the backend routing rules still prefer TGW llama.cpp today and direct llama.cpp later. The near-term preferred GGUF backend should be explicitly settled before implementation begins.
 - The plan prefers TabbyAPI for the ExLlama lane, but it also notes that EXL3 should not yet be treated as the best path for LoRA-heavy workflows because ExLlamaV3 LoRA support is still a caution area. The boundary between inference-only EXL3 support and LoRA-capable operational paths should be made explicit in the first design pass.

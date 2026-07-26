@@ -31,10 +31,18 @@ Current deployed unit wiring on this host:
 
 ### Health
 - GET /health
-  - Lightweight status payload
+  - Backward-compatible API liveness payload; `ok` means the API is alive
   - Includes active symlink targets and backend-aware resolved API bases for chat/intent/small slots
   - Includes slot_backends
-  - Performs quick connectivity checks for chat, intent, and small
+  - Adds readiness/degradation summaries and per-slot `*_up` booleans
+- GET /ready
+  - Canonical routed-capability readiness endpoint
+  - Returns HTTP 200 when provider configuration is valid and chat, completions, and embeddings each have an available source
+  - Returns HTTP 503 when a required capability is unavailable
+  - Includes normalized local lane states (`ready`, `operator_unconfigured`,
+    `operator_disabled`, `configuration_error`, `starting`, `not_ready`,
+    `failed`, or `stopped`)
+  - Reports remote credential presence only as `[SET]` or `[MISSING]`
 
 ### System
 - GET /system
@@ -113,7 +121,7 @@ Current deployed unit wiring on this host:
 ## Engine Control
 
 - GET /engines/status
-  - Returns unit info, slot backend, resolved base, base source, port, listening state, and active model path for each slot
+  - Returns unit info, slot backend, resolved base, base source, port, listening state, active model path, and normalized `availability` for each slot
   - Includes top-level `tgw_webui` status for the standalone TGW WebUI service
   - Dashboard Operations uses this payload to surface slot backend context and disable unsupported slot tests when capability checks fail
 - POST /engines/{mode}/{action}
@@ -136,6 +144,11 @@ Engine endpoints require `SYSTEMD_LLM_A` through `SYSTEMD_LLM_D` for chat, inten
 Standalone TGW WebUI endpoints use SYSTEMD_TGW_WEBUI and default to llm-tgw-webui.service.
 
 On the deployed host, the corresponding units invoke run/engine_launcher.py, which dispatches to backend-specific launchers (`run/launch_tgw.py`, `run/launch_vllm.py`, `run/launch_tabbyapi.py`) based on slot backend preference.
+The launcher preflights the effective runtime configuration before execution.
+Static configuration failures (missing backend/executable/module, missing model,
+or incompatible backend/model/task) emit `engine_preflight_failed` and exit 78.
+Tracked systemd units use `RestartPreventExitStatus=78`; temporary failures such
+as port collisions use exit 75 and remain subject to bounded restart recovery.
 TGW launches remain API-only by default (`--no-webui`) for slot services.
 `run/launch_tgw.py` applies startup guardrails by default to reduce restart wedges:
 - stale TGW-like listeners on the target API port are terminated before launch
@@ -436,8 +449,12 @@ They call the OpenAI-compatible /v1/chat/completions endpoint exposed by the und
 ## Notes
 
 - HTTP responses include `X-Request-Id`; request logs emit structured JSON including request_id, method, path, status, and duration_ms.
+- Router responses expose additive `routing.fallback_summary.service_state` and
+  `degraded` fields. A known-dead managed local lane is recorded as a skipped
+  `local_lane_unavailable` attempt without making a network request.
 
 - Prefer switching models via API rather than manual symlink edits.
-- Use /engines/status instead of /health when you need full operational state.
+- Use `/health` for liveness, `/ready` for routed capability readiness, and
+  `/engines/status` for full per-unit operational state.
 - /models is the best summary endpoint for available models, active symlinks, slot visibility, slot backends, and model metadata.
 - The effective runtime model directory may differ from the default in `llm_manager/server.py` when overridden by the systemd service environment.
