@@ -87,6 +87,16 @@ def doctor(asset_root: Path) -> dict:
             errors.append(f"{relative} lacks ExecStart or EnvironmentFile")
         if "{{" in content or "}}" in content:
             errors.append(f"{relative} contains unresolved template tokens")
+        if relative.endswith("llm-manager-engine@.service"):
+            required_supervision = (
+                "Restart=on-failure",
+                "RestartPreventExitStatus=78",
+                "StartLimitIntervalSec=",
+                "StartLimitBurst=",
+            )
+            for directive in required_supervision:
+                if directive not in content:
+                    errors.append(f"{relative} lacks bounded supervision directive: {directive}")
 
     with tempfile.TemporaryDirectory(prefix="llm-manager-doctor-") as temp_dir:
         store = SQLiteRuntimeStore(Path(temp_dir) / "runtime.db")

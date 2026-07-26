@@ -1,0 +1,24 @@
+[Unit]
+Description=LLM Engine C (managed small API on :8502)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=nova
+WorkingDirectory=/srv/2bananas/engines/text-generation-webui
+Environment=HF_HUB_DISABLE_TELEMETRY=1
+Environment=GRADIO_ANALYTICS_ENABLED=False
+Environment=CUDA_VISIBLE_DEVICES=1
+Environment=LLM_MANAGER_HOME=/srv/2bananas/projects/llm-manager
+ExecStart=/srv/2bananas/engines/text-generation-webui/venv/bin/python /srv/2bananas/projects/llm-manager/run/engine_launcher.py --api-port 8502 --model small_active_model --max-seq-len 8192
+Restart=on-failure
+RestartPreventExitStatus=78
+RestartSec=10
+TimeoutStartSec=180
+TimeoutStopSec=45
+
+[Install]
+WantedBy=multi-user.target
