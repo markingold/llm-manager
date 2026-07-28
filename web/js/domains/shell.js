@@ -1,4 +1,4 @@
-import { $ } from "../ui-core.js?v=20260722_3";
+import { $ } from "../ui-core.js?v=20260727_1";
 
 const NAV_SECTIONS = ["operations", "router", "evaluation", "providers-budget", "jobs"];
 const SURFACES = ["all", "read", "mutate"];

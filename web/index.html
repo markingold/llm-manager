@@ -486,6 +486,13 @@
         <span class="muted">Shows queue pressure, worker caps, and latest reports.</span>
       </div>
       <div class="row" style="margin-bottom:10px">
+        <span id="evalScheduleCtx" class="pill">schedule: ...</span>
+        <span id="evalDefaultFreeCtx" class="pill">default free: ...</span>
+        <button id="btnEvalRunDaily">Run Daily Health</button>
+        <button id="btnEvalRunWeekly">Run Weekly Discovery</button>
+        <button id="btnEvalRunBenchmark">Run Biweekly Benchmark</button>
+      </div>
+      <div class="row" style="margin-bottom:10px">
         <input id="evalSuiteName" placeholder="suite name" style="max-width:220px" />
         <input id="evalSuiteVersion" placeholder="version" value="1" style="max-width:120px" />
         <label class="muted" style="display:flex;align-items:center;gap:4px"><input type="checkbox" id="evalRerunAsync" checked /> async</label>
@@ -1036,7 +1043,7 @@
     </section>
   </main>
 
-  <script type="module" src="app.js?v=20260722_3"></script>
+  <script type="module" src="app.js?v=20260727_1"></script>
 </body>
 
 </html>

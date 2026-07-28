@@ -238,8 +238,8 @@ Process/service environment commonly used in deployment:
 | POST | `/providers/policies/rollback` | Roll back provider policy document to last good snapshot |
 | POST | `/providers/policies/test` | Evaluate effective strategy/chain/defaults for a task- and project-scoped probe request (includes `strategy_resolution`, `chain_resolution`, and dynamic-ranking diagnostics) |
 | POST | `/providers/openrouter/refresh` | Refresh upstream OpenRouter metadata cache, optionally with rankings |
-| POST | `/providers/openrouter/discover-free` | Manually build and optionally activate temporary OpenRouter free fallback candidates (includes ranking + smoke evidence fields) |
-| GET | `/providers/openrouter/free-candidates` | Inspect the current manual OpenRouter free candidate pool with lifecycle/smoke evidence |
+| POST | `/providers/openrouter/discover-free` | Build and optionally smoke-test an OpenRouter free candidate pool (also used by the scheduler) |
+| GET | `/providers/openrouter/free-candidates` | Inspect the current OpenRouter free candidate pool, active defaults, and lifecycle/smoke evidence |
 | POST | `/conversions/exl2` | Start managed EXL2 conversion from Hugging Face repo or merged local source |
 | GET | `/conversions/exl2/jobs` | List persisted managed EXL2 conversion runs |
 | GET | `/conversions/exl2/jobs/{job_id}` | Get one managed conversion run with log tail |
@@ -277,6 +277,8 @@ Process/service environment commonly used in deployment:
 | GET | `/router/evaluation-summary` | List recent evaluation reports |
 | GET | `/router/lane-sufficiency-report` | Compare lane pass/cost signals and identify cheaper sufficient lanes by task group |
 | GET | `/router/evaluation-worker-config` | Show evaluation worker and cap settings |
+| GET | `/router/evaluation-schedule` | Inspect daily/weekly/biweekly jobs and evidence-based promotion profiles |
+| POST | `/router/evaluation-schedule/{job_name}/run` | Schedule `daily_health`, `weekly_discovery`, or `biweekly_benchmark` immediately |
 
 ### Model Inspection
 
@@ -352,7 +354,7 @@ Notes:
 - Routed chat and completions requests support `no_thinking=true`; for local provider dispatch this maps to `enable_thinking=false`
 - OpenRouter free-tier requests are protectively throttled by a local rpm limiter and provider-model cooldown tracking
 - `POST /providers/openrouter/refresh` updates a cached upstream OpenRouter catalog and free-model set for hardened free-tier cycling, and can enrich the cache with rankings using `include_rankings=true`
-- `POST /providers/openrouter/discover-free` is a manual-only workflow that filters cached OpenRouter free models by size, popularity, context, family, and capabilities, then stores a temporary candidate pool in runtime state
+- `POST /providers/openrouter/discover-free` filters cached OpenRouter free models by size, popularity, context, family, and capabilities; the same pipeline is run automatically each week
 - OpenRouter discovery candidates now persist richer ranking fields (`top_weekly_rank`, `category_ranks`) when available
 - OpenRouter discovery candidate payloads now surface lifecycle and smoke evidence (`recent_promotion_transitions`, `recent_smoke_checks`, `lifecycle_evidence`)
 - Router decision logs now include task-policy trace context (`task_type`, `strategy_source`, `policy_context`) and are summarized via `GET /router/decision-traces`
@@ -360,14 +362,18 @@ Notes:
 - Router decision logs now include deterministic fallback visibility (`attempt_trace`, `fallback_summary`) and failed route attempts are also persisted for incident review
 - Router attempt traces now include typed dispatch reason codes (`dispatch_rate_limited`, `dispatch_auth_error`, etc.) and provider-block skip reasons after auth failures
 - `GET /router/decision-traces` summary now includes `by_reason_code` and `with_selected_fallback` counters for deterministic fallback analysis
-- `GET /providers/openrouter/free-candidates` shows the temporary candidate pool and any manually activated `active_ids`
-- The `openrouter.free` lane only uses manually activated temporary candidates after curated free models are exhausted
+- `GET /providers/openrouter/free-candidates` shows the candidate pool and evidence-promoted `active_ids`
+- The `openrouter.free` lane prefers benchmark-promoted per-capability profiles, then falls back through healthy curated and discovered candidates
 - Free-tier overflow behavior now follows policy `queue_behavior` (`wait`, `fail_fast`, `fallback_to_local`, `upgrade_to_paid`)
 - OpenRouter cooldown behavior is policy-tunable via `openrouter.cooldown_seconds_*` and `openrouter.auth_error_manual_review_threshold`
 - Provider budget guardrails can be configured in `config/provider_policies.json` (`budget`) and inspected at `/router/budget-state`
 - Runtime spend and budget sections are persisted in SQLite (`spend_logs`, `budget_state`)
 - Local evaluation runs can compare prompt/system/temperature variants and store recommendations for tuning
 - Local evaluation runs now support case-level and suite-level pass thresholds for stricter tuning gates
+- Evaluation cases support exact/contains assertions, JSON Schema, tool-call, latency, cost, and weighted plugin gates; unscored responses cannot silently pass
+- Optional blinded LLM judging uses Luna for the preliminary pass, Terra for finalists, and Sol only for material disagreement, under an explicit judge-cost cap
+- Evaluation automation persists daily availability checks, weekly free-model discovery/smoke checks, and a biweekly repeated benchmark in SQLite runtime state
+- Automatic free-model promotion requires minimum score, sample count, and reliability gates; hysteresis prevents marginal score churn and each capability profile retains fallbacks
 - Local evaluation queue supports priority lanes (`interactive`, `batch`, `evaluation`) for async runs
 - Dashboard now includes an Evaluation Ops panel showing queue health, latest reports, and suite rerun controls
 - Dashboard Evaluation now includes a Lane Sufficiency panel for comparing reference lanes vs cheaper sufficient lanes
@@ -380,6 +386,8 @@ Notes:
 - Local evaluation candidate_models now support mixed provider targets (for example `chat_active_model`, `openrouter:model_id`, `openai:model_id`)
 - `/router/evaluations` supports filtering by status, target mode, project, candidate model, provider, lane, suite pass, tag, and since timestamp
 - Evaluation summaries now include by-provider aggregates and estimated-cost totals when provider catalog pricing metadata is available
+
+See [docs/EVALUATION.md](docs/EVALUATION.md) for suite contracts, judge provenance, schedules, budgets, promotion rules, and operational controls.
 
 ## Operating Notes
 

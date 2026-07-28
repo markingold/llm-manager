@@ -1,5 +1,5 @@
-import { api } from "../api.js?v=20260722_3";
-import { $, escapeHtml, setOut } from "../ui-core.js?v=20260722_3";
+import { api } from "../api.js?v=20260727_1";
+import { $, escapeHtml, setOut } from "../ui-core.js?v=20260727_1";
 
 const API_FILTER_KEYS = [
   "status",
@@ -175,6 +175,10 @@ function defaultSuiteTemplate(name, version) {
     cases: [{ case_id: "case-1", prompt: "Hello", expected_contains: ["Hello"], tags: ["smoke"] }],
     case_pass_threshold_pct: 1.0,
     suite_pass_threshold_pct: 1.0,
+    repetitions: 1,
+    require_curated_remote: true,
+    max_estimated_cost_usd: 10,
+    judge: { enabled: false },
     metadata: { project: "llm-manager", owner: "ops", suite_name: name, suite_version: version },
   };
 }
@@ -678,6 +682,10 @@ async function loadSuiteToEditor(suiteName, suiteVersion) {
       cases: suite.cases || [],
       case_pass_threshold_pct: suite.case_pass_threshold_pct,
       suite_pass_threshold_pct: suite.suite_pass_threshold_pct,
+      repetitions: suite.repetitions || 1,
+      require_curated_remote: suite.require_curated_remote !== false,
+      max_estimated_cost_usd: suite.max_estimated_cost_usd || 10,
+      judge: suite.judge || { enabled: false },
       metadata: suite.metadata || {},
     });
 
@@ -709,6 +717,10 @@ async function saveSuite() {
         cases: Array.isArray(payload.cases) ? payload.cases : [],
         case_pass_threshold_pct: payload.case_pass_threshold_pct,
         suite_pass_threshold_pct: payload.suite_pass_threshold_pct,
+        repetitions: payload.repetitions || 1,
+        require_curated_remote: payload.require_curated_remote !== false,
+        max_estimated_cost_usd: payload.max_estimated_cost_usd || 10,
+        judge: payload.judge || { enabled: false },
         metadata: payload.metadata || {},
       },
     });
@@ -819,16 +831,29 @@ export async function refreshEvalPanel() {
   if (!panel) return;
 
   try {
-    const [q, s, w, completed] = await Promise.all([
+    const [q, s, w, completed, schedule] = await Promise.all([
       api("/router/evaluation-queue-state?limit=8"),
       api("/router/evaluation-summary?limit=5"),
       api("/router/evaluation-worker-config"),
       api("/router/evaluations?limit=10&status=completed"),
+      api("/router/evaluation-schedule"),
     ]);
 
     LAST_QUEUE = q;
     LAST_WORKERS = w;
     updateEvalContext();
+    const scheduleJobs = schedule?.scheduler?.jobs || {};
+    const generalProfile = schedule?.promotions?.profiles?.general || {};
+    if ($("evalScheduleCtx")) {
+      const next = Object.entries(scheduleJobs)
+        .map(([name, row]) => `${name}=${row?.next_run_ts || "-"}`)
+        .join(" | ");
+      $("evalScheduleCtx").textContent = `schedule ${schedule?.scheduler?.enabled === false ? "off" : "on"}: ${next || "initializing"}`;
+    }
+    if ($("evalDefaultFreeCtx")) {
+      const fallbacks = Array.isArray(generalProfile?.fallback_models) ? generalProfile.fallback_models : [];
+      $("evalDefaultFreeCtx").textContent = `default free: ${generalProfile?.primary_model || "awaiting benchmark"}${fallbacks.length ? ` (+${fallbacks.length} fallback)` : ""}`;
+    }
 
     const suiteName = $("evalSuiteName")?.value?.trim();
     let latestRuns = [];
@@ -860,6 +885,7 @@ export async function refreshEvalPanel() {
           priority_running_caps: q.priority_running_caps,
         },
         workers: w,
+        schedule,
         latest_reports: s.reports || [],
         next_queued: q.queued || [],
         latest_completed_runs: recentRuns,
@@ -879,11 +905,29 @@ export async function refreshEvalPanel() {
   }
 }
 
+async function runScheduledEvaluationJob(jobName) {
+  const costWarning = jobName === "biweekly_benchmark"
+    ? "This queues the full free-model benchmark and paid judge stages (capped at $5). Continue?"
+    : `Run ${jobName.replaceAll("_", " ")} now?`;
+  if (!window.confirm(costWarning)) return;
+  try {
+    setOut({ running: true, action: "evaluation_schedule_run", job_name: jobName });
+    const result = await api(`/router/evaluation-schedule/${encodeURIComponent(jobName)}/run`, { method: "POST" });
+    setOut(result);
+    await refreshEvalPanel();
+  } catch (e) {
+    setOut({ error: e.message, action: "evaluation_schedule_run", job_name: jobName });
+  }
+}
+
 export function wireEvaluationDomain() {
   const loaded = loadFiltersFromUrl();
   applyFilterValuesToInputs(loaded);
 
   $("btnEvalRefresh")?.addEventListener("click", refreshEvalPanel);
+  $("btnEvalRunDaily")?.addEventListener("click", () => runScheduledEvaluationJob("daily_health"));
+  $("btnEvalRunWeekly")?.addEventListener("click", () => runScheduledEvaluationJob("weekly_discovery"));
+  $("btnEvalRunBenchmark")?.addEventListener("click", () => runScheduledEvaluationJob("biweekly_benchmark"));
   $("btnEvalLaneRefresh")?.addEventListener("click", () => refreshLaneSufficiencyPanel().catch((e) => setOut({ error: e.message, action: "lane_sufficiency_refresh" })));
   $("btnEvalRerun")?.addEventListener("click", evalRerunSuite);
   $("btnEvalApplyFilters")?.addEventListener("click", applyFilters);
