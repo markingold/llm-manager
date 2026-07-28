@@ -31,7 +31,7 @@ jobs:
         run: node --test tests/js/*.test.mjs
       - name: Static checks
         run: |
-          ruff check llm_manager tests scripts run/engine_launcher.py run/launch_tgw.py run/launch_vllm.py run/launch_tabbyapi.py
+          ruff check llm_manager tests scripts run/engine_launcher.py run/launch_tgw.py run/launch_vllm.py run/launch_tabbyapi.py run/launch_llamacpp.py
           python -m compileall -q llm_manager run
           python scripts/check_secrets.py
       - name: Build distribution
