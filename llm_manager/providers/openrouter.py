@@ -1,3 +1,4 @@
+import json
 from typing import Any
 
 import requests
@@ -144,6 +145,24 @@ class OpenRouterProviderAdapter(ProviderAdapter):
                             provider_type = str(raw_type).strip() or None
                         if raw_message is not None:
                             provider_message = str(raw_message).strip() or None
+                        metadata = err.get("metadata")
+                        raw_provider_error = metadata.get("raw") if isinstance(metadata, dict) else None
+                        if isinstance(raw_provider_error, str) and raw_provider_error.strip():
+                            try:
+                                raw_body = json.loads(raw_provider_error)
+                            except (TypeError, ValueError):
+                                raw_body = None
+                            raw_error = raw_body.get("error", raw_body) if isinstance(raw_body, dict) else None
+                            if isinstance(raw_error, dict):
+                                nested_message = raw_error.get("message") or raw_error.get("detail")
+                                nested_code = raw_error.get("code")
+                                nested_type = raw_error.get("type")
+                                if nested_message is not None:
+                                    provider_message = str(nested_message).strip()[:500] or provider_message
+                                if nested_code is not None:
+                                    provider_code = str(nested_code).strip() or provider_code
+                                if nested_type is not None:
+                                    provider_type = str(nested_type).strip() or provider_type
 
                 if not provider_message:
                     text = str(getattr(response, "text", "") or "").strip()

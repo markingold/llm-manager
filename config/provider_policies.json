@@ -37,6 +37,30 @@
       "quality": 0.1
     }
   },
+  "evaluation": {
+    "judge_call_timeout_seconds": 90,
+    "max_run_estimated_cost_usd": 10.0,
+    "provider_call_timeout_seconds": 45,
+    "promotion": {
+      "fallback_count": 3,
+      "max_failure_rate": 0.1,
+      "max_p95_latency_ms": 30000,
+      "minimum_cases": 8,
+      "minimum_score": 0.7,
+      "minimum_score_delta": 0.03
+    },
+    "require_curated_remote": true,
+    "scheduler": {
+      "auto_promote": true,
+      "biweekly_benchmark_interval_days": 14,
+      "daily_health_interval_hours": 24,
+      "enabled": true,
+      "free_benchmark_max_models": 30,
+      "free_benchmark_repetitions": 2,
+      "startup_grace_seconds": 300,
+      "weekly_discovery_interval_days": 7
+    }
+  },
   "openrouter": {
     "auth_error_manual_review_threshold": 1,
     "cooldown_seconds_model_unavailable": 120,
@@ -66,7 +90,7 @@
     "spend_logs_max": 2000,
     "usage_logs_max": 1000
   },
-  "schema_version": 2,
+  "schema_version": 3,
   "selection": {
     "best_available": [
       "local",
