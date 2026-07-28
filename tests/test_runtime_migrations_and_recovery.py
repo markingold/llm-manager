@@ -48,14 +48,15 @@ def test_configuration_migrations_add_schema_capabilities_and_embed_policy():
         }
     )
     assert applied
-    assert models["schema_version"] == 2
+    assert models["schema_version"] == 3
     assert next(row for row in models["local"]["slots"] if row["id"] == "embed")["capabilities"] == ["embeddings"]
     assert models["openai"]["allowed"][0]["capabilities"] == ["chat", "completions", "tool_calling"]
 
     policies, applied = migrate_provider_policies({"task_overrides": {}})
     assert applied
-    assert policies["schema_version"] == 2
+    assert policies["schema_version"] == 3
     assert policies["task_overrides"]["embed"]["selection"]["local_first"][0] == "local"
+    assert policies["evaluation"]["scheduler"]["biweekly_benchmark_interval_days"] == 14
 
     with pytest.raises(ValueError):
         migrate_provider_models({"schema_version": 999})
@@ -69,9 +70,22 @@ def test_evaluation_recovery_requeues_running_work():
 
     result = server._recover_evaluation_jobs()
     recovered = server.read_provider_runtime_state()
-    assert result == {"requeued": 1, "interrupted": 0}
+    assert result == {"requeued": 1, "cancelled": 0, "interrupted": 0}
     assert recovered["evaluation_queue"][0]["status"] == "queued"
     assert recovered["evaluation_runs"]["run-1"]["recovery_count"] == 1
+
+
+def test_evaluation_recovery_finishes_cancellation_without_requeueing():
+    state = server.read_provider_runtime_state()
+    state["evaluation_queue"] = [{"run_id": "run-1", "status": "cancelling", "request": {}}]
+    state["evaluation_runs"] = {"run-1": {"run_id": "run-1", "status": "cancelling"}}
+    server.write_provider_runtime_state(state)
+
+    result = server._recover_evaluation_jobs()
+    recovered = server.read_provider_runtime_state()
+    assert result == {"requeued": 0, "cancelled": 1, "interrupted": 0}
+    assert recovered["evaluation_queue"][0]["status"] == "cancelled"
+    assert recovered["evaluation_runs"]["run-1"]["status"] == "cancelled"
 
 
 @pytest.mark.skipif(not hasattr(os, "pidfd_open"), reason="Linux pidfds are required for restart-safe attachment")

@@ -276,6 +276,46 @@ def test_chat_endpoint_accepts_null_usage_from_local_backend(monkeypatch: pytest
     assert response.json()["usage"] == {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
 
+def test_route_test_preserves_tool_requirements_when_selecting_models(monkeypatch: pytest.MonkeyPatch):
+    catalog = _catalog()
+    catalog["openrouter"]["free"] = [
+        {
+            "id": "router/general:free",
+            "enabled": True,
+            "priority": 0,
+            "capabilities": ["chat"],
+        },
+        {
+            "id": "router/tools:free",
+            "enabled": True,
+            "priority": 1,
+            "capabilities": ["chat", "tool_calling"],
+        },
+    ]
+    policies = _policies(["openrouter.free"])
+    policies["openrouter"]["enforce_upstream_free_status"] = False
+    _configure(catalog, policies)
+    monkeypatch.setattr(server, "_maybe_refresh_openrouter_catalog", lambda *_args, **_kwargs: {})
+
+    with TestClient(server.app) as client:
+        response = client.post(
+            "/router/route-test",
+            json={
+                "messages": [{"role": "user", "content": "call ping"}],
+                "tools": [{
+                    "type": "function",
+                    "function": {
+                        "name": "ping",
+                        "parameters": {"type": "object", "properties": {}},
+                    },
+                }],
+            },
+        )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["candidates"][0]["model"] == "router/tools:free"
+
+
 def test_completion_endpoint_falls_back_after_provider_error(monkeypatch: pytest.MonkeyPatch):
     _configure(_catalog(), _policies(["openrouter.paid", "openai"]))
     monkeypatch.setattr(server, "_maybe_refresh_openrouter_catalog", lambda *_args, **_kwargs: {})

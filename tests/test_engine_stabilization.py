@@ -113,6 +113,7 @@ def test_port_collision_is_temporary_and_distinct(tmp_path: Path, monkeypatch: p
     models.mkdir(exist_ok=True)
     _model(models, "checkpoint")
     monkeypatch.setattr(launcher, "MODELS_DIR", str(models))
+    monkeypatch.setattr(launcher, "SLOT_BACKENDS_PATH", tmp_path / "missing-slot-backends.json")
     monkeypatch.setattr(launcher, "_detect_kind", lambda _path: "transformers")
     monkeypatch.setattr(
         launcher,

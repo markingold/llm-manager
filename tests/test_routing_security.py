@@ -98,7 +98,7 @@ def test_sensitive_request_metadata_is_redacted_before_persistence():
 
 def test_governance_version_check_reloads_document_inside_transaction():
     stale = {
-        "schema_version": 2,
+        "schema_version": 3,
         "local": {"slots": [{"id": "embed", "enabled": True, "capabilities": ["embeddings"]}]},
         "openrouter": {"free": [], "paid": []},
         "openai": {"allowed": []},

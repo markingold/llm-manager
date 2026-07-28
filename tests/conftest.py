@@ -31,6 +31,9 @@ def isolated_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(server, "GLOBAL_ENV_PATH", secrets_dir / "global.env")
     monkeypatch.setattr(model_inspector, "MODELS_DIR", str(models_dir))
     monkeypatch.setenv("EVAL_WORKER_AUTOSTART", "0")
+    monkeypatch.setenv("EVAL_SCHEDULER_AUTOSTART", "0")
+    server.EVAL_SCHEDULER_STOP_EVENT.set()
+    server.EVAL_SCHEDULER_STARTED = False
     server.RUNTIME_STORE_CACHE = None
 
     with server.JOB_LOCK:
@@ -60,3 +63,5 @@ def isolated_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         server.JOB_PIDFDS.clear()
         server.JOB_IDENTITIES.clear()
     server.RUNTIME_STORE_CACHE = None
+    server.EVAL_SCHEDULER_STOP_EVENT.set()
+    server.EVAL_SCHEDULER_STARTED = False
