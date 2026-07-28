@@ -10,6 +10,8 @@ Type=simple
 User=nova
 WorkingDirectory=/srv/2bananas/projects/llm-manager
 Environment=PYTHONUNBUFFERED=1
+Environment=LOG_FORMAT=json
+Environment=LOG_LEVEL=INFO
 ExecStartPre=/usr/bin/test -f /srv/2bananas/projects/llm-manager/llm_manager/server.py
 ExecStart=/srv/2bananas/projects/llm-manager/venv/bin/python -m llm_manager.server
 Restart=on-failure

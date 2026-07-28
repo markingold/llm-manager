@@ -15,6 +15,7 @@ import re
 import socket
 import subprocess
 import sys
+from datetime import datetime, timezone
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RUNTIME_HOME = pathlib.Path(os.getenv("LLM_MANAGER_HOME", str(ROOT)))
@@ -358,19 +359,51 @@ def _redact_detail(detail: str) -> str:
     return text[:500]
 
 
+def _emit_event(
+    event: str,
+    *,
+    level: str,
+    message: str,
+    mode: str,
+    **fields,
+) -> None:
+    payload = {
+        "schema_version": 1,
+        "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "level": level,
+        "project_id": "llm-manager",
+        "service_id": f"llm-{mode}",
+        "component": "engine_launcher",
+        "environment": os.getenv("APP_ENV", "production"),
+        "event": event,
+        "msg": message[:1024],
+        **fields,
+    }
+    if level in {"error", "critical"}:
+        payload.setdefault("error_code", "engine_preflight_failed")
+        payload.setdefault("handled", True)
+    print(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")),
+        file=sys.stderr if level in {"error", "critical"} else sys.stdout,
+        flush=True,
+    )
+
+
 def _emit_preflight_failure(exc: EnginePreflightError, *, mode: str, backend: str, model_alias: str) -> None:
-    print(json.dumps({
-        "event": "engine_preflight_failed",
-        "level": "error",
-        "failure_type": exc.failure_type,
-        "retryable": exc.retryable,
-        "exit_code": exc.exit_code,
-        "lane": mode,
-        "backend": backend,
-        "model_alias": pathlib.Path(str(model_alias or "")).name,
-        "incident_key": _incident_key(mode, exc.failure_type, backend, model_alias),
-        "detail": _redact_detail(exc.detail),
-    }, sort_keys=True, separators=(",", ":")), file=sys.stderr, flush=True)
+    _emit_event(
+        "engine_preflight_failed",
+        level="error",
+        message="Engine preflight failed",
+        mode=mode,
+        failure_type=exc.failure_type,
+        retryable=exc.retryable,
+        exit_code=exc.exit_code,
+        lane=mode,
+        backend=backend,
+        model_alias=pathlib.Path(str(model_alias or "")).name,
+        incident_key=_incident_key(mode, exc.failure_type, backend, model_alias),
+        detail=_redact_detail(exc.detail),
+    )
 
 
 def main():
@@ -404,21 +437,29 @@ def main():
     launcher = pathlib.Path(plan["launcher"])
     runtime_env = dict(plan["runtime_env"])
     if args.preflight_only:
-        print(json.dumps({
-            "event": "engine_preflight_succeeded",
-            "level": "info",
-            "lane": mode,
-            "backend": backend,
-            "model_alias": pathlib.Path(args.model).name,
-            "model_kind": model_kind,
-            "port_checked": not args.skip_port_check,
-        }, sort_keys=True, separators=(",", ":")), flush=True)
+        _emit_event(
+            "engine.preflight_succeeded",
+            level="info",
+            message="Engine preflight succeeded",
+            mode=mode,
+            lane=mode,
+            backend=backend,
+            model_alias=pathlib.Path(args.model).name,
+            model_kind=model_kind,
+            port_checked=not args.skip_port_check,
+        )
         return 0
 
     if backend == "vllm":
         vllm_python = str(os.getenv("VLLM_PYTHON_BIN", "") or "").strip()
         if vllm_python:
-            print(f"[engine-launcher] backend=vllm using python={vllm_python}", flush=True)
+            _emit_event(
+                "engine.runtime_selected",
+                level="info",
+                message="Engine runtime selected",
+                mode=mode,
+                backend=backend,
+            )
 
     cmd = [
         sys.executable,
@@ -467,9 +508,18 @@ def main():
             if tensor_split:
                 cmd += ["--tensor-split", tensor_split]
 
-    print(
-        f"[engine-launcher] mode={mode} backend={backend} kind={model_kind} launcher={launcher.name} model={args.model} port={args.api_port}",
-        flush=True,
+    _emit_event(
+        "component.started",
+        level="info",
+        message="LLM engine launcher started",
+        mode=mode,
+        backend=backend,
+        model_kind=model_kind,
+        launcher=launcher.name,
+        model_alias=pathlib.Path(args.model).name,
+        listen_port=int(args.api_port),
+        effective_log_level=os.getenv("LOG_LEVEL", "INFO").lower(),
+        log_format="json",
     )
     os.execv(sys.executable, cmd)
     return 0
